@@ -1,0 +1,39 @@
+# def mock_data() -> bytes:
+#     data = b'\x00\x00\x00\x00\x00\x15\x08\x08\n14\x03\xe6\x00\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+#            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\t+\x00\x00\x00\x00\x00\x07\x00' \
+#            b'\x00\x00\x00\x13\x8a\x00\x00\x00\x00\x00\x00\x00\xbd\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+#            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01/\x00\x00\x00\x00\x00\x03\x00\x00\x07\xde' \
+#            b'\x00\x00\x03\x7f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+#            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' \
+#            b'\x00\x00\x00F'
+#     data = bytes()
+#     zero = (0).to_bytes(1, 'big')
+#     data += zero * 5
+#     data += (21).to_bytes(1, 'big')     # pos 5
+#     data += (8).to_bytes(1, 'big')      # pos 6
+#     data += (8).to_bytes(1, 'big')      # pos 7
+#     data += (10).to_bytes(1, 'big')     # pos 8
+#     data += (49).to_bytes(1, 'big')     # pos 9
+#     data += (52).to_bytes(1, 'big')     # pos 10
+#     data += (998).to_bytes(2, 'big')    # pos 11
+#     data += (18).to_bytes(2, 'big')     # pos 13
+#     data += zero * 26
+#     data += (2347).to_bytes(2, 'big')   # pos 41
+#     data += zero * 4
+#     data += (7).to_bytes(2, 'big')      # pos 47
+#     data += zero * 4
+#     data += (5002).to_bytes(2, 'big')   # pos 53
+#     data += zero * 6
+#     data += (189).to_bytes(2, 'big')    # pos 61
+#     data += (1).to_bytes(2, 'big')      # pos 63
+#     data += zero * 22
+#     data += (303).to_bytes(2, 'big')    # pos 87
+#     data += zero * 4
+#     data += (3).to_bytes(2, 'big')      # pos 93
+#     data += zero * 2
+#     data += (2014).to_bytes(2, 'big')   # pos 97
+#     data += zero * 2
+#     data += (895).to_bytes(2, 'big')    # pos 101
+#     data += zero * 46
+#     data += (70).to_bytes(2, 'big')     # pos 149
+#     return data
