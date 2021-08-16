@@ -49,6 +49,7 @@ class GoodWeXSProcessor(AbstractDataProcessor):
         self._use_validator = self._validator is not None
 
     def process_data(self, data: bytes) -> ProcessorResult:
+        """Process the data provided by the GoodWe XS inverter and return ProcessorResult"""
         if self._use_validator and not self._validator(data):
             logger.debug(f'received invalid data: {data}')
             raise InvalidDataException
