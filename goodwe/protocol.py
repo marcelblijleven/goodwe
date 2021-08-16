@@ -3,8 +3,8 @@ import logging
 
 from typing import Tuple, Optional, Callable
 
-from goodwexs.exceptions import ProcessingException, MaxRetriesException
-from goodwexs.processor import ProcessResult
+from goodwe.exceptions import ProcessingException, MaxRetriesException
+from goodwe.processor import ProcessorResult
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class UDPClientProtocol(asyncio.transports.DatagramTransport):
     transport: asyncio.DatagramTransport
 
-    def __init__(self, message: str, future: asyncio.Future, processor: Callable[[bytes], ProcessResult]):
+    def __init__(self, message: str, future: asyncio.Future, processor: Callable[[bytes], ProcessorResult]):
         super().__init__()
         self.message = bytes.fromhex(message)
         self.future = future

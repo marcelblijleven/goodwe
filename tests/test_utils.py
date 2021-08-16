@@ -2,7 +2,7 @@ import io
 
 from unittest import TestCase
 
-from goodwexs.utils import get_float_from_buffer, get_int_from_buffer
+from goodwe.utils import get_float_from_buffer, get_int_from_buffer
 
 
 class TestUtils(TestCase):

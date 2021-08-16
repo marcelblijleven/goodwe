@@ -1,8 +1,8 @@
 from typing import Callable
 from unittest import TestCase, mock
 
-from goodwexs.exceptions import MaxRetriesException, ProcessingException
-from goodwexs.protocol import UDPClientProtocol
+from goodwe.exceptions import MaxRetriesException, ProcessingException
+from goodwe.protocol import UDPClientProtocol
 
 
 class TestUDPClientProtocol(TestCase):
@@ -31,7 +31,7 @@ class TestUDPClientProtocol(TestCase):
         self.protocol.error_received(exc)
         self.future.set_exception.assert_called_once_with(exc)
 
-    @mock.patch('goodwexs.protocol.asyncio.get_event_loop')
+    @mock.patch('goodwe.protocol.asyncio.get_event_loop')
     def test_connection_made(self, mock_get_event_loop):
         transport = mock.Mock()
         mock_loop = mock.Mock()
@@ -64,7 +64,7 @@ class TestUDPClientProtocol(TestCase):
         self.protocol.transport.close.assert_called()
         self.protocol._send_message.assert_not_called()
 
-    @mock.patch('goodwexs.protocol.asyncio.get_event_loop')
+    @mock.patch('goodwe.protocol.asyncio.get_event_loop')
     def test_retry_mechanism_two_retries(self, mock_get_event_loop):
         def call_later(_: int, retry_func: Callable):
             retry_func()
@@ -80,7 +80,7 @@ class TestUDPClientProtocol(TestCase):
         self.protocol.transport.close.assert_called()
         self.assertEqual(self.protocol._retries, 2)
 
-    @mock.patch('goodwexs.protocol.asyncio.get_event_loop')
+    @mock.patch('goodwe.protocol.asyncio.get_event_loop')
     def test_retry_mechanism_max_retries(self, mock_get_event_loop):
         def call_later(_: int, retry_func: Callable):
             retry_func()

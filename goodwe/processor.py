@@ -1,17 +1,19 @@
 import io
 import logging
+from abc import ABC
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
-from goodwexs.exceptions import InvalidDataException
-from goodwexs.utils import get_float_from_buffer, get_int_from_buffer
+from goodwe.exceptions import InvalidDataException
+from goodwe.utils import get_float_from_buffer, get_int_from_buffer
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass(init=True, order=True)
-class ProcessResult:
+class ProcessorResult:
     sort_index: datetime = field(init=False)
     date: datetime
     volts_dc: float
@@ -34,13 +36,18 @@ class ProcessResult:
         return f'{self.date.strftime("%Y-%m-%d %H:%M:%S")}: (status: {self.status}, power: {self.power})'
 
 
-class Processor:
+class AbstractDataProcessor(ABC):
+    def process_data(self, data: bytes) -> ProcessorResult:
+        """Process the data provided by the GoodWe inverter and return ProcessorResult"""
+
+
+class GoodWeXSProcessor(AbstractDataProcessor):
     _buffer: io.BytesIO
 
     def __init__(self, validation: Callable[[bytes], bool]):
         self.validation = validation
 
-    def process_data(self, data: bytes) -> ProcessResult:
+    def process_data(self, data: bytes) -> ProcessorResult:
         ok = self.validation(data)
 
         if not ok:
@@ -49,7 +56,7 @@ class Processor:
 
         with io.BytesIO(data) as buffer:
             self._buffer = buffer
-            result = ProcessResult(
+            result = ProcessorResult(
                 date=self._get_date(),
                 volts_dc=self._get_volts_dc(),
                 current_dc=self._get_current_dc(),

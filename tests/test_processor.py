@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest import TestCase, mock
 
-from goodwexs.processor import Processor, InvalidDataException
+from goodwe.processor import GoodWeXSProcessor, InvalidDataException
 
 
 class TestProcessor(TestCase):
@@ -12,7 +12,7 @@ class TestProcessor(TestCase):
         with open('sample/inverter_data', 'rb') as f:
             mock_data = f.read()
 
-        processor = Processor(validator)
+        processor = GoodWeXSProcessor(validator)
         data = processor.process_data(mock_data)
 
         self.assertEqual(data.date, datetime(year=2021, month=8, day=8, hour=10, minute=49, second=52))
@@ -33,5 +33,5 @@ class TestProcessor(TestCase):
         validator = mock.Mock()
         validator.return_value = False
 
-        processor = Processor(validator)
+        processor = GoodWeXSProcessor(validator)
         self.assertRaises(InvalidDataException, processor.process_data, b'')

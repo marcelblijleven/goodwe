@@ -1,16 +1,18 @@
 import asyncio
 
-from goodwexs.const import MAGIC_PACKET
-from goodwexs.processor import Processor, ProcessResult
-from goodwexs.protocol import UDPClientProtocol
+from typing import Tuple
+
+from goodwe.const import MAGIC_PACKET
+from goodwe.processor import GoodWeXSProcessor, ProcessorResult
+from goodwe.protocol import UDPClientProtocol
 
 
 class GoodWeInverter:
-    def __init__(self, inverter_address: tuple[str, int], processor: Processor):
+    def __init__(self, inverter_address: Tuple[str, int], processor: GoodWeXSProcessor):
         self.address = inverter_address
         self.processor = processor
 
-    async def request_data(self) -> ProcessResult:
+    async def request_data(self) -> ProcessorResult:
         loop = asyncio.get_running_loop()
         future = loop.create_future()
         message = MAGIC_PACKET
