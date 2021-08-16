@@ -3,12 +3,12 @@ import asyncio
 from typing import Tuple
 
 from goodwe.const import MAGIC_PACKET
-from goodwe.processor import GoodWeXSProcessor, ProcessorResult
+from goodwe.processor import GoodWeXSProcessor, ProcessorResult, AbstractDataProcessor
 from goodwe.protocol import UDPClientProtocol
 
 
 class GoodWeInverter:
-    def __init__(self, inverter_address: Tuple[str, int], processor: GoodWeXSProcessor):
+    def __init__(self, inverter_address: Tuple[str, int], processor: AbstractDataProcessor):
         self.address = inverter_address
         self.processor = processor
 
