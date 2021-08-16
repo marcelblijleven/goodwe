@@ -1,2 +1,1 @@
-from .goodwe import GoodWeInverter
-from .goodwe import GoodWeXSProcessor
+from .goodwe import GoodWeXSProcessor, AbstractDataProcessor, GoodWeInverter
