@@ -1,9 +1,10 @@
 name: Public to PyPi and TestPyPi
 on:
-  release:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
 
 jobs:
   build-and-publish:
