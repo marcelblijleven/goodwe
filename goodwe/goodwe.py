@@ -1,10 +1,14 @@
 import asyncio
+import logging
 
 from typing import Tuple
 
 from goodwe.const import MAGIC_PACKET
 from goodwe.processor import GoodWeXSProcessor, ProcessorResult, AbstractDataProcessor
 from goodwe.protocol import UDPClientProtocol
+
+
+logger = logging.getLogger(__name__)
 
 
 class GoodWeInverter:
@@ -23,7 +27,9 @@ class GoodWeInverter:
         )
 
         try:
+            logger.debug('awaiting future')
             await future
             return future.result()
         finally:
+            logger.debug('closing transport')
             transport.close()
