@@ -9,7 +9,7 @@ class TestUDPClientProtocol(TestCase):
     def setUp(self) -> None:
         self.future = mock.Mock()
         self.processor = mock.Mock()
-        self.protocol = UDPClientProtocol(message='636f666665650d0a', future=self.future, processor=self.processor)
+        self.protocol = UDPClientProtocol(message='636f666665650d0a', future=self.future, process_func=self.processor)
 
     def test_datagram_received(self):
         data = b'this is mock data'

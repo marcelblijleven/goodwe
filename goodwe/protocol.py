@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 class UDPClientProtocol(asyncio.transports.DatagramTransport):
     transport: asyncio.DatagramTransport
 
-    def __init__(self, message: str, future: asyncio.Future, processor: Callable[[bytes], ProcessorResult]):
+    def __init__(self, message: str, future: asyncio.Future, process_func: Callable[[bytes], ProcessorResult]):
         super().__init__()
         self.message = bytes.fromhex(message)
         self.future = future
-        self.processor = processor
+        self.processor = process_func
 
         self._retries = 0
         self._retry_timeout = 1
