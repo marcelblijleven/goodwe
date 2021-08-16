@@ -4,7 +4,7 @@ from abc import ABC
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Optional
 
 from goodwe.exceptions import InvalidDataException
 from goodwe.utils import get_float_from_buffer, get_int_from_buffer
@@ -44,13 +44,12 @@ class AbstractDataProcessor(ABC):
 class GoodWeXSProcessor(AbstractDataProcessor):
     _buffer: io.BytesIO
 
-    def __init__(self, validation: Callable[[bytes], bool]):
-        self.validation = validation
+    def __init__(self, validator_func: Optional[Callable[[bytes], bool]]):
+        self._validator = validator_func
+        self._use_validator = self._validator is not None
 
     def process_data(self, data: bytes) -> ProcessorResult:
-        ok = self.validation(data)
-
-        if not ok:
+        if self._use_validator and not self._validator(data):
             logger.debug(f'received invalid data: {data}')
             raise InvalidDataException
 
