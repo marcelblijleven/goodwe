@@ -1,7 +1,11 @@
+import os
+
 from datetime import datetime
 from unittest import TestCase, mock
 
 from goodwe.processor import GoodWeXSProcessor, InvalidDataException
+
+root_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestProcessor(TestCase):
@@ -9,7 +13,7 @@ class TestProcessor(TestCase):
         validator = mock.Mock()
         validator.return_value = True
 
-        with open('sample/inverter_data', 'rb') as f:
+        with open(root_dir + '/sample/inverter_data', 'rb') as f:
             mock_data = f.read()
 
         processor = GoodWeXSProcessor(validator)
