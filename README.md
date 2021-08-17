@@ -15,7 +15,7 @@ from goodwe import GoodWeInverter, GoodWeXSProcessor
 
 async def get_data():
     ip_address = '192.168.200.100'
-    processor = GoodWeXSProcessor(validator_func=None)
+    processor = GoodWeXSProcessor()
     inverter = GoodWeInverter(inverter_address=(ip_address, 8899), processor=processor)
     data = await inverter.request_data()
     print(f'power is {data.power} at {data.date:%H:%M:%S}')
