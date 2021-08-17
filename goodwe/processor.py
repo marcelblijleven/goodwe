@@ -40,13 +40,14 @@ class AbstractDataProcessor(ABC):
     def process_data(self, data: bytes) -> ProcessorResult:
         """Process the data provided by the GoodWe inverter and return ProcessorResult"""
 
+    def set_validator(self, validator_fn: Callable[[bytes], bool]):
+        """Set a validator for the processor to use when processing data from the inverter"""
+
 
 class GoodWeXSProcessor(AbstractDataProcessor):
     _buffer: io.BytesIO
-
-    def __init__(self, validator_func: Optional[Callable[[bytes], bool]]):
-        self._validator = validator_func
-        self._use_validator = self._validator is not None
+    _validator: Callable[[bytes], bool]
+    _use_validator: bool
 
     def process_data(self, data: bytes) -> ProcessorResult:
         """Process the data provided by the GoodWe XS inverter and return ProcessorResult"""
@@ -73,6 +74,11 @@ class GoodWeXSProcessor(AbstractDataProcessor):
             )
 
         return result
+
+    def set_validator(self, validator_fn: Callable[[bytes], bool]):
+        """Set a validator for the processor to use when processing data from the inverter"""
+        self._validator = validator_fn
+        self._use_validator = self._validator is not None
 
     def _get_date(self) -> datetime:
         """Retrieve time stamp from GoodWe data"""

@@ -16,7 +16,8 @@ class TestProcessor(TestCase):
         with open(root_dir + '/sample/inverter_data', 'rb') as f:
             mock_data = f.read()
 
-        processor = GoodWeXSProcessor(validator)
+        processor = GoodWeXSProcessor()
+        processor.set_validator(validator)
         data = processor.process_data(mock_data)
 
         self.assertEqual(data.date, datetime(year=2021, month=8, day=8, hour=10, minute=49, second=52))
@@ -37,5 +38,6 @@ class TestProcessor(TestCase):
         validator = mock.Mock()
         validator.return_value = False
 
-        processor = GoodWeXSProcessor(validator)
+        processor = GoodWeXSProcessor()
+        processor.set_validator(validator)
         self.assertRaises(InvalidDataException, processor.process_data, b'')
