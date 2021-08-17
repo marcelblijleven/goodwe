@@ -28,7 +28,7 @@ jobs:
         run: pytest
 
       - name: Create version for test pypi
-        if: !startsWith(github.ref, 'refs/tags')
+        if: startsWith(github.ref, 'refs/tags') != true
         run: echo ${$(git describe --tags)#"v"} > VERSION
 
       - name: Create version for pypi
