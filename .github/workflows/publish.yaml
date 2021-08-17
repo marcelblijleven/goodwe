@@ -27,15 +27,7 @@ jobs:
       - name: Test with pytest
         run: pytest
 
-      - name: Create version for test pypi
-        if: startsWith(github.ref, 'refs/tags') != true
-        run: |
-          tag=$(git describe --tags)
-          prefix=v
-          version=${tag#"$prefix"}
-          echo $version > VERSION
-
-      - name: Create version for pypi
+      - name: Create version file for pypi
         if: startsWith(github.ref, 'refs/tags')
         run: |
           tag=$(git describe --tags --abbrev=0)
