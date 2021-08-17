@@ -26,6 +26,15 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with pytest
         run: pytest
+
+      - name: Create version for test pypi
+        if: !startsWith(github.ref, 'refs/tags')
+        run: echo ${$(git describe --tags)#"v"} > VERSION
+
+      - name: Create version for pypi
+        if: startsWith(github.ref, 'refs/tags')
+        run: echo ${$(git describe --tags --abbrev=0)#"v"} > VERSION
+
       - run: pip install -q build
       - run: python -m build --sdist --wheel --outdir dist/ .
       - name: Publish to Test PyPi
