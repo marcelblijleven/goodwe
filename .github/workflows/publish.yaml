@@ -34,6 +34,7 @@ jobs:
           prefix=v
           version=${tag#"$prefix"}
           echo $version > VERSION
+          echo "VERSION=$version" >> $GITHUB_ENV
 
       - run: pip install -q build
       - run: python -m build --sdist --wheel --outdir dist/ .
