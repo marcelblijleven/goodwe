@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable, Optional
 
+from goodwe.const import WORK_MODES
 from goodwe.exceptions import InvalidDataException
 from goodwe.utils import get_float_from_buffer, get_int_from_buffer
 
@@ -152,12 +153,4 @@ class GoodWeXSProcessor(AbstractDataProcessor):
         """Retrieve rssi from GoodWe data"""
         position = 63
         value = get_int_from_buffer(self._buffer, position, 2, 'big')
-
-        modes = {
-            0: 'Wait mode',
-            1: 'Normal',
-            2: 'Error',
-            3: 'Check mode'
-        }
-
-        return modes[value]
+        return WORK_MODES[value]

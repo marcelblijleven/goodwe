@@ -89,7 +89,7 @@ def _read_work_mode_et(data: bytes, offset: int) -> Optional[str]:
 
 
 def _read_work_mode_dt(data: bytes, offset: int) -> Optional[str]:
-    return WORK_MODES_DT.get(_read_bytes2(data, offset))
+    return WORK_MODES.get(_read_bytes2(data, offset))
 
 
 def _read_pv_mode1(data: bytes, offset: int) -> Optional[str]:
@@ -97,7 +97,7 @@ def _read_pv_mode1(data: bytes, offset: int) -> Optional[str]:
 
 
 def _read_work_mode1(data: bytes, offset: int) -> Optional[str]:
-    return WORK_MODES.get(_read_byte(data, offset))
+    return WORK_MODES_ES.get(_read_byte(data, offset))
 
 
 def _read_load_mode1(data: bytes, offset: int) -> Optional[str]:

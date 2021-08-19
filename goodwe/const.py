@@ -40,7 +40,7 @@ PV_MODES: Dict[int, str] = {
     2: "PV panels connected, producing power",
 }
 
-WORK_MODES_DT: Dict[int, str] = {
+WORK_MODES: Dict[int, str] = {
     0: "Wait Mode",
     1: "Normal",
     2: "Error",
@@ -56,7 +56,7 @@ WORK_MODES_ET: Dict[int, str] = {
     5: "Check Mode",
 }
 
-WORK_MODES: Dict[int, str] = {
+WORK_MODES_ES: Dict[int, str] = {
     0: "Inverter Off - Standby",
     1: "Inverter On",
     2: "Inverter Abnormal, stopping power",
