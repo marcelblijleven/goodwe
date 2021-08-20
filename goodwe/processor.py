@@ -1,12 +1,9 @@
-import io
 import logging
 from abc import ABC
-
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Callable
 
-from goodwe.const import WORK_MODES
 from goodwe.exceptions import InvalidDataException
 from goodwe.utils import *
 

@@ -1,7 +1,7 @@
 import io
+from typing import Optional
 
 from goodwe.const import *
-from typing import Optional
 
 
 def read_byte(buffer: io.BytesIO, offset: int) -> int:
