@@ -1,33 +1,32 @@
 import io
-
 from unittest import TestCase
 
-from goodwe.utils import get_float_from_buffer, get_int_from_buffer
+from goodwe.utils import read_byte, read_bytes2, read_voltage
 
 
 class TestUtils(TestCase):
 
+    def test_read_byte(self):
+        data = bytes()
+        data += (21).to_bytes(1, 'big')
+        data += (5).to_bytes(1, 'big')
+        buffer = io.BytesIO(data)
 
-    def test_get_float_from_buffer(self):
+        self.assertEqual(read_byte(buffer, 0), 21)
+        self.assertEqual(read_byte(buffer, 1), 5)
+
+    def test_read_bytes2(self):
         data = bytes()
         data += (21).to_bytes(1, 'big')
         data += (1337).to_bytes(2, 'big')
         buffer = io.BytesIO(data)
 
-        value_one = get_float_from_buffer(buffer, 0, 1, 'big', 0.1, 1)
-        value_two = get_float_from_buffer(buffer, 1, 2, 'big', 0.1, 0)
+        self.assertEqual(read_bytes2(buffer, 1), 1337)
 
-        self.assertEqual(value_one, 2.1)
-        self.assertEqual(value_two, 134)
-
-    def test_get_int_from_buffer(self):
+    def test_read_voltage(self):
         data = bytes()
         data += (21).to_bytes(1, 'big')
         data += (1337).to_bytes(2, 'big')
         buffer = io.BytesIO(data)
 
-        value_one = get_int_from_buffer(buffer, 0, 1, 'big')
-        value_two = get_int_from_buffer(buffer, 1, 2, 'big')
-
-        self.assertEqual(value_one, 21)
-        self.assertEqual(value_two, 1337)
+        self.assertEqual(read_voltage(buffer, 1), 133.7)
