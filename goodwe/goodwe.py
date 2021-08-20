@@ -1,12 +1,11 @@
 import asyncio
 import logging
-
 from typing import Tuple
 
 from goodwe.const import MAGIC_PACKET
-from goodwe.processor import GoodWeXSProcessor, ProcessorResult, AbstractDataProcessor
+from goodwe.processor import ProcessorResult, AbstractDataProcessor
 from goodwe.protocol import UDPClientProtocol
-
+from goodwe.xs import GoodWeXSProcessor
 
 logger = logging.getLogger(__name__)
 

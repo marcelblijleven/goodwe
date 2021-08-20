@@ -3,7 +3,8 @@ import os
 from datetime import datetime
 from unittest import TestCase, mock
 
-from goodwe.processor import GoodWeXSProcessor, InvalidDataException
+from goodwe.exceptions import InvalidDataException
+from goodwe.xs import GoodWeXSProcessor
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
