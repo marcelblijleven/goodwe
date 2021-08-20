@@ -12,3 +12,7 @@ class ProcessingException(Exception):
 
 class MaxRetriesException(Exception):
     """Indicates the maximum number of retries has been reached"""
+
+
+class InverterError(Exception):
+    """Indicates error communicating with inverter"""
