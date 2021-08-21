@@ -24,17 +24,17 @@ class GoodWeInverter:
     async def request_data(self) -> ProcessorResult:
         loop = asyncio.get_running_loop()
         future = loop.create_future()
-        message = MAGIC_PACKET
+        request = bytes.fromhex(MAGIC_PACKET)
         # noinspection PyTypeChecker
         transport, _ = await loop.create_datagram_endpoint(
-            lambda: UDPClientProtocol(message, future, self.processor.process_data),
+            lambda: UDPClientProtocol(request, lambda x: True, future),
             remote_addr=self.address
         )
 
         try:
             logger.debug('awaiting future')
             await future
-            return future.result()
+            return self.processor.process_data(future.result())
         finally:
             logger.debug('closing transport')
             transport.close()

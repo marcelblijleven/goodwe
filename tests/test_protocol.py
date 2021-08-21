@@ -1,30 +1,31 @@
 from typing import Callable
 from unittest import TestCase, mock
 
-from goodwe.exceptions import MaxRetriesException, ProcessingException
+from goodwe.exceptions import MaxRetriesException
 from goodwe.protocol import UDPClientProtocol
 
 
 class TestUDPClientProtocol(TestCase):
     def setUp(self) -> None:
         self.future = mock.Mock()
-        self.processor = mock.Mock()
-        self.protocol = UDPClientProtocol(message='636f666665650d0a', future=self.future, process_func=self.processor)
+        #        self.processor = mock.Mock()
+        self.protocol = UDPClientProtocol(request=bytes.fromhex('636f666665650d0a'), validator=lambda x: True,
+                                          on_response_received=self.future)
 
     def test_datagram_received(self):
         data = b'this is mock data'
         self.protocol.datagram_received(data, ('127.0.0.1', 1337))
         self.future.set_result.assert_called_once()
-        self.processor.assert_called_once_with(data)
+    #        self.processor.assert_called_once_with(data)
 
-    def test_datagram_received_process_exception(self):
-        data = b'this is mock data'
+    #    def test_datagram_received_process_exception(self):
+    #        data = b'this is mock data'
 
-        self.protocol.processor.side_effect = TypeError
-        self.protocol.datagram_received(data, ('127.0.0.1', 1337))
-        self.processor.assert_called_once_with(data)
-        self.future.set_result.assert_not_called()
-        self.future.set_exception.assert_called_once_with(ProcessingException)
+    #        self.protocol.processor.side_effect = TypeError
+    #        self.protocol.datagram_received(data, ('127.0.0.1', 1337))
+    #        self.processor.assert_called_once_with(data)
+    #        self.future.set_result.assert_not_called()
+    #        self.future.set_exception.assert_called_once_with(ProcessingException)
 
     def test_error_received(self):
         exc = Exception('something went wrong')
@@ -41,7 +42,7 @@ class TestUDPClientProtocol(TestCase):
         self.protocol.retry_mechanism = mock_retry_mechanism
         self.protocol.connection_made(transport)
 
-        transport.sendto.assert_called_with(self.protocol.message)
+        transport.sendto.assert_called_with(self.protocol.request)
         mock_get_event_loop.assert_called()
         mock_loop.call_later.assert_called_with(1, mock_retry_mechanism)
 

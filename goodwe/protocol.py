@@ -2,9 +2,8 @@ import asyncio
 import logging
 from typing import Tuple, Optional, Callable
 
-from goodwe.exceptions import ProcessingException, MaxRetriesException
+from goodwe.exceptions import MaxRetriesException
 from goodwe.exceptions import RequestFailedException
-from goodwe.processor import ProcessorResult
 from goodwe.utils import create_crc16_table
 
 logger = logging.getLogger(__name__)
@@ -13,31 +12,30 @@ logger = logging.getLogger(__name__)
 class UDPClientProtocol(asyncio.transports.DatagramTransport):
     transport: asyncio.DatagramTransport
 
-    def __init__(self, message: str, future: asyncio.Future, process_func: Callable[[bytes], ProcessorResult]):
-        super().__init__()
-        self.message = bytes.fromhex(message)
-        self.future = future
-        self.processor = process_func
+    def __init__(self, request: bytes,
+                 validator: Callable[[bytes], bool],
+                 on_response_received: asyncio.futures.Future,
+                 timeout: int = 1,
+                 retries: int = 4):
 
-        self._retries = 0
-        self._retry_timeout = 1
-        self._max_retries = 4
+        super().__init__()
+        self.request: bytes = request
+        self.validator: Callable[[bytes], bool] = validator
+        self.on_response_received: asyncio.futures.Future = on_response_received
+        self.transport: asyncio.transports.DatagramTransport
+        self._retry_timeout: int = timeout
+        self._max_retries: int = retries
+        self._retries: int = 0
 
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
         logger.debug(f'datagram received: {len(data)} bytes from {addr}')
-
-        try:
-            processed_data = self.processor(data)
-            self.future.set_result(processed_data)
-        except (TypeError, ValueError) as e:
-            logger.debug(f'exception occurred during processing inverter data: {e}')
-            self.future.set_exception(ProcessingException)
+        self.on_response_received.set_result(data)
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
         logger.debug(f'error received: {exc}')
-        self.future.set_exception(exc)
+        self.on_response_received.set_exception(exc)
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         """On connection made"""
@@ -48,8 +46,8 @@ class UDPClientProtocol(asyncio.transports.DatagramTransport):
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
         # Cancel Future on connection lost
-        if not self.future.done():
-            self.future.cancel()
+        if not self.on_response_received.done():
+            self.on_response_received.cancel()
 
         if exc is not None:
             logger.debug(f'connection lost: {exc}')
@@ -57,7 +55,7 @@ class UDPClientProtocol(asyncio.transports.DatagramTransport):
     def _send_message(self) -> None:
         """Send message via transport"""
         logger.debug('sending message to transport')
-        self.transport.sendto(self.message)
+        self.transport.sendto(self.request)
 
         loop = asyncio.get_event_loop()
         loop.call_later(self._retry_timeout, self.retry_mechanism)
@@ -65,7 +63,7 @@ class UDPClientProtocol(asyncio.transports.DatagramTransport):
     def retry_mechanism(self) -> None:
         """Retry mechanism to prevent hanging transport"""
         # If future is done we can close the transport
-        if self.future.done():
+        if self.on_response_received.done():
             logger.debug('future is done, closing transport')
             return self.transport.close()
 
@@ -76,7 +74,7 @@ class UDPClientProtocol(asyncio.transports.DatagramTransport):
             self._send_message()
         else:
             logger.debug('max number of retries reached, closing transport')
-            self.future.set_exception(MaxRetriesException)
+            self.on_response_received.set_exception(MaxRetriesException)
 
 
 class _UdpInverterProtocol(asyncio.DatagramProtocol):
@@ -88,51 +86,54 @@ class _UdpInverterProtocol(asyncio.DatagramProtocol):
             timeout: int = 2,
             retries: int = 3
     ):
+        super().__init__()
         self.request: bytes = request
         self.validator: Callable[[bytes], bool] = validator
         self.on_response_received: asyncio.futures.Future = on_response_received
         self.transport: asyncio.transports.DatagramTransport
-        self.timeout: int = timeout
-        self.retries: int = retries
-        self.retry_nr: int = 1
+        self._retry_timeout: int = timeout
+        self._max_retries: int = retries
+        self._retries: int = 0
 
     def connection_made(self, transport: asyncio.transports.DatagramTransport):
         self.transport = transport
-        logger.debug("Send: '%s'", self.request.hex())
+        logger.debug(f'Sent: {self.request.hex()}')
         self.transport.sendto(self.request)
-        asyncio.get_event_loop().call_later(self.timeout, self._timeout_heartbeat)
+        asyncio.get_event_loop().call_later(self._retry_timeout, self._timeout_heartbeat)
 
-    def connection_lost(self, exc: Exception):
+    def connection_lost(self, exc: Optional[Exception]) -> None:
+        """On connection lost"""
         if exc is not None:
-            logger.debug("Socket closed with error: '%s'", exc)
+            logger.debug(f'Socket closed with error: {exc}')
+        # Cancel Future on connection lost
         if not self.on_response_received.done():
             self.on_response_received.cancel()
 
-    def datagram_received(self, data: bytes, addr: Tuple[str, int]):
-        logger.debug("Received: '%s'", data.hex())
+    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
+        """On datagram received"""
+        logger.debug(f'Received: {data.hex()}')
         if self.validator(data):
             self.on_response_received.set_result(data)
             self.transport.close()
         else:
-            logger.debug(
-                "Invalid response length: %d",
-                len(data),
-            )
-            self.retry_nr += 1
+            logger.debug(f'Invalid response: {data.hex()}')
+            self._retries += 1
             self.connection_made(self.transport)
 
-    def error_received(self, exc: Exception):
-        logger.debug("Received error: '%s'", exc)
+    def error_received(self, exc: Exception) -> None:
+        """On error received"""
+        logger.debug(f'Received error: {exc}')
+        self.on_response_received.set_exception(exc)
 
     def _timeout_heartbeat(self):
         if self.on_response_received.done():
             self.transport.close()
-        elif self.retry_nr <= self.retries:
-            logger.debug("Re-try #%d", self.retry_nr)
-            self.retry_nr += 1
+        elif self._retries < self._max_retries:
+            self._retries += 1
+            logger.debug("Re-try #%d", self._retries)
             self.connection_made(self.transport)
         else:
-            logger.debug("Re-try #%d, closing socket", self.retry_nr)
+            logger.debug("Re-try #%d, closing socket", self._retries)
             self.transport.close()
 
 
