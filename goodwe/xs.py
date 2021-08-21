@@ -20,7 +20,7 @@ class GoodWeXSProcessor(AbstractDataProcessor):
             logger.debug(f'received invalid data: {data}')
             raise InvalidDataException
 
-        with io.BytesIO(data) as buffer:
+        with io.BytesIO(data[5:]) as buffer:
             self._buffer = buffer
             result = ProcessorResult(
                 date=self._get_date(),
@@ -47,8 +47,7 @@ class GoodWeXSProcessor(AbstractDataProcessor):
 
     def _get_date(self) -> datetime:
         """Retrieve time stamp from GoodWe data"""
-        position_year = 5
-        self._buffer.seek(position_year)
+        self._buffer.seek(0)
         year = 2000 + int.from_bytes(self._buffer.read(1), byteorder='big')
         month = int.from_bytes(self._buffer.read(1), byteorder='big')
         day = int.from_bytes(self._buffer.read(1), byteorder='big')
@@ -60,48 +59,48 @@ class GoodWeXSProcessor(AbstractDataProcessor):
 
     def _get_volts_dc(self) -> float:
         """Retrieve volts_dc from GoodWe data"""
-        return read_voltage(self._buffer, 11)
+        return read_voltage(self._buffer, 6)
 
     def _get_current_dc(self) -> float:
         """Retrieve current_dc from GoodWe data"""
-        return read_current(self._buffer, 13)
+        return read_current(self._buffer, 8)
 
     def _get_volts_ac(self) -> float:
         """Retrieve volts_ac from GoodWe data"""
-        return read_voltage(self._buffer, 41)
+        return read_voltage(self._buffer, 36)
 
     def _get_current_ac(self) -> float:
         """Retrieve current_ac from GoodWe data"""
-        return read_voltage(self._buffer, 47)
+        return read_voltage(self._buffer, 42)
 
     def _get_frequency_ac(self) -> float:
         """Retrieve frequency_ac from GoodWe data"""
-        return read_freq(self._buffer, 53)
+        return read_freq(self._buffer, 48)
 
     def _get_generation_today(self) -> float:
         """Retrieve generation_today from GoodWe data"""
-        return read_power_k2(self._buffer, 93)
+        return read_power_k2(self._buffer, 88)
 
     def _get_generation_total(self) -> float:
         """Retrieve generation_total from GoodWe data"""
-        return read_power_k2(self._buffer, 97)
+        return read_power_k2(self._buffer, 92)
 
     def _get_rssi(self) -> float:
         """Retrieve rssi from GoodWe data"""
-        return read_bytes2(self._buffer, 149)
+        return read_bytes2(self._buffer, 144)
 
     def _get_operational_hours(self) -> float:
         """Retrieve operational_hours from GoodWe data"""
-        return read_bytes2(self._buffer, 101)
+        return read_bytes2(self._buffer, 96)
 
     def _get_temperature(self) -> float:
         """Retrieve rssi from GoodWe data"""
-        return read_temp(self._buffer, 87)
+        return read_temp(self._buffer, 82)
 
     def _get_power(self) -> float:
         """Retrieve rssi from GoodWe data"""
-        return read_power2(self._buffer, 61)
+        return read_power2(self._buffer, 56)
 
     def _get_status(self) -> str:
         """Retrieve rssi from GoodWe data"""
-        return read_work_mode_dt(self._buffer, 63)
+        return read_work_mode_dt(self._buffer, 58)

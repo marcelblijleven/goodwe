@@ -6,7 +6,7 @@ from goodwe.utils import *
 
 
 class DT(Inverter):
-    """Class representing inverter of DT and D-NS families"""
+    """Class representing inverter of DT, D-NS and XS families"""
 
     _READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusProtocolCommand("7F0375310028", 87)
     _READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusProtocolCommand("7F0375940049", 153)
