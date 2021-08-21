@@ -2,14 +2,14 @@ from typing import Callable
 from unittest import TestCase, mock
 
 from goodwe.exceptions import MaxRetriesException
-from goodwe.protocol import UDPClientProtocol
+from goodwe.protocol import UdpInverterProtocol
 
 
 class TestUDPClientProtocol(TestCase):
     def setUp(self) -> None:
         self.future = mock.Mock()
         #        self.processor = mock.Mock()
-        self.protocol = UDPClientProtocol(request=bytes.fromhex('636f666665650d0a'), validator=lambda x: True,
+        self.protocol = UdpInverterProtocol(request=bytes.fromhex('636f666665650d0a'), validator=lambda x: True,
                                           on_response_received=self.future)
 
     def test_datagram_received(self):
@@ -44,7 +44,7 @@ class TestUDPClientProtocol(TestCase):
 
         transport.sendto.assert_called_with(self.protocol.request)
         mock_get_event_loop.assert_called()
-        mock_loop.call_later.assert_called_with(1, mock_retry_mechanism)
+        mock_loop.call_later.assert_called_with(2, mock_retry_mechanism)
 
     def test_connection_lost(self):
         self.future.done.return_value = True
@@ -94,4 +94,4 @@ class TestUDPClientProtocol(TestCase):
         self.future.done.side_effect = [False, False, False, False, False]
         self.protocol.retry_mechanism()
         self.future.set_exception.assert_called_once_with(MaxRetriesException)
-        self.assertEqual(self.protocol._retries, 4)
+        self.assertEqual(self.protocol._retries, 3)

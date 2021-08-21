@@ -7,10 +7,10 @@ from goodwe.dt import DT
 from goodwe.eh import EH
 from goodwe.es import ES
 from goodwe.et import ET
-from goodwe.exceptions import InverterError
+from goodwe.exceptions import InverterError, ProcessingException
 from goodwe.inverter import Inverter
 from goodwe.processor import ProcessorResult, AbstractDataProcessor
-from goodwe.protocol import UDPClientProtocol, _UdpInverterProtocol, Aa55ProtocolCommand
+from goodwe.protocol import UdpInverterProtocol, Aa55ProtocolCommand
 from goodwe.xs import GoodWeXSProcessor
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class GoodWeInverter:
         request = bytes.fromhex(MAGIC_PACKET)
         # noinspection PyTypeChecker
         transport, _ = await loop.create_datagram_endpoint(
-            lambda: UDPClientProtocol(request, lambda x: True, future),
+            lambda: UdpInverterProtocol(request, lambda x: True, future),
             remote_addr=self.address
         )
 
@@ -35,6 +35,9 @@ class GoodWeInverter:
             logger.debug('awaiting future')
             await future
             return self.processor.process_data(future.result())
+        except (TypeError, ValueError) as e:
+            logger.debug(f'exception occurred during processing inverter data: {e}')
+            future.set_exception(ProcessingException)
         finally:
             logger.debug('closing transport')
             transport.close()
@@ -49,7 +52,7 @@ async def search_inverters() -> bytes:
     loop = asyncio.get_running_loop()
     on_response_received = loop.create_future()
     transport, _ = await loop.create_datagram_endpoint(
-        lambda: _UdpInverterProtocol(
+        lambda: UdpInverterProtocol(
             "WIFIKIT-214028-READ".encode("utf-8"),
             lambda r: True,
             on_response_received,

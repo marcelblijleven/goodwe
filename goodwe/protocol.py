@@ -9,75 +9,7 @@ from goodwe.utils import create_crc16_table
 logger = logging.getLogger(__name__)
 
 
-class UDPClientProtocol(asyncio.transports.DatagramTransport):
-    transport: asyncio.DatagramTransport
-
-    def __init__(self, request: bytes,
-                 validator: Callable[[bytes], bool],
-                 on_response_received: asyncio.futures.Future,
-                 timeout: int = 1,
-                 retries: int = 4):
-
-        super().__init__()
-        self.request: bytes = request
-        self.validator: Callable[[bytes], bool] = validator
-        self.on_response_received: asyncio.futures.Future = on_response_received
-        self.transport: asyncio.transports.DatagramTransport
-        self._retry_timeout: int = timeout
-        self._max_retries: int = retries
-        self._retries: int = 0
-
-    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
-        """On datagram received"""
-        logger.debug(f'datagram received: {len(data)} bytes from {addr}')
-        self.on_response_received.set_result(data)
-
-    def error_received(self, exc: Exception) -> None:
-        """On error received"""
-        logger.debug(f'error received: {exc}')
-        self.on_response_received.set_exception(exc)
-
-    def connection_made(self, transport: asyncio.DatagramTransport) -> None:
-        """On connection made"""
-        logger.debug(f'connection made to address {transport.get_extra_info("peername")}')
-        self.transport = transport
-        self._send_message()
-
-    def connection_lost(self, exc: Optional[Exception]) -> None:
-        """On connection lost"""
-        # Cancel Future on connection lost
-        if not self.on_response_received.done():
-            self.on_response_received.cancel()
-
-        if exc is not None:
-            logger.debug(f'connection lost: {exc}')
-
-    def _send_message(self) -> None:
-        """Send message via transport"""
-        logger.debug('sending message to transport')
-        self.transport.sendto(self.request)
-
-        loop = asyncio.get_event_loop()
-        loop.call_later(self._retry_timeout, self.retry_mechanism)
-
-    def retry_mechanism(self) -> None:
-        """Retry mechanism to prevent hanging transport"""
-        # If future is done we can close the transport
-        if self.on_response_received.done():
-            logger.debug('future is done, closing transport')
-            return self.transport.close()
-
-        # Start retrying
-        if self._retries < self._max_retries:
-            logger.debug(f'retrying: {self._retries + 1}/{self._max_retries}')
-            self._retries += 1
-            self._send_message()
-        else:
-            logger.debug('max number of retries reached, closing transport')
-            self.on_response_received.set_exception(MaxRetriesException)
-
-
-class _UdpInverterProtocol(asyncio.DatagramProtocol):
+class UdpInverterProtocol(asyncio.DatagramProtocol):
     def __init__(
             self,
             request: bytes,
@@ -95,11 +27,17 @@ class _UdpInverterProtocol(asyncio.DatagramProtocol):
         self._max_retries: int = retries
         self._retries: int = 0
 
-    def connection_made(self, transport: asyncio.transports.DatagramTransport):
+    def connection_made(self, transport: asyncio.DatagramTransport) -> None:
+        """On connection made"""
+        logger.debug(f'Connection made to address {transport.get_extra_info("peername")}')
         self.transport = transport
+        self._send_request()
+
+    def _send_request(self) -> None:
+        """Send message via transport"""
         logger.debug(f'Sent: {self.request.hex()}')
         self.transport.sendto(self.request)
-        asyncio.get_event_loop().call_later(self._retry_timeout, self._timeout_heartbeat)
+        asyncio.get_event_loop().call_later(self._retry_timeout, self.retry_mechanism)
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
@@ -114,26 +52,28 @@ class _UdpInverterProtocol(asyncio.DatagramProtocol):
         logger.debug(f'Received: {data.hex()}')
         if self.validator(data):
             self.on_response_received.set_result(data)
-            self.transport.close()
         else:
             logger.debug(f'Invalid response: {data.hex()}')
             self._retries += 1
-            self.connection_made(self.transport)
+            self._send_request()
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
         logger.debug(f'Received error: {exc}')
         self.on_response_received.set_exception(exc)
 
-    def _timeout_heartbeat(self):
+    def retry_mechanism(self):
+        """Retry mechanism to prevent hanging transport"""
+        # If future is done we can close the transport
         if self.on_response_received.done():
             self.transport.close()
         elif self._retries < self._max_retries:
             self._retries += 1
-            logger.debug("Re-try #%d", self._retries)
-            self.connection_made(self.transport)
+            logger.debug(f'Retry #{self._retries + 1} of {self._max_retries}')
+            self._send_request()
         else:
-            logger.debug("Re-try #%d, closing socket", self._retries)
+            logger.debug(f'Max number of retries ({self._max_retries}) reached, closing socket')
+            self.on_response_received.set_exception(MaxRetriesException)
             self.transport.close()
 
 
@@ -155,7 +95,7 @@ class ProtocolCommand:
         loop = asyncio.get_running_loop()
         on_response_received = loop.create_future()
         transport, _ = await loop.create_datagram_endpoint(
-            lambda: _UdpInverterProtocol(
+            lambda: UdpInverterProtocol(
                 self.request, self.validator, on_response_received, timeout, retries
             ),
             remote_addr=(host, port),
