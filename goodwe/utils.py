@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 from typing import Optional
 
 from goodwe.const import *
@@ -82,6 +83,18 @@ def read_temp(buffer: io.BytesIO, offset: int) -> float:
     buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     return float(value) / 10
+
+
+def read_datetime(buffer: io.BytesIO, offset: int) -> datetime:
+    """Retrieve datetime value (6 bytes) from buffer at given position"""
+    buffer.seek(offset)
+    year = 2000 + int.from_bytes(buffer.read(1), byteorder='big')
+    month = int.from_bytes(buffer.read(1), byteorder='big')
+    day = int.from_bytes(buffer.read(1), byteorder='big')
+    hour = int.from_bytes(buffer.read(1), byteorder='big')
+    minute = int.from_bytes(buffer.read(1), byteorder='big')
+    second = int.from_bytes(buffer.read(1), byteorder='big')
+    return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
 
 
 def read_grid_mode(buffer: io.BytesIO, offset: int) -> int:

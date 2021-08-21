@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from typing import Callable
 
 from goodwe.exceptions import InvalidDataException
@@ -47,15 +46,7 @@ class GoodWeXSProcessor(AbstractDataProcessor):
 
     def _get_date(self) -> datetime:
         """Retrieve time stamp from GoodWe data"""
-        self._buffer.seek(0)
-        year = 2000 + int.from_bytes(self._buffer.read(1), byteorder='big')
-        month = int.from_bytes(self._buffer.read(1), byteorder='big')
-        day = int.from_bytes(self._buffer.read(1), byteorder='big')
-        hour = int.from_bytes(self._buffer.read(1), byteorder='big')
-        minute = int.from_bytes(self._buffer.read(1), byteorder='big')
-        second = int.from_bytes(self._buffer.read(1), byteorder='big')
-
-        return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+        return read_datetime(self._buffer, 0)
 
     def _get_volts_dc(self) -> float:
         """Retrieve volts_dc from GoodWe data"""

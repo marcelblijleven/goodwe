@@ -12,6 +12,7 @@ class DT(Inverter):
     _READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusProtocolCommand("7F0375940049", 153)
 
     __sensors: Tuple[Sensor, ...] = (
+        Sensor("timestamp", 0, read_datetime, "", "Timestamp", None),
         Sensor("vpv1", 6, read_voltage, "V", "PV1 Voltage", SensorKind.pv),
         Sensor("ipv1", 8, read_current, "A", "PV1 Current", SensorKind.pv),
         Sensor(
