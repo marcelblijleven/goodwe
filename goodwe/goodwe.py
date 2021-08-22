@@ -7,7 +7,7 @@ from goodwe.eh import EH
 from goodwe.es import ES
 from goodwe.et import ET
 from goodwe.exceptions import InverterError, ProcessingException
-from goodwe.inverter import Inverter
+from goodwe.inverter import Inverter, Sensor, SensorKind
 from goodwe.processor import ProcessorResult, AbstractDataProcessor
 from goodwe.protocol import UdpInverterProtocol, Aa55ProtocolCommand
 from goodwe.xs import GoodWeXSProcessor
