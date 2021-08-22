@@ -47,13 +47,9 @@ class EsProtocolTest(TestCase):
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.loop.close()
-
     def test_GW5048_EM_runtime_data(self):
         testee = GW5048_EM("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data())
+        data = self.loop.run_until_complete(testee.read_runtime_data(True))
 
         self.assertEqual(0.3, data['ipv1'])
         self.assertEqual(39, data['ppv1'])
@@ -110,7 +106,7 @@ class EsProtocolTest(TestCase):
 
     def test_GW5048_EM_no_batt_runtime_data(self):
         testee = GW5048_EM_No_Batt("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data())
+        data = self.loop.run_until_complete(testee.read_runtime_data(True))
 
         self.assertEqual(334.3, data['vpv1'])
         self.assertEqual(0.4, data['ipv1'])
@@ -168,7 +164,7 @@ class EsProtocolTest(TestCase):
 
     def test_GW5048D_ES_runtime_data(self):
         testee = GW5048D_ES("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data())
+        data = self.loop.run_until_complete(testee.read_runtime_data(True))
 
         self.assertEqual(0.0, data['vpv1'])
         self.assertEqual(0.1, data['ipv1'])

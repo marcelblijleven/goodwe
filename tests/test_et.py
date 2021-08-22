@@ -31,13 +31,9 @@ class EtProtocolTest(TestCase):
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.loop.close()
-
     def test_GW10K_ET_runtime_data(self):
         testee = GW10K_ET("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data())
+        data = self.loop.run_until_complete(testee.read_runtime_data(True))
 
         # for (sensor, _, _, unit, name, _) in ET.sensors():
         #   print(f"self.assertEqual({data[sensor]}, data['{sensor}'])")
