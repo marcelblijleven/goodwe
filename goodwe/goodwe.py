@@ -2,7 +2,6 @@ import asyncio
 import logging
 from typing import Tuple
 
-from goodwe.const import MAGIC_PACKET
 from goodwe.dt import DT
 from goodwe.eh import EH
 from goodwe.es import ES
@@ -22,25 +21,13 @@ class GoodWeInverter:
         self.processor = processor
 
     async def request_data(self) -> ProcessorResult:
-        loop = asyncio.get_running_loop()
-        future = loop.create_future()
-        request = bytes.fromhex(MAGIC_PACKET)
-        # noinspection PyTypeChecker
-        transport, _ = await loop.create_datagram_endpoint(
-            lambda: UdpInverterProtocol(request, lambda x: True, future),
-            remote_addr=self.address
-        )
-
         try:
             logger.debug('awaiting future')
-            await future
-            return self.processor.process_data(future.result())
+            data = await self.processor.get_runtime_data_command().execute(self.address[0], self.address[1])
+            return self.processor.process_data(data)
         except (TypeError, ValueError) as e:
             logger.debug(f'exception occurred during processing inverter data: {e}')
-            future.set_exception(ProcessingException)
-        finally:
-            logger.debug('closing transport')
-            transport.close()
+            raise ProcessingException
 
 
 async def search_inverters() -> bytes:

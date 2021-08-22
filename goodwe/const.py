@@ -1,7 +1,5 @@
 from typing import Dict
 
-MAGIC_PACKET = "7F0375940049D5C2"
-
 BATTERY_MODES_ET: Dict[int, str] = {
     0: "No battery",
     1: "Standby",

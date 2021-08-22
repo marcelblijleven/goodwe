@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from unittest import TestCase, mock
 
-from goodwe.exceptions import InvalidDataException
 from goodwe.xs import GoodWeXSProcessor
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,14 +10,11 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 
 class TestProcessor(TestCase):
     def test_process_data(self):
-        validator = mock.Mock()
-        validator.return_value = True
 
         with open(root_dir + '/sample/inverter_data', 'rb') as f:
             mock_data = f.read()
 
         processor = GoodWeXSProcessor()
-        processor.set_validator(validator)
         data = processor.process_data(mock_data)
 
         self.assertEqual(data.date, datetime(year=2021, month=8, day=8, hour=10, minute=49, second=52))
@@ -34,11 +30,3 @@ class TestProcessor(TestCase):
         self.assertEqual(data.temperature, 30.3)
         self.assertEqual(data.power, 189)
         self.assertEqual(data.status, 'Normal')
-
-    def test_process_data_invalid_data(self):
-        validator = mock.Mock()
-        validator.return_value = False
-
-        processor = GoodWeXSProcessor()
-        processor.set_validator(validator)
-        self.assertRaises(InvalidDataException, processor.process_data, b'')

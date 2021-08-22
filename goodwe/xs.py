@@ -2,23 +2,17 @@ import logging
 from typing import Callable
 
 from goodwe.dt import DT
-from goodwe.exceptions import InvalidDataException
 from goodwe.processor import ProcessorResult, AbstractDataProcessor
+from goodwe.protocol import ProtocolCommand
 from goodwe.utils import *
 
 logger = logging.getLogger(__name__)
 
 
 class GoodWeXSProcessor(AbstractDataProcessor):
-    _validator: Callable[[bytes], bool]
-    _use_validator: bool
 
     def process_data(self, data: bytes) -> ProcessorResult:
         """Process the data provided by the GoodWe XS inverter and return ProcessorResult"""
-        if self._use_validator and not self._validator(data):
-            logger.debug(f'received invalid data: {data}')
-            raise InvalidDataException
-
         sensors = DT._map_response(data[5:-2], DT.sensors())
 
         return ProcessorResult(
@@ -36,12 +30,11 @@ class GoodWeXSProcessor(AbstractDataProcessor):
             power=sensors['ppv'],
             status=sensors['work_mode_label'])
 
-    def set_validator(self, validator_fn: Callable[[bytes], bool]):
-        """Set a validator for the processor to use when processing data from the inverter"""
-        self._validator = validator_fn
-        self._use_validator = self._validator is not None
-
     def _get_rssi(self, data) -> float:
         """Retrieve rssi from GoodWe data"""
         with io.BytesIO(data) as buffer:
             return read_bytes2(buffer, 149)
+
+    def get_runtime_data_command(self) -> ProtocolCommand:
+        """Answer protocol command for reading runtime data"""
+        return DT._READ_DEVICE_RUNNING_DATA

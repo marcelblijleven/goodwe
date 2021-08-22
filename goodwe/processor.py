@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
+from goodwe.protocol import ProtocolCommand
 
 @dataclass(init=True, order=True)
 class ProcessorResult:
@@ -32,5 +33,5 @@ class AbstractDataProcessor(ABC):
     def process_data(self, data: bytes) -> ProcessorResult:
         """Process the data provided by the GoodWe inverter and return ProcessorResult"""
 
-    def set_validator(self, validator_fn: Callable[[bytes], bool]):
-        """Set a validator for the processor to use when processing data from the inverter"""
+    def get_runtime_data_command(self) -> ProtocolCommand:
+        """Answer protocol command for reading runtime data"""
