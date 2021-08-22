@@ -59,11 +59,14 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def read_runtime_data(self) -> Dict[str, Any]:
+    async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         """
         Request the runtime data from the inverter.
         Answer dictionary of individual sensors and their values.
         List of supported sensors (and their definitions) is provided by sensors() method.
+
+        If include_unknown_sensors parameter is set to True, return also all runtime values,
+        include those "xx*" sensors whose meaning is not yet identified
         """
         raise NotImplementedError()
 
@@ -136,10 +139,11 @@ class Inverter:
         raise NotImplementedError()
 
     @staticmethod
-    def _map_response(resp_data: bytes, sensors: Tuple[Sensor, ...]) -> Dict[str, Any]:
+    def _map_response(resp_data: bytes, sensors: Tuple[Sensor, ...], incl_xx: bool = True) -> Dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
         with io.BytesIO(resp_data) as buffer:
-            return {
-                sensor_id: fn(buffer, offset)
-                for (sensor_id, offset, fn, _, name, _) in sensors
-            }
+            result = {}
+            for (sensor_id, offset, fn, _, name, _) in sensors:
+                if incl_xx or not sensor_id.startswith("xx"):
+                    result[sensor_id] = fn(buffer, offset)
+            return result

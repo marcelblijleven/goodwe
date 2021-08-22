@@ -286,13 +286,13 @@ class ET(Inverter):
         self.serial_number = response[6:22].decode("ascii")
         self.software_version = response[54:66].decode("ascii")
 
-    async def read_runtime_data(self) -> Dict[str, Any]:
+    async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA1)
-        data = self._map_response(raw_data[5:-2], self.__sensors)
+        data = self._map_response(raw_data[5:-2], self.__sensors, include_unknown_sensors)
         raw_data = await self._read_from_socket(self._READ_BATTERY_INFO)
-        data.update(self._map_response(raw_data[5:-2], self.__sensors_battery))
+        data.update(self._map_response(raw_data[5:-2], self.__sensors_battery, include_unknown_sensors))
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA2)
-        data.update(self._map_response(raw_data[5:-2], self.__sensors2))
+        data.update(self._map_response(raw_data[5:-2], self.__sensors2, include_unknown_sensors))
         return data
 
     async def set_work_mode(self, work_mode: int):
