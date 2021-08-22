@@ -2,7 +2,7 @@ import io
 from enum import Enum
 from typing import Any, Callable, Dict, NamedTuple, Tuple, Optional
 
-from goodwe.protocol import ProtocolCommand, Aa55ProtocolCommand
+from goodwe.protocol import ProtocolCommand, Aa55ProtocolCommand, ModbusProtocolCommand
 
 
 class SensorKind(Enum):
@@ -97,6 +97,16 @@ class Inverter:
         """
         response = await self._read_from_socket(
             Aa55ProtocolCommand(payload, response_type)
+        )
+        return response.hex()
+
+    async def send_modbus_command(self, payload: str, response_len: int) -> str:
+        """
+        Send low level udp modbus type command (payload in hex).
+        Answer command's raw response data (in hex).
+        """
+        response = await self._read_from_socket(
+            ModbusProtocolCommand(payload, response_len)
         )
         return response.hex()
 

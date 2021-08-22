@@ -13,6 +13,13 @@ class ET(Inverter):
     _READ_DEVICE_RUNNING_DATA2: ProtocolCommand = ModbusProtocolCommand("F7038ca00011", 41)
     _READ_BATTERY_INFO: ProtocolCommand = ModbusProtocolCommand("F7039088000b", 29)
     _GET_WORK_MODE: ProtocolCommand = ModbusProtocolCommand("F703b7980001", 9)
+    _READ_ETU_ADVANCED_PARAM1: ProtocolCommand = ModbusProtocolCommand("F703b98c000b", 29)
+    _READ_ETU_ADVANCED_PARAM2: ProtocolCommand = ModbusProtocolCommand("F703b0c30001", 0)
+    _READ_ETU_ADVANCED_PARAM3: ProtocolCommand = ModbusProtocolCommand("F703b0c00007", 21)
+    _READ_ETU_ADVANCED_PARAM4: ProtocolCommand = ModbusProtocolCommand("F703b1aa0001", 9)
+    _READ_ETU_ADVANCED_PARAM5: ProtocolCommand = ModbusProtocolCommand("F703b126000a", 27)
+    _READ_ETU_BATTERY_SOC_SWITCH: ProtocolCommand = ModbusProtocolCommand("F703b98c0001", 9)
+
 
     __sensors: Tuple[Sensor, ...] = (
         Sensor("vpv1", 6, read_voltage, "V", "PV1 Voltage", SensorKind.pv),
@@ -279,6 +286,38 @@ class ET(Inverter):
         Sensor("xxx32", 32, read_bytes2, "", "Unknown sensor2@32", None),
     )
 
+    __params1: Tuple[Sensor, ...] = (
+        Sensor("switchBackflowLimit", 18, read_bytes2, "", "Back-flow enabled", None),
+        Sensor("backflowLimit", 18, read_bytes2, "", "Back-flow limit", None),
+    )
+
+    __params3: Tuple[Sensor, ...] = (
+        Sensor("switchColdStart", 0, read_bytes2, "", "Cold start", None),
+        Sensor("switchShadowscan", 6, read_bytes2, "", "Shadow scan", None),
+        Sensor("switchBackup", 8, read_bytes2, "", "Backup enabled", None),
+        Sensor("sensitivityCheck", 12, read_bytes2, "", "Sensitivity check mode", None),
+    )
+
+    __params4: Tuple[Sensor, ...] = (
+        # TODO convert this to float ??
+        Sensor("powerFactor", 0, read_bytes2, "", "Power Factor", None),
+    )
+
+    __params5: Tuple[Sensor, ...] = (
+        Sensor("batteryCapacity", 0, read_bytes2, "", "Battery capacity", None),
+        Sensor("batteryNumber", 2, read_bytes2, "", "Battery count", None),
+        Sensor("batteryChargeVoltage", 4, read_voltage, "", "Battery charge voltage", None),
+        Sensor("batteryChargeCurrent", 6, read_current, "", "Battery charge current", None),
+        Sensor("batteryDischargeVoltage", 8, read_voltage, "", "Battery discharge voltage", None),
+        Sensor("batteryDischargeCurrent", 10, read_current, "", "Battery discharge current", None),
+        Sensor("batteryDischargeDepth", 12, read_bytes2, "", "Battery discharge depth", None),
+        Sensor("batteryOfflineDischargeDepth", 16, read_bytes2, "", "Battery discharge depth (off-line)", None),
+    )
+
+    __soc_switch: Tuple[Sensor, ...] = (
+        Sensor("batterySocSwitch", 0, read_bytes2, "", "Battery SoC Switch", None),
+    )
+
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
         response = response[5:-2]
@@ -296,6 +335,19 @@ class ET(Inverter):
             data.update(self._map_response(raw_data[5:-2], self.__sensors2, include_unknown_sensors))
         return data
 
+    async def read_settings_data(self) -> Dict[str, Any]:
+        raw_data = await self._read_from_socket(self._READ_ETU_ADVANCED_PARAM1)
+        data = self._map_response(raw_data[5:-2], self.__params1)
+        raw_data = await self._read_from_socket(self._READ_ETU_ADVANCED_PARAM3)
+        data.update(self._map_response(raw_data[5:-2], self.__params3))
+        raw_data = await self._read_from_socket(self._READ_ETU_ADVANCED_PARAM4)
+        data.update(self._map_response(raw_data[5:-2], self.__params4))
+        raw_data = await self._read_from_socket(self._READ_ETU_ADVANCED_PARAM5)
+        data.update(self._map_response(raw_data[5:-2], self.__params5))
+        raw_data = await self._read_from_socket(self._READ_ETU_BATTERY_SOC_SWITCH)
+        data.update(self._map_response(raw_data[5:-2], self.__soc_switch))
+        return data
+
     async def set_work_mode(self, work_mode: int):
         if work_mode in (0, 1, 2):
             await self._read_from_socket(
@@ -311,3 +363,7 @@ class ET(Inverter):
     @classmethod
     def sensors(cls) -> Tuple[Sensor, ...]:
         return cls.__sensors + cls.__sensors_battery + cls.__sensors2
+
+    @classmethod
+    def settings(cls) -> Tuple[Sensor, ...]:
+        return cls.__params1 + cls.__params3 + cls.__params4 + cls.__params5 + cls.__soc_switch
