@@ -291,8 +291,9 @@ class ET(Inverter):
         data = self._map_response(raw_data[5:-2], self.__sensors, include_unknown_sensors)
         raw_data = await self._read_from_socket(self._READ_BATTERY_INFO)
         data.update(self._map_response(raw_data[5:-2], self.__sensors_battery, include_unknown_sensors))
-        raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA2)
-        data.update(self._map_response(raw_data[5:-2], self.__sensors2, include_unknown_sensors))
+        if include_unknown_sensors: # all sensors in RUNNING_DATA2 request are not yet know at the moment
+            raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA2)
+            data.update(self._map_response(raw_data[5:-2], self.__sensors2, include_unknown_sensors))
         return data
 
     async def set_work_mode(self, work_mode: int):
