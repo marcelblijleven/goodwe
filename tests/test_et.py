@@ -7,7 +7,8 @@ from goodwe.protocol import ProtocolCommand
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-class Testee(ET):
+
+class GW10K_ET(ET):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
@@ -26,15 +27,19 @@ class Testee(ET):
 
 class EtProtocolTest(TestCase):
 
-    def test_runtime_data(self):
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
 
-        et = Testee("localhost", 8899)
+    @classmethod
+    def tearDownClass(cls):
+        cls.loop.close()
 
-        loop = asyncio.get_event_loop()
-        data = loop.run_until_complete(et.read_runtime_data())
-        loop.close()
+    def test_GW10K_ET_runtime_data(self):
+        testee = GW10K_ET("localhost", 8899)
+        data = self.loop.run_until_complete(testee.read_runtime_data())
 
-        #for (sensor, _, _, unit, name, _) in ET.sensors():
+        # for (sensor, _, _, unit, name, _) in ET.sensors():
         #   print(f"self.assertEqual({data[sensor]}, data['{sensor}'])")
 
         self.assertEqual(5.1, data['ipv1'])
@@ -140,4 +145,3 @@ class EtProtocolTest(TestCase):
         self.assertEqual(4998, data['xxx28'])
         self.assertEqual(17953, data['xxx30'])
         self.assertEqual(26304, data['xxx32'])
-
