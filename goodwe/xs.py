@@ -1,5 +1,4 @@
 import logging
-from typing import Callable
 
 from goodwe.dt import DT
 from goodwe.processor import ProcessorResult, AbstractDataProcessor
@@ -24,7 +23,8 @@ class GoodWeXSProcessor(AbstractDataProcessor):
             frequency_ac=sensors['fgrid1'],
             generation_today=sensors['e_day'],
             generation_total=sensors['e_total'],
-            rssi=self._get_rssi(data), # this is just response checksum
+            # this is just response checksum
+            rssi=self._get_rssi(data),
             operational_hours=sensors['h_total'],
             temperature=sensors['temperature'],
             power=sensors['ppv'],

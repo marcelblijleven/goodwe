@@ -6,12 +6,20 @@ from goodwe.protocol import ProtocolCommand, Aa55ProtocolCommand, ModbusProtocol
 
 
 class SensorKind(Enum):
-    """Enumeration of sensor kinds"""
+    """
+    Enumeration of sensor kinds.
 
-    pv = 1
-    ac = 2
-    ups = 3
-    bat = 4
+    Possible values are:
+    PV - photo-voltaic (e.g. dc voltage of pv panels)
+    AC - grid side (e.g. ac voltage of grid connected output)
+    UPS - ups/eps/backup side (e.g. ac voltage of backup/off-grid connected output)
+    BAT - battery (e.g. dc voltage of connected battery pack)
+    """
+
+    PV = 1
+    AC = 2
+    UPS = 3
+    BAT = 4
 
 
 class Sensor(NamedTuple):

@@ -1,6 +1,7 @@
 from typing import Any, Tuple
 
-from goodwe.inverter import Inverter, Sensor, SensorKind
+from goodwe.inverter import Inverter, Sensor
+from goodwe.inverter import SensorKind as Kind
 from goodwe.protocol import ProtocolCommand, Aa55ProtocolCommand
 from goodwe.utils import *
 
@@ -13,205 +14,94 @@ class ES(Inverter):
     _READ_DEVICE_SETTINGS_DATA: ProtocolCommand = Aa55ProtocolCommand("010900", "0189")
 
     __sensors: Tuple[Sensor, ...] = (
-        Sensor("vpv1", 0, read_voltage, "V", "PV1 Voltage", SensorKind.pv),
-        Sensor("ipv1", 2, read_current, "A", "PV1 Current", SensorKind.pv),
-        Sensor(
-            "ppv1",
-            0,
-            lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)),
-            "W",
-            "PV1 Power",
-            SensorKind.pv,
-        ),
-        Sensor("pv1_mode", 4, read_byte, "", "PV1 Mode", SensorKind.pv),
-        Sensor("pv1_mode_label", 4, read_pv_mode1, "", "PV1 Mode", SensorKind.pv),
-        Sensor("vpv2", 5, read_voltage, "V", "PV2 Voltage", SensorKind.pv),
-        Sensor("ipv2", 7, read_current, "A", "PV2 Current", SensorKind.pv),
-        Sensor(
-            "ppv2",
-            0,
-            lambda data, _: round(read_voltage(data, 5) * read_current(data, 7)),
-            "W",
-            "PV2 Power",
-            SensorKind.pv,
-        ),
-        Sensor("pv2_mode", 9, read_byte, "", "PV2 Mode", SensorKind.pv),
-        Sensor("pv2_mode_label", 9, read_pv_mode1, "", "PV2 Mode", SensorKind.pv),
-        Sensor(
-            "ppv",
-            0,
-            lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
-                read_voltage(data, 5) * read_current(data, 7)),
-            "W",
-            "PV Power",
-            SensorKind.pv,
-        ),
-        Sensor("vbattery1", 10, read_voltage, "V", "Battery Voltage", SensorKind.bat),
-        # Sensor("vbattery2", 12, read_voltage, "V", "Battery Voltage 2", SensorKind.bat),
-        # Sensor("vbattery3", 14, read_voltage, "V", "Battery Voltage 3", SensorKind.bat),
-        Sensor(
-            "battery_temperature",
-            16,
-            read_temp,
-            "C",
-            "Battery Temperature",
-            SensorKind.bat,
-        ),
-        Sensor(
-            "ibattery1",
-            18,
-            lambda data, _: abs(read_current(data, 18)) * (-1 if read_byte(data, 30) == 3 else 1),
-            "A",
-            "Battery Current",
-            SensorKind.bat,
-        ),
+        Sensor("vpv1", 0, read_voltage, "V", "PV1 Voltage", Kind.PV),
+        Sensor("ipv1", 2, read_current, "A", "PV1 Current", Kind.PV),
+        Sensor("ppv1", 0, lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)), "W", "PV1 Power",
+               Kind.PV),
+        Sensor("pv1_mode", 4, read_byte, "", "PV1 Mode", Kind.PV),
+        Sensor("pv1_mode_label", 4, read_pv_mode1, "", "PV1 Mode", Kind.PV),
+        Sensor("vpv2", 5, read_voltage, "V", "PV2 Voltage", Kind.PV),
+        Sensor("ipv2", 7, read_current, "A", "PV2 Current", Kind.PV),
+        Sensor("ppv2", 0, lambda data, _: round(read_voltage(data, 5) * read_current(data, 7)), "W", "PV2 Power",
+               Kind.PV),
+        Sensor("pv2_mode", 9, read_byte, "", "PV2 Mode", Kind.PV),
+        Sensor("pv2_mode_label", 9, read_pv_mode1, "", "PV2 Mode", Kind.PV),
+        Sensor("ppv", 0,
+               lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
+                   read_voltage(data, 5) * read_current(data, 7)),
+               "W", "PV Power", Kind.PV),
+        Sensor("vbattery1", 10, read_voltage, "V", "Battery Voltage", Kind.BAT),
+        # Sensor("vbattery2", 12, read_voltage, "V", "Battery Voltage 2", Kind.BAT),
+        # Sensor("vbattery3", 14, read_voltage, "V", "Battery Voltage 3", Kind.BAT),
+        Sensor("battery_temperature", 16, read_temp, "C", "Battery Temperature", Kind.BAT),
+        Sensor("ibattery1", 18, lambda data, _: abs(read_current(data, 18)) * (-1 if read_byte(data, 30) == 3 else 1),
+               "A", "Battery Current", Kind.BAT),
         # round(vbattery1 * ibattery1),
-        Sensor(
-            "pbattery1",
-            0,
-            lambda data, _: abs(
-                round(read_voltage(data, 10) * read_current(data, 18))
-            ) * (-1 if read_byte(data, 30) == 3 else 1),
-            "W",
-            "Battery Power",
-            SensorKind.bat,
-        ),
-        Sensor(
-            "battery_charge_limit",
-            20,
-            read_bytes2,
-            "A",
-            "Battery Charge Limit",
-            SensorKind.bat,
-        ),
-        Sensor(
-            "battery_discharge_limit",
-            22,
-            read_bytes2,
-            "A",
-            "Battery Discharge Limit",
-            SensorKind.bat,
-        ),
-        Sensor(
-            "battery_status", 24, read_bytes2, "", "Battery Status", SensorKind.bat
-        ),
-        Sensor(
-            "battery_soc",
-            26,
-            read_byte,
-            "%",
-            "Battery State of Charge",
-            SensorKind.bat,
-        ),
-        # Sensor("cbattery2", 27, read_byte, "%", "Battery State of Charge 2", SensorKind.bat),
-        # Sensor("cbattery3", 28, read_byte, "%", "Battery State of Charge 3", SensorKind.bat),
-        Sensor(
-            "battery_soh",
-            29,
-            read_byte,
-            "%",
-            "Battery State of Health",
-            SensorKind.bat,
-        ),
-        Sensor("battery_mode", 30, read_byte, "", "Battery Mode code", SensorKind.bat),
-        Sensor(
-            "battery_mode_label",
-            30,
-            read_battery_mode1,
-            "",
-            "Battery Mode",
-            SensorKind.bat,
-        ),
-        Sensor(
-            "battery_warning", 31, read_bytes2, "", "Battery Warning", SensorKind.bat
-        ),
-        Sensor("meter_status", 33, read_byte, "", "Meter Status code", SensorKind.ac),
-        Sensor("vgrid", 34, read_voltage, "V", "On-grid Voltage", SensorKind.ac),
-        Sensor("igrid", 36, read_current, "A", "On-grid Current", SensorKind.ac),
-        Sensor(
-            "pgrid",
-            38,
-            lambda data, _: abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
-            "W",
-            "On-grid Export Power",
-            SensorKind.ac,
-        ),
-        Sensor("fgrid", 40, read_freq, "Hz", "On-grid Frequency", SensorKind.ac),
-        Sensor("grid_mode", 42, read_byte, "", "Work Mode code", SensorKind.ac),
-        Sensor("grid_mode_label", 42, read_work_mode1, "", "Work Mode", SensorKind.ac),
-        Sensor("vload", 43, read_voltage, "V", "Back-up Voltage", SensorKind.ups),
-        Sensor("iload", 45, read_current, "A", "Back-up Current", SensorKind.ups),
-        Sensor("pload", 47, read_power2, "W", "On-grid Power", SensorKind.ac),
-        Sensor("fload", 49, read_freq, "Hz", "Back-up Frequency", SensorKind.ups),
-        Sensor("load_mode", 51, read_byte, "", "Load Mode code", SensorKind.ac),
-        Sensor("load_mode_label", 51, read_load_mode1, "", "Load Mode", SensorKind.ac),
-        Sensor("work_mode", 52, read_byte, "", "Energy Mode code", SensorKind.ac),
-        Sensor(
-            "work_mode_label", 52, read_energy_mode1, "", "Energy Mode", SensorKind.ac
-        ),
+        Sensor("pbattery1", 0,
+               lambda data, _: abs(
+                   round(read_voltage(data, 10) * read_current(data, 18))
+               ) * (-1 if read_byte(data, 30) == 3 else 1),
+               "W", "Battery Power", Kind.BAT),
+        Sensor("battery_charge_limit", 20, read_bytes2, "A", "Battery Charge Limit", Kind.BAT),
+        Sensor("battery_discharge_limit", 22, read_bytes2, "A", "Battery Discharge Limit", Kind.BAT),
+        Sensor("battery_status", 24, read_bytes2, "", "Battery Status", Kind.BAT),
+        Sensor("battery_soc", 26, read_byte, "%", "Battery State of Charge", Kind.BAT),
+        # Sensor("cbattery2", 27, read_byte, "%", "Battery State of Charge 2", Kind.BAT),
+        # Sensor("cbattery3", 28, read_byte, "%", "Battery State of Charge 3", Kind.BAT),
+        Sensor("battery_soh", 29, read_byte, "%", "Battery State of Health", Kind.BAT),
+        Sensor("battery_mode", 30, read_byte, "", "Battery Mode code", Kind.BAT),
+        Sensor("battery_mode_label", 30, read_battery_mode1, "", "Battery Mode", Kind.BAT),
+        Sensor("battery_warning", 31, read_bytes2, "", "Battery Warning", Kind.BAT),
+        Sensor("meter_status", 33, read_byte, "", "Meter Status code", Kind.AC),
+        Sensor("vgrid", 34, read_voltage, "V", "On-grid Voltage", Kind.AC),
+        Sensor("igrid", 36, read_current, "A", "On-grid Current", Kind.AC),
+        Sensor("pgrid", 38,
+               lambda data, _: abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
+               "W", "On-grid Export Power", Kind.AC),
+        Sensor("fgrid", 40, read_freq, "Hz", "On-grid Frequency", Kind.AC),
+        Sensor("grid_mode", 42, read_byte, "", "Work Mode code", Kind.AC),
+        Sensor("grid_mode_label", 42, read_work_mode1, "", "Work Mode", Kind.AC),
+        Sensor("vload", 43, read_voltage, "V", "Back-up Voltage", Kind.UPS),
+        Sensor("iload", 45, read_current, "A", "Back-up Current", Kind.UPS),
+        Sensor("pload", 47, read_power2, "W", "On-grid Power", Kind.AC),
+        Sensor("fload", 49, read_freq, "Hz", "Back-up Frequency", Kind.UPS),
+        Sensor("load_mode", 51, read_byte, "", "Load Mode code", Kind.AC),
+        Sensor("load_mode_label", 51, read_load_mode1, "", "Load Mode", Kind.AC),
+        Sensor("work_mode", 52, read_byte, "", "Energy Mode code", Kind.AC),
+        Sensor("work_mode_label", 52, read_energy_mode1, "", "Energy Mode", Kind.AC),
         Sensor("temperature", 53, read_temp, "C", "Inverter Temperature", None),
         Sensor("error_codes", 55, read_bytes4, "", "Error Codes", None),
-        Sensor(
-            "e_total", 59, read_power_k, "kWh", "Total PV Generation", SensorKind.pv
-        ),
-        Sensor("h_total", 63, read_bytes4, "", "Hours Total", SensorKind.pv),
-        Sensor(
-            "e_day", 67, read_power_k2, "kWh", "Today's PV Generation", SensorKind.pv
-        ),
+        Sensor("e_total", 59, read_power_k, "kWh", "Total PV Generation", Kind.PV),
+        Sensor("h_total", 63, read_bytes4, "", "Hours Total", Kind.PV),
+        Sensor("e_day", 67, read_power_k2, "kWh", "Today's PV Generation", Kind.PV),
         Sensor("e_load_day", 69, read_power_k2, "kWh", "Today's Load", None),
         Sensor("e_load_total", 71, read_power_k, "kWh", "Total Load", None),
         Sensor("total_power", 75, read_power2, "W", "Total Power", None),
-        Sensor(
-            "effective_work_mode", 77, read_byte, "", "Effective Work Mode code", None
-        ),
+        Sensor("effective_work_mode", 77, read_byte, "", "Effective Work Mode code", None),
         # Effective relay control 78-79
-        Sensor("grid_in_out", 80, read_byte, "", "On-grid Mode code", SensorKind.ac),
-        Sensor(
-            "grid_in_out_label",
-            0,
-            lambda data, _: GRID_MODES.get(read_byte(data, 80)),
-            "",
-            "On-grid Mode",
-            SensorKind.ac,
-        ),
-        Sensor("pback_up", 81, read_power2, "W", "Back-up Power", SensorKind.ups),
+        Sensor("grid_in_out", 80, read_byte, "", "On-grid Mode code", Kind.AC),
+        Sensor("grid_in_out_label", 0,
+               lambda data, _: GRID_MODES.get(read_byte(data, 80)),
+               "", "On-grid Mode", Kind.AC),
+        Sensor("pback_up", 81, read_power2, "W", "Back-up Power", Kind.UPS),
         # pload + pback_up
-        Sensor(
-            "plant_power",
-            0,
-            lambda data, _: round(read_power2(data, 47) + read_power2(data, 81)),
-            "W",
-            "Plant Power",
-            SensorKind.ac,
-        ),
+        Sensor("plant_power", 0,
+               lambda data, _: round(read_power2(data, 47) + read_power2(data, 81)),
+               "W", "Plant Power", Kind.AC),
         Sensor("diagnose_result", 89, read_bytes4, "", "Diag Status", None),
         # ppv1 + ppv2 + pbattery - pgrid
-        Sensor(
-            "house_consumption",
-            0,
-            lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
-                read_voltage(data, 5) * read_current(data, 7)) + (
-                                    abs(round(read_voltage(data, 10) * read_current(data, 18)))
-                                    * (-1 if read_byte(data, 30) == 3 else 1)
-                            ) - (abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
-            "W",
-            "House Comsumption",
-            SensorKind.ac,
-        ),
+        Sensor("house_consumption", 0,
+               lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
+                   read_voltage(data, 5) * read_current(data, 7)) + (
+                                       abs(round(read_voltage(data, 10) * read_current(data, 18)))
+                                       * (-1 if read_byte(data, 30) == 3 else 1)
+                               ) - (abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
+               "W", "House Comsumption", Kind.AC),
     )
 
     __settings: Tuple[Sensor, ...] = (
-        Sensor(
-            "charge_power_limit", 4, read_bytes2, "", "Charge Power Limit Value", None
-        ),
-        Sensor(
-            "discharge_power_limit",
-            10,
-            read_bytes2,
-            "",
-            "Disharge Power Limit Value",
-            None,
-        ),
+        Sensor("charge_power_limit", 4, read_bytes2, "", "Charge Power Limit Value", None),
+        Sensor("discharge_power_limit", 10, read_bytes2, "", "Disharge Power Limit Value", None),
         Sensor("relay_control", 13, read_byte, "", "Relay Control", None),
         Sensor("off-grid_charge", 15, read_byte, "", "Off-grid Charge", None),
         Sensor("shadow_scan", 17, read_byte, "", "Shadow Scan", None),
@@ -221,14 +111,7 @@ class ES(Inverter):
         Sensor("charge_i", 26, read_bytes2, "A", "Charge Current", None),
         Sensor("discharge_i", 28, read_bytes2, "A", "Discharge Current", None),
         Sensor("discharge_v", 30, read_bytes2, "V", "Discharge Voltage", None),
-        Sensor(
-            "dod",
-            32,
-            lambda data, _: 100 - read_bytes2(data, 32),
-            "%",
-            "Depth of Discharge",
-            None,
-        ),
+        Sensor("dod", 32, lambda data, _: 100 - read_bytes2(data, 32), "%", "Depth of Discharge", None),
         Sensor("battery_activated", 34, read_bytes2, "", "Battery Activated", None),
         Sensor("bp_off_grid_charge", 36, read_bytes2, "", "BP Off-grid Charge", None),
         Sensor("bp_pv_discharge", 38, read_bytes2, "", "BP PV Discharge", None),
