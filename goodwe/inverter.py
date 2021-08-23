@@ -65,8 +65,8 @@ class Inverter:
         Answer dictionary of individual sensors and their values.
         List of supported sensors (and their definitions) is provided by sensors() method.
 
-        If include_unknown_sensors parameter is set to True, return also all runtime values,
-        include those "xx*" sensors whose meaning is not yet identified
+        If include_unknown_sensors parameter is set to True, return all runtime values,
+        including those "xx*" sensors whose meaning is not yet identified.
         """
         raise NotImplementedError()
 

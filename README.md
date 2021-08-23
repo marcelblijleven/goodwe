@@ -31,7 +31,7 @@ import goodwe
 async def get_runtime_data():
     ip_address = '192.168.1.14'
     port = 8899
-    inverter_family = "ET" # One of ET, EH, ES, EM, DT, NS, XS or None do detect family automatically
+    inverter_family = "ET" # One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
 
     inverter = await goodwe.connect(ip_address, port, inverter_family)
     runtime_data = await inverter.read_runtime_data()

@@ -14,7 +14,7 @@ logging.basicConfig(
 # Set the appropriate IP address
 IP_ADDRESS = "192.168.1.14"
 PORT = 8899
-# One of ET, EH, ES, EM, DT, NS, XS or None do detect family automatically
+# One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
 FAMILY = "ET"
 TIMEOUT = 2
 RETRIES = 3
