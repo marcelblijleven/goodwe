@@ -1,9 +1,9 @@
 from typing import Any, Tuple
 
-from goodwe.inverter import Inverter, Sensor
-from goodwe.inverter import SensorKind as Kind
-from goodwe.protocol import ProtocolCommand, ModbusProtocolCommand
-from goodwe.utils import *
+from .inverter import Inverter, Sensor
+from .inverter import SensorKind as Kind
+from .protocol import ProtocolCommand, ModbusProtocolCommand
+from .utils import *
 
 
 class ET(Inverter):

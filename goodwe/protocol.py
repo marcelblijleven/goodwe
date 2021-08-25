@@ -2,9 +2,8 @@ import asyncio
 import logging
 from typing import Tuple, Optional, Callable
 
-from goodwe.exceptions import MaxRetriesException
-from goodwe.exceptions import RequestFailedException
-from goodwe.utils import create_crc16_table
+from .exceptions import MaxRetriesException, RequestFailedException
+from .utils import create_crc16_table
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import io
 from enum import Enum
 from typing import Any, Callable, Dict, NamedTuple, Tuple, Optional
 
-from goodwe.protocol import ProtocolCommand, Aa55ProtocolCommand, ModbusProtocolCommand
+from .protocol import ProtocolCommand, Aa55ProtocolCommand, ModbusProtocolCommand
 
 
 class SensorKind(Enum):

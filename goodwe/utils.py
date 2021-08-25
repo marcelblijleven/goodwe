@@ -2,7 +2,7 @@ import io
 from datetime import datetime
 from typing import Optional
 
-from goodwe.const import *
+from .const import *
 
 
 def read_byte(buffer: io.BytesIO, offset: int) -> int:

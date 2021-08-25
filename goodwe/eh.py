@@ -1,9 +1,9 @@
 from typing import Any, Tuple
 
-from goodwe.inverter import Inverter, Sensor
-from goodwe.inverter import SensorKind as Kind
-from goodwe.protocol import ProtocolCommand, ModbusProtocolCommand
-from goodwe.utils import *
+from .inverter import Inverter, Sensor
+from .inverter import SensorKind as Kind
+from .protocol import ProtocolCommand, ModbusProtocolCommand
+from .utils import *
 
 
 class EH(Inverter):
@@ -117,8 +117,8 @@ class EH(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        response = response[5:-2]
-        self.model_name = response[22:32].decode("ascii").rstrip()
+        response = response[12:22]
+        self.model_name = response[12:22].decode("ascii").rstrip()
         self.serial_number = response[6:22].decode("ascii")
         self.software_version = response[54:66].decode("ascii")
 

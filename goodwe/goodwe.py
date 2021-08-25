@@ -2,15 +2,15 @@ import asyncio
 import logging
 from typing import Tuple
 
-from goodwe.dt import DT
-from goodwe.eh import EH
-from goodwe.es import ES
-from goodwe.et import ET
-from goodwe.exceptions import InverterError, ProcessingException
-from goodwe.inverter import Inverter, Sensor, SensorKind
-from goodwe.processor import ProcessorResult, AbstractDataProcessor
-from goodwe.protocol import UdpInverterProtocol, Aa55ProtocolCommand
-from goodwe.xs import GoodWeXSProcessor
+from .dt import DT
+from .eh import EH
+from .es import ES
+from .et import ET
+from .exceptions import InverterError, ProcessingException
+from .inverter import Inverter, Sensor, SensorKind
+from .processor import ProcessorResult, AbstractDataProcessor
+from .protocol import UdpInverterProtocol, Aa55ProtocolCommand
+from .xs import GoodWeXSProcessor
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,9 @@
 import logging
 
-from goodwe.dt import DT
-from goodwe.processor import ProcessorResult, AbstractDataProcessor
-from goodwe.protocol import ProtocolCommand
-from goodwe.utils import *
+from .dt import DT
+from .processor import ProcessorResult, AbstractDataProcessor
+from .protocol import ProtocolCommand
+from .utils import *
 
 logger = logging.getLogger(__name__)
 
