@@ -2,15 +2,15 @@ from typing import Any, Tuple
 
 from .inverter import Inverter, Sensor
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, ModbusProtocolCommand
+from .protocol import ProtocolCommand, ModbusProtocolCommand, ModbusReadCommand
 from .utils import *
 
 
 class DT(Inverter):
     """Class representing inverter of DT, D-NS and XS families"""
 
-    _READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusProtocolCommand("7F0375310028", 87)
-    _READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusProtocolCommand("7F0375940049", 153)
+    _READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusReadCommand(0x7531, 0x0028, 87)
+    _READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(0x7594, 0x0049, 153)
 
     __sensors: Tuple[Sensor, ...] = (
         Sensor("timestamp", 0, read_datetime, "", "Timestamp", None),
