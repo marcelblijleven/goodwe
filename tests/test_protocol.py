@@ -2,7 +2,7 @@ from typing import Callable
 from unittest import TestCase, mock
 
 from goodwe.exceptions import MaxRetriesException
-from goodwe.protocol import UdpInverterProtocol
+from goodwe.protocol import UdpInverterProtocol, ModbusReadCommand
 
 
 class TestUDPClientProtocol(TestCase):
@@ -95,3 +95,7 @@ class TestUDPClientProtocol(TestCase):
         self.protocol.retry_mechanism()
         self.future.set_exception.assert_called_once_with(MaxRetriesException)
         self.assertEqual(self.protocol._retries, 3)
+
+    def test_modbus_read_command(self):
+        command = ModbusReadCommand(0x88b8, 0x0021, 0)
+        self.assertEqual(bytes.fromhex('f70388b800213ac1'), command.request)
