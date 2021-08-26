@@ -26,7 +26,7 @@ print(f"Identified inverter\n"
       f"- Version: {inverter.software_version}"
       )
 
-response = asyncio.run(inverter.read_runtime_data())
+response = asyncio.run(inverter.read_runtime_data(True))
 
 for sensor in inverter.sensors():
     if sensor.id_ in response:
