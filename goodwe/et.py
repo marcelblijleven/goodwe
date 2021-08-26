@@ -2,7 +2,7 @@ from typing import Any, Tuple
 
 from .inverter import Inverter, Sensor
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, ModbusProtocolCommand, ModbusReadCommand
+from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand
 from .utils import *
 
 
@@ -216,15 +216,11 @@ class ET(Inverter):
 
     async def set_work_mode(self, work_mode: int):
         if work_mode in (0, 1, 2):
-            await self._read_from_socket(
-                ModbusProtocolCommand("F706b798" + "{:04x}".format(work_mode))
-            )
+            await self._read_from_socket(ModbusWriteCommand(0xb798, work_mode))
 
     async def set_ongrid_battery_dod(self, dod: int):
         if 0 <= dod <= 89:
-            await self._read_from_socket(
-                ModbusProtocolCommand("F706b12c" + "{:04x}".format(100 - dod), 10)
-            )
+            await self._read_from_socket(ModbusWriteCommand(0xb12c, 100 - dod, 10))
 
     @classmethod
     def sensors(cls) -> Tuple[Sensor, ...]:

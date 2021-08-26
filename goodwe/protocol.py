@@ -3,7 +3,8 @@ import logging
 from typing import Tuple, Optional, Callable
 
 from .exceptions import MaxRetriesException, RequestFailedException
-from .modbus import append_modbus_checksum, create_modbus_request, validate_modbus_response
+from .modbus import append_modbus_checksum, create_modbus_request, validate_modbus_response, MODBUS_READ_CMD, \
+    MODBUS_WRITE_CMD
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +165,8 @@ class Aa55ProtocolCommand(ProtocolCommand):
 
 class ModbusProtocolCommand(ProtocolCommand):
     """
-    Inverter communication protocol, suffixes each payload with 2 bytes of Modbus-CRC16 checksum of the payload.
+    Inverter modbus communication protocol accepting string based payload (including header).
+    Modbus-CRC16 checksum will be appended.
     """
 
     def __init__(self, payload: str, response_len: int = 0):
@@ -176,11 +178,23 @@ class ModbusProtocolCommand(ProtocolCommand):
 
 class ModbusReadCommand(ProtocolCommand):
     """
-    Inverter communication protocol, suffixes each payload with 2 bytes of Modbus-CRC16 checksum of the payload.
+    Inverter modbus READ command for retrieving <count> modbus registers starting at register # <offset>
     """
 
     def __init__(self, offset: int, count: int, response_len: int = 0):
         super().__init__(
-            create_modbus_request(0x3, offset, count),
+            create_modbus_request(MODBUS_READ_CMD, offset, count),
+            lambda x: validate_modbus_response(x, response_len),
+        )
+
+
+class ModbusWriteCommand(ProtocolCommand):
+    """
+    Inverter modbus WRITE command setting to modbus register # <register> value <value>
+    """
+
+    def __init__(self, register: int, value: int, response_len: int = 0):
+        super().__init__(
+            create_modbus_request(MODBUS_WRITE_CMD, register, value),
             lambda x: validate_modbus_response(x, response_len),
         )

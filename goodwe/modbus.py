@@ -3,6 +3,8 @@ from typing import Union
 # default inverter modbus address
 _INVERTER_ADDRESS = 0xf7
 
+MODBUS_READ_CMD: int = 0x3
+MODBUS_WRITE_CMD: int = 0x6
 
 def _create_crc16_table() -> tuple:
     """Construct (modbus) CRC-16 table"""
