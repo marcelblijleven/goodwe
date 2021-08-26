@@ -28,7 +28,7 @@ class DtProtocolTest(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id: s.unit for s in DT.sensors()}
+        cls.sensors = {s.id_: s.unit for s in DT.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
@@ -90,7 +90,7 @@ class DtProtocolTest(TestCase):
         self.assertSensor('xx90', -1, '', data)
         self.assertSensor('e_total', -0.1, 'kWh', data)
         self.assertSensor('xx94', -1, '', data)
-        self.assertSensor('h_total', -1, '', data)
+        self.assertSensor('h_total', -1, 'h', data)
         self.assertSensor('safety_country', 32, '', data)
         self.assertSensor('safety_country_label', '50Hz Grid Default', '', data)
         self.assertSensor('xx100', 0, '', data)

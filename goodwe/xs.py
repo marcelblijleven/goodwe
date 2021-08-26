@@ -3,7 +3,7 @@ import logging
 from .dt import DT
 from .processor import ProcessorResult, AbstractDataProcessor
 from .protocol import ProtocolCommand
-from .utils import *
+from .sensor import *
 
 logger = logging.getLogger(__name__)
 

@@ -28,9 +28,9 @@ print(f"Identified inverter\n"
 
 response = asyncio.run(inverter.read_runtime_data())
 
-for (sensor, _, _, unit, name, _) in inverter.sensors():
-    if sensor in response:
-        print(f"{sensor}: \t\t {name} = {response[sensor]} {unit}")
+for sensor in inverter.sensors():
+    if sensor.id_ in response:
+        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
 
 # response = asyncio.run(inverter.read_settings_data())
 

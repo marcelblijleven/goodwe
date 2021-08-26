@@ -7,7 +7,7 @@ from .eh import EH
 from .es import ES
 from .et import ET
 from .exceptions import InverterError, ProcessingException
-from .inverter import Inverter, Sensor, SensorKind
+from .inverter import Inverter
 from .processor import ProcessorResult, AbstractDataProcessor
 from .protocol import UdpInverterProtocol, Aa55ProtocolCommand
 from .xs import GoodWeXSProcessor

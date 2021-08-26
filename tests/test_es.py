@@ -46,7 +46,7 @@ class EsProtocolTest(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id: s.unit for s in ES.sensors()}
+        cls.sensors = {s.id_: s.unit for s in ES.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
@@ -97,7 +97,7 @@ class EsProtocolTest(TestCase):
         self.assertSensor('temperature', 34.8, 'C', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('e_total', 957.8, 'kWh', data)
-        self.assertSensor('h_total', 1343, '', data)
+        self.assertSensor('h_total', 1343, 'h', data)
         self.assertSensor('e_day', 8.8, 'kWh', data)
         self.assertSensor('e_load_day', 17.6, 'kWh', data)
         self.assertSensor('e_load_total', 1803.7, 'kWh', data)
@@ -155,7 +155,7 @@ class EsProtocolTest(TestCase):
         self.assertSensor('temperature', 29.9, 'C', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('e_total', 587.7, 'kWh', data)
-        self.assertSensor('h_total', 299, '', data)
+        self.assertSensor('h_total', 299, 'h', data)
         self.assertSensor('e_day', 23.3, 'kWh', data)
         self.assertSensor('e_load_day', 20.5, 'kWh', data)
         self.assertSensor('e_load_total', 550.4, 'kWh', data)
@@ -213,7 +213,7 @@ class EsProtocolTest(TestCase):
         self.assertSensor('temperature', 22.9, 'C', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('e_total', 22963.2, 'kWh', data)
-        self.assertSensor('h_total', 46332, '', data)
+        self.assertSensor('h_total', 46332, 'h', data)
         self.assertSensor('e_day', 12.3, 'kWh', data)
         self.assertSensor('e_load_day', 13.7, 'kWh', data)
         self.assertSensor('e_load_total', 31348.0, 'kWh', data)

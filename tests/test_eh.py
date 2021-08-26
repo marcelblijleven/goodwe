@@ -27,7 +27,7 @@ class EhProtocolTest(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id: s.unit for s in EH.sensors()}
+        cls.sensors = {s.id_: s.unit for s in EH.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
@@ -90,7 +90,7 @@ class EhProtocolTest(TestCase):
         self.assertSensor('e_day', 22.0, 'kWh', data)
         self.assertSensor('xx190', 0, '', data)
         self.assertSensor('s_total', 58.6, 'kWh', data)
-        self.assertSensor('h_total', 33, '', data)
+        self.assertSensor('h_total', 33, 'h', data)
         self.assertSensor('xx198', 216, '', data)
         self.assertSensor('s_day', 0.0, 'kWh', data)
         self.assertSensor('diagnose_result', 117983303, '', data)

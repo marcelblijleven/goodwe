@@ -1,7 +1,7 @@
 import io
 from unittest import TestCase
 
-from goodwe.utils import read_byte, read_bytes2, read_voltage
+from goodwe.sensor import read_byte, read_bytes2, read_voltage
 
 
 class TestUtils(TestCase):
