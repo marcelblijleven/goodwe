@@ -34,5 +34,6 @@ for sensor in inverter.sensors():
 
 # response = asyncio.run(inverter.read_settings_data())
 
-# for (sensor, _, _, unit, name, _) in inverter.settings():
-#    print(f"{sensor}: \t\t {name} = {response[sensor]} {unit}")
+# for setting in inverter.settings():
+#    value = asyncio.run(inverter.read_settings(setting.id_))
+#    print(f"{setting.id_}: \t\t {setting.name} = {value} {setting.unit}")
