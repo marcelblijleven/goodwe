@@ -66,6 +66,15 @@ class Inverter:
         self.model_name = model_name
         self.serial_number = serial_number
         self.software_version = software_version
+        self.modbus_version: int = None
+        self.rated_power: int = None
+        self.ac_output_type: int = None
+        self.dsp1_sw_version: int = None
+        self.dsp2_sw_version: int = None
+        self.dsp_spn_version: int = None
+        self.arm_sw_version: int = None
+        self.arm_svn_version: int = None
+        self.arm_version: str = None
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         return await command.execute(self.host, self.port, self.timeout, self.retries)

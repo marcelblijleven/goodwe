@@ -299,3 +299,8 @@ def read_grid_mode(buffer: io.BytesIO, offset: int = None) -> int:
         return 1
     else:
         return 0
+
+
+def read_unsigned_int(data: bytes, offset: int) -> int:
+    """Retrieve 2 byte (unsigned int) value from bytes at specified offset"""
+    return int.from_bytes(data[offset:offset + 2], byteorder="big", signed=False)
