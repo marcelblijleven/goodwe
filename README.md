@@ -42,5 +42,10 @@ async def get_runtime_data():
 
 asyncio.run(get_runtime_data())
 ```
+## References and useful links
 
-
+- https://github.com/tkubec/GoodWe
+- https://github.com/yasko-pv/modbus-log
+- https://github.com/MiG-41/Modbus-GoodWe-DT
+- https://github.com/mletenay/home-assistant-goodwe-inverter
+- https://github.com/OpenEMS/openems
