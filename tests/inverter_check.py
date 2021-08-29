@@ -4,6 +4,7 @@ import logging
 import sys
 
 import goodwe as inverter
+import goodwe.protocol
 
 logging.basicConfig(
     format="%(asctime)-15s %(funcName)s(%(lineno)d) - %(levelname)s: %(message)s",
@@ -31,6 +32,9 @@ response = asyncio.run(inverter.read_runtime_data(True))
 for sensor in inverter.sensors():
     if sensor.id_ in response:
         print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
+
+# response = asyncio.run(goodwe.protocol.ModbusReadCommand(0x88b8, 43).execute(IP_ADDRESS, PORT))
+# print(response.hex())
 
 # response = asyncio.run(inverter.read_settings_data())
 

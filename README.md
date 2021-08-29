@@ -1,7 +1,7 @@
 # GoodWe
 Get inverter data from a Goodwe solar inverter.
 
-It has been reported to work on GoodWe ET, EH, ES, EM, DT, D-NS and XS families of inverters.
+It has been reported to work on GoodWe ET, EH, ES, EM, DT, D-NS, XS and BP families of inverters.
 It may work on other inverters as well, as long as they listen on UDP port 8899 and respond to one of supported communication protocols.
 
 ## Usage
@@ -31,7 +31,7 @@ import goodwe
 async def get_runtime_data():
     ip_address = '192.168.1.14'
     port = 8899
-    inverter_family = "ET" # One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
+    inverter_family = "ET" # One of ET, EH, ES, EM, DT, NS, XS, BP or None to detect family automatically
 
     inverter = await goodwe.connect(ip_address, port, inverter_family)
     runtime_data = await inverter.read_runtime_data()

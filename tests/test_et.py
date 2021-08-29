@@ -42,7 +42,7 @@ class EtProtocolTest(TestCase):
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
 
         # for sensor in ET.sensors():
-        #   print(f"self.assertSensor('{sensor.id}', {data[sensor.id]}, '{self.sensors.get(sensor.id)}', data)")
+        #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-22 11:11:12', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 332.6, 'V', data)

@@ -41,6 +41,16 @@ class GW5048D_ES(ES):
             raise ValueError
 
 
+class GW5000S_BP(ES):
+
+    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
+        """Mock UDP communication"""
+        if command == ES._READ_DEVICE_RUNNING_DATA:
+            with open(root_dir + '/sample/es/GW5000S-BP_running_data.hex', 'r') as f:
+                return bytes.fromhex(f.read())
+        else:
+            raise ValueError
+
 class EsProtocolTest(TestCase):
 
     @classmethod
@@ -225,3 +235,62 @@ class EsProtocolTest(TestCase):
         self.assertSensor('plant_power', 691, 'W', data)
         self.assertSensor('diagnose_result', 117440576, '', data)
         self.assertSensor('house_consumption', 467, 'W', data)
+
+    def test_GW5000S_BP_runtime_data(self):
+        testee = GW5000S_BP("localhost", 8899)
+        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+
+        self.assertSensor('vpv1', 0.0, 'V', data)
+        self.assertSensor('ipv1', 0.0, 'A', data)
+        self.assertSensor('ppv1', 0, 'W', data)
+        self.assertSensor('pv1_mode', 0, '', data)
+        self.assertSensor('pv1_mode_label', 'PV panels not connected', '', data)
+        self.assertSensor('vpv2', 0.0, 'V', data)
+        self.assertSensor('ipv2', 0.0, 'A', data)
+        self.assertSensor('ppv2', 0, 'W', data)
+        self.assertSensor('pv2_mode', 0, '', data)
+        self.assertSensor('pv2_mode_label', 'PV panels not connected', '', data)
+        self.assertSensor('ppv', 0, 'W', data)
+        self.assertSensor('vbattery1', 0.0, 'V', data)
+        self.assertSensor('battery_temperature', 0.0, 'C', data)
+        self.assertSensor('ibattery1', 0.0, 'A', data)
+        self.assertSensor('pbattery1', 0, 'W', data)
+        self.assertSensor('battery_charge_limit', 0, 'A', data)
+        self.assertSensor('battery_discharge_limit', 0, 'A', data)
+        self.assertSensor('battery_status', 0, '', data)
+        self.assertSensor('battery_soc', 0, '%', data)
+        self.assertSensor('battery_soh', 0, '%', data)
+        self.assertSensor('battery_mode', 0, '', data)
+        self.assertSensor('battery_mode_label', 'No battery', '', data)
+        self.assertSensor('battery_warning', 0, '', data)
+        self.assertSensor('meter_status', 0, '', data)
+        self.assertSensor('vgrid', 0.0, 'V', data)
+        self.assertSensor('igrid', 0.0, 'A', data)
+        self.assertSensor('pgrid', 0, 'W', data)
+        self.assertSensor('fgrid', 0.0, 'Hz', data)
+        self.assertSensor('grid_mode', 0, '', data)
+        self.assertSensor('grid_mode_label', 'Inverter Off - Standby', '', data)
+        self.assertSensor('vload', 0.0, 'V', data)
+        self.assertSensor('iload', 0.0, 'A', data)
+        self.assertSensor('pload', 0, 'W', data)
+        self.assertSensor('fload', 0.0, 'Hz', data)
+        self.assertSensor('load_mode', 0, '', data)
+        self.assertSensor('load_mode_label', 'Inverter and the load is disconnected', '', data)
+        self.assertSensor('work_mode', 0, '', data)
+        self.assertSensor('work_mode_label', 'Check Mode', '', data)
+        self.assertSensor('temperature', 0.0, 'C', data)
+        self.assertSensor('error_codes', 0, '', data)
+        self.assertSensor('e_total', 0.0, 'kWh', data)
+        self.assertSensor('h_total', 0, 'h', data)
+        self.assertSensor('e_day', 0.0, 'kWh', data)
+        self.assertSensor('e_load_day', 0.0, 'kWh', data)
+        self.assertSensor('e_load_total', 0.0, 'kWh', data)
+        self.assertSensor('total_power', 0, 'W', data)
+        self.assertSensor('effective_work_mode', 0, '', data)
+        self.assertSensor('grid_in_out', 0, '', data)
+        self.assertSensor('grid_in_out_label', 'Idle', '', data)
+        self.assertSensor('pback_up', 0, 'W', data)
+        self.assertSensor('plant_power', 0, 'W', data)
+        self.assertSensor('diagnose_result', 0, '', data)
+        self.assertSensor('house_consumption', 0, 'W', data)
+
