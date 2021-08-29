@@ -13,10 +13,10 @@ class GW10K_ET(ET):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == ET._READ_DEVICE_RUNNING_DATA1:
+        if command == ET._READ_RUNNING_DATA:
             with open(root_dir + '/sample/et/GW10K-ET_running_data1.hex', 'r') as f:
                 return bytes.fromhex(f.read())
-        elif command == ET._READ_DEVICE_RUNNING_DATA2:
+        elif command == ET._READ_METER_DATA:
             with open(root_dir + '/sample/et/GW10K-ET_running_data2.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         elif command == ET._READ_BATTERY_INFO:
@@ -132,19 +132,19 @@ class EtProtocolTest(TestCase):
         self.assertSensor('battery_soh', 99, '%', data)
         self.assertSensor('battery_warning', 0, '', data)
         self.assertSensor('xxx0', 1, '', data)
-        self.assertSensor('xxx2', 37, '', data)
-        self.assertSensor('xxx4', 10, '', data)
+        self.assertSensor('rssi', 37, '', data)
+        self.assertSensor('manufacture_code', 10, '', data)
         self.assertSensor('meter_test_status', 0, '', data)
         self.assertSensor('meter_comm_status', 1, '', data)
         self.assertSensor('active_power1', -8, 'W', data)
         self.assertSensor('active_power2', 18, 'W', data)
         self.assertSensor('active_power3', -24, 'W', data)
-        self.assertSensor('xxx16', -13, '', data)
-        self.assertSensor('xxx18', 991, '', data)
-        self.assertSensor('xxx20', 17, '', data)
-        self.assertSensor('xxx22', 89, '', data)
-        self.assertSensor('xxx24', -61, '', data)
-        self.assertSensor('xxx26', -4, '', data)
+        self.assertSensor('active_power_total', -13, '', data)
+        self.assertSensor('reactive_power_total', 991, '', data)
+        self.assertSensor('meter_power_factor1', 17, '', data)
+        self.assertSensor('meter_power_factor2', 89, '', data)
+        self.assertSensor('meter_power_factor3', -61, '', data)
+        self.assertSensor('meter_power_factor', -4, '', data)
         self.assertSensor('meter_freq', 49.98, 'Hz', data)
         self.assertSensor('xxx30', 17953, '', data)
         self.assertSensor('xxx32', 26304, '', data)
