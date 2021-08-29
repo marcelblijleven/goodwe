@@ -97,7 +97,7 @@ class TestUDPClientProtocol(TestCase):
         self.assertEqual(self.protocol._retries, 3)
 
     def test_modbus_read_command(self):
-        command = ModbusReadCommand(0x88b8, 0x0021, 0)
+        command = ModbusReadCommand(0x88b8, 0x0021)
         self.assertEqual(bytes.fromhex('f70388b800213ac1'), command.request)
 
     def test_modbus_write_command(self):

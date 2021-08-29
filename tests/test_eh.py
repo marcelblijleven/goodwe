@@ -3,6 +3,7 @@ import os
 from unittest import TestCase
 
 from goodwe.eh import EH
+from goodwe.exceptions import RequestFailedException
 from goodwe.protocol import ProtocolCommand
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -10,14 +11,19 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 
 class GW6000_EH(EH):
 
+    def mock_response(self, command: ProtocolCommand, filename: str) -> bytes:
+        with open(root_dir + '/sample/eh/' + filename, 'r') as f:
+            response = bytes.fromhex(f.read())
+            if not command.validator(response):
+                raise RequestFailedException
+            return response
+
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
         if command == EH._READ_DEVICE_RUNNING_DATA1:
-            with open(root_dir + '/sample/eh/GW6000_EH_running_data1.hex', 'r') as f:
-                return bytes.fromhex(f.read())
+            return self.mock_response(command, 'GW6000_EH_running_data1.hex')
         elif command == EH._READ_DEVICE_VERSION_INFO:
-            with open(root_dir + '/sample/eh/GW6000_EH_device_info.hex', 'r') as f:
-                return bytes.fromhex(f.read())
+            return self.mock_response(command, 'GW6000_EH_device_info.hex')
         else:
             raise ValueError
 
@@ -32,6 +38,15 @@ class EhProtocolTest(TestCase):
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensors.get(sensor))
+
+    def test_GW6000_EH_device_info(self):
+        testee = GW6000_EH("localhost", 8899)
+        self.loop.run_until_complete(testee.read_device_info())
+        print(testee)
+        self.assertEqual('GW6000-EH', testee.model_name)
+        self.assertEqual('00000EHU00000000', testee.serial_number)
+        self.assertEqual(6000, testee.rated_power)
+        self.assertEqual('02041-16-S00', testee.arm_version)
 
     def test_GW6000_EH_runtime_data(self):
         testee = GW6000_EH("localhost", 8899)
