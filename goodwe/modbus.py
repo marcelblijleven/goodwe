@@ -81,10 +81,13 @@ def validate_modbus_response(data: bytes) -> bool:
     data[4] is response payload length
     data[-2:] is crc-16 checksum
     """
-    if len(data) <= 4 or (data[4] > len(data) - 7):
-        logger.debug(f'Response has unexpected length: {len(data)}, expected {data[4] + 7}.')
+    if len(data) <= 4:
+        logger.debug(f'Response is too short.')
+    expected_length = data[4] + 7
+    if len(data) < expected_length:
+        logger.debug(f'Response has unexpected length: {len(data)}, expected {expected_length}.')
         return False
-    checksum_offset = data[4] + 5
+    checksum_offset = expected_length - 2
     if _modbus_checksum(data[2:checksum_offset]) != ((data[checksum_offset + 1] << 8) + data[checksum_offset]):
         logger.debug(f'Response CRC-16 checksum does not match.')
         return False
