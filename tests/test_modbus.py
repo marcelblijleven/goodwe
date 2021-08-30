@@ -6,7 +6,7 @@ from goodwe.modbus import create_modbus_request, validate_modbus_response
 class TestModbus(TestCase):
 
     def test_create_modbus_request(self):
-        request = create_modbus_request(0x3, 0x88b8, 0x0021)
+        request = create_modbus_request(0xf7, 0x3, 0x88b8, 0x0021)
         self.assertEqual(bytes.fromhex('f70388b800213ac1'), request)
 
     def test_validate_modbus_response(self):

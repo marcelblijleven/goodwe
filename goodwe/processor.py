@@ -4,6 +4,7 @@ from datetime import datetime
 
 from goodwe.protocol import ProtocolCommand
 
+
 @dataclass(init=True, order=True)
 class ProcessorResult:
     sort_index: datetime = field(init=False)

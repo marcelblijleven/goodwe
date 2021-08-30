@@ -4,9 +4,6 @@ from typing import Union
 
 logger = logging.getLogger(__name__)
 
-# default inverter modbus address
-_INVERTER_ADDRESS = 0xf7
-
 MODBUS_READ_CMD: int = 0x3
 MODBUS_WRITE_CMD: int = 0x6
 
@@ -40,33 +37,22 @@ def _modbus_checksum(data: Union[bytearray, bytes]) -> int:
     return crc
 
 
-def create_modbus_request(cmd: int, offset: int, count: int) -> bytes:
+def create_modbus_request(dst: int, cmd: int, offset: int, value: int) -> bytes:
     """
     Create modbus request.
     data[0] is inverter address
     data[1] is modbus command
     data[2:3] is command offset parameter
-    data[4:5] is command count parameter
+    data[4:5] is command value parameter
     data[6:7] is crc-16 checksum
     """
     data: bytearray = bytearray(6)
-    data[0] = _INVERTER_ADDRESS
+    data[0] = dst
     data[1] = cmd
     data[2] = (offset >> 8) & 0xFF
     data[3] = offset & 0xFF
-    data[4] = (count >> 8) & 0xFF
-    data[5] = count & 0xFF
-    checksum = _modbus_checksum(data)
-    data.append(checksum & 0xFF)
-    data.append((checksum >> 8) & 0xFF)
-    return bytes(data)
-
-
-def append_modbus_checksum(payload: str) -> bytes:
-    """
-    Create modbus request from prepared string payload
-    """
-    data = bytearray.fromhex(payload)
+    data[4] = (value >> 8) & 0xFF
+    data[5] = value & 0xFF
     checksum = _modbus_checksum(data)
     data.append(checksum & 0xFF)
     data.append((checksum >> 8) & 0xFF)
