@@ -1,7 +1,7 @@
 import io
 from unittest import TestCase
 
-from goodwe.sensor import read_byte, read_bytes2, read_voltage, read_current, read_power
+from goodwe.sensor import read_byte, read_bytes2, read_voltage, read_current, read_power, read_power_k, read_power_k2
 
 
 class TestUtils(TestCase):
@@ -50,3 +50,12 @@ class TestUtils(TestCase):
         buffer = io.BytesIO(data)
         self.assertEqual(read_power(buffer), -3)
 
+    def test_read_power_k2(self):
+        data = bytes.fromhex("0972")
+        buffer = io.BytesIO(data)
+        self.assertEqual(read_power_k2(buffer), 241.8)
+
+    def test_read_power_k(self):
+        data = bytes.fromhex("00020972")
+        buffer = io.BytesIO(data)
+        self.assertEqual(read_power_k(buffer), 13349.0)
