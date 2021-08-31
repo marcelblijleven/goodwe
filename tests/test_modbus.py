@@ -9,7 +9,7 @@ class TestModbus(TestCase):
         request = create_modbus_request(0xf7, 0x3, 0x88b8, 0x0021)
         self.assertEqual(bytes.fromhex('f70388b800213ac1'), request)
 
-    def test_validate_modbus_response(self):
+    def test_validate_modbus_read_response(self):
         self.assertTrue(validate_modbus_response(bytes.fromhex('aa55f7030501020304053347')))
         # some garbage after response end
         self.assertTrue(validate_modbus_response(bytes.fromhex('aa55f7030501020304053347ffffff')))
@@ -17,3 +17,12 @@ class TestModbus(TestCase):
         self.assertFalse(validate_modbus_response(bytes.fromhex('aa55f7030501020304')))
         # wrong checksum
         self.assertFalse(validate_modbus_response(bytes.fromhex('aa55f7030501020304053346')))
+
+    def test_validate_modbus_write_response(self):
+        self.assertTrue(validate_modbus_response(bytes.fromhex('aa55f706b12c00147ba6')))
+        # some garbage after response end
+        self.assertTrue(validate_modbus_response(bytes.fromhex('aa55f706b12c00147ba6ffffff')))
+        # length too short
+        self.assertFalse(validate_modbus_response(bytes.fromhex('aa55f7066b12')))
+        # wrong checksum
+        self.assertFalse(validate_modbus_response(bytes.fromhex('aa55f706b12c00147ba7')))

@@ -176,6 +176,8 @@ class ET(Inverter):
 
         Integer("power_factor", 45482, "Power Factor"),
 
+        Integer("work_mode", 47000, "Work Mode", "", Kind.AC),
+
         Integer("battery_soc_protection", 47500, "Battery SoC Protection", "", Kind.BAT),
 
         Integer("grid_export", 47509, "Grid Export Enabled", "", Kind.AC),
@@ -208,10 +210,22 @@ class ET(Inverter):
         return data
 
     async def read_settings(self, setting_id: str) -> Any:
-        setting = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
+        if not setting:
+            raise ValueError(f'Unknown setting "{setting_id}"')
         raw_data = await self._read_from_socket(ModbusReadCommand(0xf7, setting.offset, 1))
         with io.BytesIO(raw_data[5:-2]) as buffer:
             return setting.read_value(buffer)
+
+    async def write_settings(self, setting_id: str, value: Any):
+        setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
+        if not setting:
+            raise ValueError(f'Unknown setting "{setting_id}"')
+        raw_value = setting.encode_value(value)
+        if len(raw_value) > 2:
+            raise NotImplementedError()
+        value = int.from_bytes(raw_value, byteorder="big", signed=True)
+        await self._read_from_socket(ModbusWriteCommand(0xf7, setting.offset, value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}
@@ -220,14 +234,16 @@ class ET(Inverter):
             data[setting.id_] = value
         return data
 
+    async def set_grid_export_limit(self, export_limit: int):
+        return await self.write_settings('grid_export_limit', export_limit)
+
     async def set_work_mode(self, work_mode: int):
         if work_mode in (0, 1, 2):
-            await self._read_from_socket(ModbusWriteCommand(0xf7, 0xb798, work_mode))
+            return await self.write_settings('work_mode', work_mode)
 
     async def set_ongrid_battery_dod(self, dod: int):
-        # battery_discharge_depth setting
         if 0 <= dod <= 89:
-            await self._read_from_socket(ModbusWriteCommand(0xf7, 0xb12c, 100 - dod))
+            return await self.write_settings('battery_discharge_depth', 100 - dod)
 
     @classmethod
     def sensors(cls) -> Tuple[Sensor, ...]:

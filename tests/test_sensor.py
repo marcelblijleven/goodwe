@@ -1,7 +1,6 @@
-import io
 from unittest import TestCase
 
-from goodwe.sensor import read_byte, read_bytes2, read_voltage, read_current, read_power, read_power_k, read_power_k2
+from goodwe.sensor import *
 
 
 class TestUtils(TestCase):
@@ -27,19 +26,23 @@ class TestUtils(TestCase):
         data = bytes.fromhex("0cfe")
         buffer = io.BytesIO(data)
         self.assertEqual(read_voltage(buffer), 332.6)
+        self.assertEqual("0cfe", encode_voltage(332.6).hex())
 
         data = bytes.fromhex("1f64")
         buffer = io.BytesIO(data)
         self.assertEqual(read_voltage(buffer), 803.6)
+        self.assertEqual("1f64", encode_voltage(803.6).hex())
 
     def test_read_current(self):
         data = bytes.fromhex("0031")
         buffer = io.BytesIO(data)
         self.assertEqual(read_current(buffer), 4.9)
+        self.assertEqual("0031", encode_current(4.9).hex())
 
         data = bytes.fromhex("ff9e")
         buffer = io.BytesIO(data)
         self.assertEqual(read_current(buffer), -9.8)
+        self.assertEqual("ff9e", encode_current(-9.8).hex())
 
     def test_read_power(self):
         data = bytes.fromhex("0000069f")
