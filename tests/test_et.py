@@ -41,6 +41,7 @@ class EtProtocolTest(TestCase):
     def test_GW10K_ET_runtime_data(self):
         testee = GW10K_ET("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(110, len(data))
 
         # for sensor in ET.sensors():
         #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")

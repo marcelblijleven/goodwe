@@ -48,6 +48,7 @@ class DtProtocolTest(TestCase):
     def test_GW6000_DT_runtime_data(self):
         testee = GW6000_DT("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(76, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-31 12:03:02', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 320.8, 'V', data)
@@ -129,6 +130,7 @@ class DtProtocolTest(TestCase):
     def test_GW8K_DT_runtime_data(self):
         testee = GW8K_DT("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(76, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-24 16:43:27', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 275.5, 'V', data)

@@ -51,6 +51,7 @@ class EhProtocolTest(TestCase):
     def test_GW6000_EH_runtime_data(self):
         testee = GW6000_EH("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(64, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
         self.assertSensor('ipv1', 2.6, 'A', data)

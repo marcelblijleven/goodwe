@@ -65,6 +65,7 @@ class EsProtocolTest(TestCase):
     def test_GW5048_EM_runtime_data(self):
         testee = GW5048_EM("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 130.8, 'V', data)
         self.assertSensor('ipv1', 0.3, 'A', data)
@@ -127,6 +128,7 @@ class EsProtocolTest(TestCase):
     def test_GW5048_EM_no_batt_runtime_data(self):
         testee = GW5048_EM_No_Batt("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 334.3, 'V', data)
         self.assertSensor('ipv1', 0.4, 'A', data)
@@ -189,6 +191,7 @@ class EsProtocolTest(TestCase):
     def test_GW5048D_ES_runtime_data(self):
         testee = GW5048D_ES("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 0.0, 'V', data)
         self.assertSensor('ipv1', 0.1, 'A', data)
@@ -251,6 +254,7 @@ class EsProtocolTest(TestCase):
     def test_GW5000S_BP_runtime_data(self):
         testee = GW5000S_BP("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 0.0, 'V', data)
         self.assertSensor('ipv1', 0.0, 'A', data)
