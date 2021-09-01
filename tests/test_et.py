@@ -13,13 +13,13 @@ class GW10K_ET(ET):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == ET._READ_RUNNING_DATA:
+        if command == self._READ_RUNNING_DATA:
             with open(root_dir + '/sample/et/GW10K-ET_running_data1.hex', 'r') as f:
                 return bytes.fromhex(f.read())
-        elif command == ET._READ_METER_DATA:
+        elif command == self._READ_METER_DATA:
             with open(root_dir + '/sample/et/GW10K-ET_running_data2.hex', 'r') as f:
                 return bytes.fromhex(f.read())
-        elif command == ET._READ_BATTERY_INFO:
+        elif command == self._READ_BATTERY_INFO:
             with open(root_dir + '/sample/et/GW10K-ET_battery_info.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:

@@ -20,9 +20,9 @@ class GW6000_EH(EH):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == EH._READ_DEVICE_RUNNING_DATA1:
+        if command == self._READ_DEVICE_RUNNING_DATA1:
             return self.mock_response(command, 'GW6000_EH_running_data1.hex')
-        elif command == EH._READ_DEVICE_VERSION_INFO:
+        elif command == self._READ_DEVICE_VERSION_INFO:
             return self.mock_response(command, 'GW6000_EH_device_info.hex')
         else:
             raise ValueError

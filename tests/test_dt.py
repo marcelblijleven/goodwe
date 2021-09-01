@@ -13,7 +13,7 @@ class GW6000_DT(DT):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == DT._READ_DEVICE_RUNNING_DATA:
+        if command == self._READ_DEVICE_RUNNING_DATA:
             with open(root_dir + '/sample/dt/GW6000-DT_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:
@@ -24,10 +24,10 @@ class GW8K_DT(DT):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == DT._READ_DEVICE_RUNNING_DATA:
+        if command == self._READ_DEVICE_RUNNING_DATA:
             with open(root_dir + '/sample/dt/GW8K-DT_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
-        elif command == DT._READ_DEVICE_VERSION_INFO:
+        elif command == self._READ_DEVICE_VERSION_INFO:
             with open(root_dir + '/sample/dt/GW8K-DT_device_info.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:

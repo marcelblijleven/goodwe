@@ -12,7 +12,7 @@ class GW5048_EM(ES):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == ES._READ_DEVICE_RUNNING_DATA:
+        if command == self._READ_DEVICE_RUNNING_DATA:
             with open(root_dir + '/sample/es/GW5048-EM_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:
@@ -23,7 +23,7 @@ class GW5048_EM_No_Batt(ES):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == ES._READ_DEVICE_RUNNING_DATA:
+        if command == self._READ_DEVICE_RUNNING_DATA:
             with open(root_dir + '/sample/es/GW5048-EM-no-bat_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:
@@ -34,7 +34,7 @@ class GW5048D_ES(ES):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == ES._READ_DEVICE_RUNNING_DATA:
+        if command == self._READ_DEVICE_RUNNING_DATA:
             with open(root_dir + '/sample/es/GW5048D-ES_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:
@@ -45,7 +45,7 @@ class GW5000S_BP(ES):
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == ES._READ_DEVICE_RUNNING_DATA:
+        if command == self._READ_DEVICE_RUNNING_DATA:
             with open(root_dir + '/sample/es/GW5000S-BP_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:
