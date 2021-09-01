@@ -5,60 +5,78 @@ from goodwe.sensor import *
 
 class TestUtils(TestCase):
 
-    def test_read_byte(self):
-        data = bytes()
-        data += (21).to_bytes(1, 'big')
-        data += (5).to_bytes(1, 'big')
-        buffer = io.BytesIO(data)
+    def test_byte(self):
+        testee = Byte("", 0, "", None)
 
-        self.assertEqual(read_byte(buffer, 0), 21)
-        self.assertEqual(read_byte(buffer, 1), 5)
+        data = io.BytesIO(bytes.fromhex("0c"))
+        self.assertEqual(12, testee.read(data))
+        self.assertEqual("0c", testee.encode_value(12).hex())
 
-    def test_read_bytes2(self):
-        data = bytes()
-        data += (21).to_bytes(1, 'big')
-        data += (1337).to_bytes(2, 'big')
-        buffer = io.BytesIO(data)
+        data = io.BytesIO(bytes.fromhex("f0"))
+        self.assertEqual(-16, testee.read(data))
+        self.assertEqual("f0", testee.encode_value(-16).hex())
 
-        self.assertEqual(read_bytes2(buffer, 1), 1337)
+    def test_integer(self):
+        testee = Integer("", 0, "", None)
 
-    def test_read_voltage(self):
-        data = bytes.fromhex("0cfe")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_voltage(buffer), 332.6)
-        self.assertEqual("0cfe", encode_voltage(332.6).hex())
+        data = io.BytesIO(bytes.fromhex("0031"))
+        self.assertEqual(49, testee.read(data))
+        self.assertEqual("0031", testee.encode_value(49).hex())
 
-        data = bytes.fromhex("1f64")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_voltage(buffer), 803.6)
-        self.assertEqual("1f64", encode_voltage(803.6).hex())
+        data = io.BytesIO(bytes.fromhex("ff9e"))
+        self.assertEqual(-98, testee.read(data))
+        self.assertEqual("ff9e", testee.encode_value(-98).hex())
 
-    def test_read_current(self):
-        data = bytes.fromhex("0031")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_current(buffer), 4.9)
-        self.assertEqual("0031", encode_current(4.9).hex())
+    def test_decimal(self):
+        testee = Decimal("", 0, 10, "", None)
 
-        data = bytes.fromhex("ff9e")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_current(buffer), -9.8)
-        self.assertEqual("ff9e", encode_current(-9.8).hex())
+        data = io.BytesIO(bytes.fromhex("0031"))
+        self.assertEqual(4.9, testee.read(data))
+        self.assertEqual("0031", testee.encode_value(4.9).hex())
 
-    def test_read_power(self):
-        data = bytes.fromhex("0000069f")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_power(buffer), 1695)
+        data = io.BytesIO(bytes.fromhex("ff9e"))
+        self.assertEqual(-9.8, testee.read(data))
+        self.assertEqual("ff9e", testee.encode_value(-9.8).hex())
 
-        data = bytes.fromhex("fffffffd")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_power(buffer), -3)
+    def test_voltage(self):
+        testee = Voltage("", 0, "", None)
 
-    def test_read_power_k2(self):
-        data = bytes.fromhex("0972")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_power_k2(buffer), 241.8)
+        data = io.BytesIO(bytes.fromhex("0cfe"))
+        self.assertEqual(332.6, testee.read(data))
+        self.assertEqual("0cfe", testee.encode_value(332.6).hex())
 
-    def test_read_power_k(self):
-        data = bytes.fromhex("00020972")
-        buffer = io.BytesIO(data)
-        self.assertEqual(read_power_k(buffer), 13349.0)
+        data = io.BytesIO(bytes.fromhex("1f64"))
+        self.assertEqual(803.6, testee.read(data))
+        self.assertEqual("1f64", testee.encode_value(803.6).hex())
+
+    def test_current(self):
+        testee = Current("", 0, "", None)
+
+        data = io.BytesIO(bytes.fromhex("0031"))
+        self.assertEqual(4.9, testee.read(data))
+        self.assertEqual("0031", testee.encode_value(4.9).hex())
+
+        data = io.BytesIO(bytes.fromhex("ff9e"))
+        self.assertEqual(-9.8, testee.read(data))
+        self.assertEqual("ff9e", testee.encode_value(-9.8).hex())
+
+    def test_power4(self):
+        testee = Power4("", 0, "", None)
+
+        data = io.BytesIO(bytes.fromhex("0000069f"))
+        self.assertEqual(1695, testee.read(data))
+
+        data = io.BytesIO(bytes.fromhex("fffffffd"))
+        self.assertEqual(-3, testee.read(data))
+
+    def test_power_k(self):
+        testee = PowerK("", 0, "", None)
+
+        data = io.BytesIO(bytes.fromhex("0972"))
+        self.assertEqual(241.8, testee.read(data))
+
+    def test_power_k4(self):
+        testee = PowerK4("", 0, "", None)
+
+        data = io.BytesIO(bytes.fromhex("00020972"))
+        self.assertEqual(13349.0, testee.read(data))
