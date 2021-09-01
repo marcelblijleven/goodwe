@@ -41,7 +41,7 @@ class EtProtocolTest(TestCase):
     def test_GW10K_ET_runtime_data(self):
         testee = GW10K_ET("localhost", 8899)
         data = self.loop.run_until_complete(testee.read_runtime_data(True))
-        self.assertEqual(110, len(data))
+        self.assertEqual(125, len(data))
 
         # for sensor in ET.sensors():
         #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")
@@ -136,10 +136,25 @@ class EtProtocolTest(TestCase):
         self.assertSensor('battery_temperature', 37.0, 'C', data)
         self.assertSensor('battery_charge_limit', 10, 'A', data)
         self.assertSensor('battery_discharge_limit', 25, 'A', data)
+        self.assertSensor("battery_error_l", 0, "", data),
         self.assertSensor('battery_soc', 91, '%', data)
         self.assertSensor('battery_soh', 99, '%', data)
-        self.assertSensor('battery_warning', 0, '', data)
-        self.assertSensor('xxx0', 1, '', data)
+        self.assertSensor("battery_modules", 5, "", data)
+        self.assertSensor("battery_warning_l", 0, "", data)
+        self.assertSensor("battery_protocol", 0, "", data)
+        self.assertSensor("battery_error_h", 0, "", data)
+        self.assertSensor("battery_warning_h", 0, "", data)
+        self.assertSensor("battery_sw_version", 0, "", data)
+        self.assertSensor("battery_hw_version", 0, "", data)
+        self.assertSensor("battery_max_cell_temp_id", 0, "", data)
+        self.assertSensor("battery_min_cell_temp_id", 0, "", data)
+        self.assertSensor("battery_max_cell_voltage_id", 0, "", data)
+        self.assertSensor("battery_min_cell_voltage_id", 0, "", data)
+        self.assertSensor("battery_max_cell_temp", 0, "C", data)
+        self.assertSensor("battery_min_cell_temp", 0, "C", data)
+        self.assertSensor("battery_max_cell_voltage", 0, "V", data)
+        self.assertSensor("battery_min_cell_voltage", 0, "V", data)
+        self.assertSensor('commode', 1, '', data)
         self.assertSensor('rssi', 37, '', data)
         self.assertSensor('manufacture_code', 10, '', data)
         self.assertSensor('meter_test_status', 0, '', data)
@@ -154,8 +169,8 @@ class EtProtocolTest(TestCase):
         self.assertSensor('meter_power_factor3', -0.61, '', data)
         self.assertSensor('meter_power_factor', -0.04, '', data)
         self.assertSensor('meter_freq', 49.98, 'Hz', data)
-        self.assertSensor('xxx30', 17953, '', data)
-        self.assertSensor('xxx32', 26304, '', data)
+        self.assertSensor('meter_e_total_exp', 1795.3, 'kWh', data)
+        self.assertSensor('meter_e_total_imp', 2630.4, 'kWh', data)
 
     def test_GW10K_ET_read_setting(self):
         testee = GW10K_ET("localhost", 8899)
