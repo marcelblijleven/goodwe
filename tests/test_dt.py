@@ -34,20 +34,23 @@ class GW8K_DT(DT):
             raise ValueError
 
 
-class DtProtocolTest(TestCase):
+class GW6000_DT_Test(TestCase, GW6000_DT):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW6000_DT.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id_: s.unit for s in DT.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensors.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW6000_DT_runtime_data(self):
-        testee = GW6000_DT("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(76, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-31 12:03:02', '%Y-%m-%d %H:%M:%S'), '', data)
@@ -127,9 +130,23 @@ class DtProtocolTest(TestCase):
         self.assertSensor('xx142', 0, '', data)
         self.assertSensor('xx144', 100, '', data)
 
+class GW8K_DT_Test(TestCase, GW8K_DT):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW8K_DT.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+
     def test_GW8K_DT_runtime_data(self):
-        testee = GW8K_DT("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(76, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-24 16:43:27', '%Y-%m-%d %H:%M:%S'), '', data)

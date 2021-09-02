@@ -52,20 +52,23 @@ class GW5000S_BP(ES):
         else:
             raise ValueError
 
-class EsProtocolTest(TestCase):
+class GW5048_EM_Test(TestCase, GW5048_EM):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW5048_EM.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id_: s.unit for s in ES.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensors.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW5048_EM_runtime_data(self):
-        testee = GW5048_EM("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(67, len(data))
 
         self.assertSensor('vpv1', 130.8, 'V', data)
@@ -136,9 +139,23 @@ class EsProtocolTest(TestCase):
 
         self.assertSensor('house_consumption', 1118, 'W', data)
 
+class GW5048_EM_No_Batt_Test(TestCase, GW5048_EM_No_Batt):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW5048_EM_No_Batt.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+
     def test_GW5048_EM_no_batt_runtime_data(self):
-        testee = GW5048_EM_No_Batt("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(67, len(data))
 
         self.assertSensor('vpv1', 334.3, 'V', data)
@@ -200,9 +217,23 @@ class EsProtocolTest(TestCase):
         self.assertSensor('diagnose_result', 18501, '', data)
         self.assertSensor('house_consumption', 234, 'W', data)
 
+class GW5048D_ES_Test(TestCase, GW5048D_ES):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW5048D_ES.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+
     def test_GW5048D_ES_runtime_data(self):
-        testee = GW5048D_ES("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(67, len(data))
 
         self.assertSensor('vpv1', 0.0, 'V', data)
@@ -264,9 +295,23 @@ class EsProtocolTest(TestCase):
         self.assertSensor('diagnose_result', 117440576, '', data)
         self.assertSensor('house_consumption', 467, 'W', data)
 
+class GW5000S_BP_Test(TestCase, GW5000S_BP):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW5000S_BP.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+
     def test_GW5000S_BP_runtime_data(self):
-        testee = GW5000S_BP("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(67, len(data))
 
         self.assertSensor('vpv1', 374.9, 'V', data)

@@ -28,29 +28,30 @@ class GW6000_EH(EH):
             raise ValueError
 
 
-class EhProtocolTest(TestCase):
+class GW6000_EH_Test(TestCase, GW6000_EH):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW6000_EH.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id_: s.unit for s in EH.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensors.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW6000_EH_device_info(self):
-        testee = GW6000_EH("localhost", 8899)
-        self.loop.run_until_complete(testee.read_device_info())
-        print(testee)
-        self.assertEqual('GW6000-EH', testee.model_name)
-        self.assertEqual('00000EHU00000000', testee.serial_number)
-        self.assertEqual(6000, testee.rated_power)
-        self.assertEqual('02041-16-S00', testee.arm_version)
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW6000-EH', self.model_name)
+        self.assertEqual('00000EHU00000000', self.serial_number)
+        self.assertEqual(6000, self.rated_power)
+        self.assertEqual('02041-16-S00', self.arm_version)
 
     def test_GW6000_EH_runtime_data(self):
-        testee = GW6000_EH("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(64, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)

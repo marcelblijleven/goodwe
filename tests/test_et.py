@@ -27,20 +27,23 @@ class GW10K_ET(ET):
             return bytes.fromhex("010203040506070809")
 
 
-class EtProtocolTest(TestCase):
+class GW10K_ET_Test(TestCase, GW10K_ET):
+
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        GW10K_ET.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-        cls.sensors = {s.id_: s.unit for s in ET.sensors()}
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensors.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW10K_ET_runtime_data(self):
-        testee = GW10K_ET("localhost", 8899)
-        data = self.loop.run_until_complete(testee.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(139, len(data))
 
         # for sensor in ET.sensors():
@@ -173,29 +176,24 @@ class EtProtocolTest(TestCase):
         self.assertSensor('meter_e_total_imp', 3254462.25, 'kWh', data)
 
     def test_GW10K_ET_read_setting(self):
-        testee = GW10K_ET("localhost", 8899)
-        self.loop.run_until_complete(testee.read_settings('work_mode'))
-        self.assertEqual('f703b798000136c7', testee.request.hex())
+        self.loop.run_until_complete(self.read_settings('work_mode'))
+        self.assertEqual('f703b798000136c7', self.request.hex())
 
-        self.loop.run_until_complete(testee.read_settings('grid_export_limit'))
-        self.assertEqual('f703b996000155ec', testee.request.hex())
+        self.loop.run_until_complete(self.read_settings('grid_export_limit'))
+        self.assertEqual('f703b996000155ec', self.request.hex())
 
     def test_GW10K_ET_write_setting(self):
-        testee = GW10K_ET("localhost", 8899)
-        self.loop.run_until_complete(testee.write_settings('grid_export_limit', 100))
-        self.assertEqual('f706b996006459c7', testee.request.hex())
+        self.loop.run_until_complete(self.write_settings('grid_export_limit', 100))
+        self.assertEqual('f706b996006459c7', self.request.hex())
 
     def test_set_grid_export_limit(self):
-        testee = GW10K_ET("localhost", 8899)
-        self.loop.run_until_complete(testee.set_grid_export_limit(100))
-        self.assertEqual('f706b996006459c7', testee.request.hex())
+        self.loop.run_until_complete(self.set_grid_export_limit(100))
+        self.assertEqual('f706b996006459c7', self.request.hex())
 
     def test_set_work_mode(self):
-        testee = GW10K_ET("localhost", 8899)
-        self.loop.run_until_complete(testee.set_work_mode(1))
-        self.assertEqual('f706b7980001fac7', testee.request.hex())
+        self.loop.run_until_complete(self.set_work_mode(1))
+        self.assertEqual('f706b7980001fac7', self.request.hex())
 
     def test_set_ongrid_battery_dod(self):
-        testee = GW10K_ET("localhost", 8899)
-        self.loop.run_until_complete(testee.set_ongrid_battery_dod(80))
-        self.assertEqual('f706b12c00147ba6', testee.request.hex())
+        self.loop.run_until_complete(self.set_ongrid_battery_dod(80))
+        self.assertEqual('f706b12c00147ba6', self.request.hex())

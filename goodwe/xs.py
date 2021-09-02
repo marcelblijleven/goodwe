@@ -10,9 +10,12 @@ logger = logging.getLogger(__name__)
 
 class GoodWeXSProcessor(AbstractDataProcessor):
 
+    def __init__(self):
+        self.dummy_inverter = DT("localhost", 8899)
+
     def process_data(self, data: bytes) -> ProcessorResult:
         """Process the data provided by the GoodWe XS inverter and return ProcessorResult"""
-        sensors = DT._map_response(data[5:-2], DT.sensors())
+        sensors = self.dummy_inverter._map_response(data[5:-2], self.dummy_inverter.sensors())
 
         return ProcessorResult(
             date=sensors['timestamp'],
@@ -37,4 +40,4 @@ class GoodWeXSProcessor(AbstractDataProcessor):
 
     def get_runtime_data_command(self) -> ProtocolCommand:
         """Answer protocol command for reading runtime data"""
-        return DT._READ_DEVICE_RUNNING_DATA
+        return self.dummy_inverter._READ_DEVICE_RUNNING_DATA
