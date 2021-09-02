@@ -38,7 +38,8 @@ class GW5048D_ES(ES):
             with open(root_dir + '/sample/es/GW5048D-ES_running_data.hex', 'r') as f:
                 return bytes.fromhex(f.read())
         else:
-            raise ValueError
+            self.request = command.request
+            return bytes.fromhex("010203040506070809")
 
 
 class GW5000S_BP(ES):
@@ -314,3 +315,17 @@ class EsProtocolTest(TestCase):
         self.assertSensor('diagnose_result', 0, '', data)
         self.assertSensor('house_consumption', 0, 'W', data)
 
+    def test_set_grid_export_limit(self):
+        testee = GW5048D_ES("localhost", 8899)
+        self.loop.run_until_complete(testee.set_grid_export_limit(100))
+        self.assertEqual('aa55c07f033502006402dc', testee.request.hex())
+
+    def test_set_work_mode(self):
+        testee = GW5048D_ES("localhost", 8899)
+        self.loop.run_until_complete(testee.set_work_mode(1))
+        self.assertEqual('aa55c07f03590101029c', testee.request.hex())
+
+    def test_set_ongrid_battery_dod(self):
+        testee = GW5048D_ES("localhost", 8899)
+        self.loop.run_until_complete(testee.set_ongrid_battery_dod(80))
+        self.assertEqual('aa55c07f023905056001001402f8', testee.request.hex())
