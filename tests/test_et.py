@@ -172,8 +172,8 @@ class GW10K_ET_Test(TestCase, GW10K_ET):
         self.assertSensor('meter_power_factor3', -0.14, '', data)
         self.assertSensor('meter_power_factor', -0.8, '', data)
         self.assertSensor('meter_freq', 50.05, 'Hz', data)
-        self.assertSensor('meter_e_total_exp', 10514.375, 'kWh', data)
-        self.assertSensor('meter_e_total_imp', 3254462.25, 'kWh', data)
+        self.assertSensor('meter_e_total_exp', 10.514375, 'kWh', data)
+        self.assertSensor('meter_e_total_imp', 3254.46225, 'kWh', data)
 
     def test_GW10K_ET_read_setting(self):
         self.loop.run_until_complete(self.read_settings('work_mode'))
