@@ -215,6 +215,14 @@ class GW5048_EM_No_Batt_Test(TestCase, GW5048_EM_No_Batt):
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', -35, '', data)
         self.assertSensor('diagnose_result', 18501, '', data)
+        self.assertSensor('e_total_exp', 512.9, 'kWh', data)
+        self.assertSensor('e_total_imp', 33653889.9, 'kWh', data)
+        self.assertSensor('vgrid_uo', 0, 'V', data)
+        self.assertSensor('igrid_uo', 0, 'A', data)
+        self.assertSensor('vgrid_wo', 0, 'V', data)
+        self.assertSensor('igrid_wo', 0, 'A', data)
+        self.assertSensor('e_bat_charge_total', 0, 'kWh', data)
+        self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 234, 'W', data)
 
 class GW5048D_ES_Test(TestCase, GW5048D_ES):
@@ -293,6 +301,14 @@ class GW5048D_ES_Test(TestCase, GW5048D_ES):
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', 5, '', data)
         self.assertSensor('diagnose_result', 117440576, '', data)
+        self.assertSensor('e_total_exp', 0, 'kWh', data)
+        self.assertSensor('e_total_imp', 0, 'kWh', data)
+        self.assertSensor('vgrid_uo', 0, 'V', data)
+        self.assertSensor('igrid_uo', 0, 'A', data)
+        self.assertSensor('vgrid_wo', 0, 'V', data)
+        self.assertSensor('igrid_wo', 0, 'A', data)
+        self.assertSensor('e_bat_charge_total', 0, 'kWh', data)
+        self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 467, 'W', data)
 
 class GW5000S_BP_Test(TestCase, GW5000S_BP):
@@ -371,6 +387,14 @@ class GW5000S_BP_Test(TestCase, GW5000S_BP):
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', 211, '', data)
         self.assertSensor('diagnose_result', 524320, '', data)
+        self.assertSensor('e_total_exp', 538.4, 'kWh', data)
+        self.assertSensor('e_total_imp', 48713267.2, 'kWh', data)
+        self.assertSensor('vgrid_uo', 0, 'V', data)
+        self.assertSensor('igrid_uo', 0, 'A', data)
+        self.assertSensor('vgrid_wo', 0, 'V', data)
+        self.assertSensor('igrid_wo', 0, 'A', data)
+        self.assertSensor('e_bat_charge_total', 0, 'kWh', data)
+        self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 143, 'W', data)
 
     def test_set_grid_export_limit(self):
