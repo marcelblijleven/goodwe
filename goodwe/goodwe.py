@@ -3,7 +3,6 @@ import logging
 from typing import Tuple
 
 from .dt import DT
-from .eh import EH
 from .es import ES
 from .et import ET
 from .exceptions import InverterError, ProcessingException
@@ -15,8 +14,7 @@ from .xs import GoodWeXSProcessor
 logger = logging.getLogger(__name__)
 
 # registry of supported inverter protocols
-# TODO: it breaks when EH is not first with EH inverter during discovery
-_SUPPORTED_PROTOCOLS = [EH, ET, DT, ES]
+_SUPPORTED_PROTOCOLS = [ET, DT, ES]
 
 
 class GoodWeInverter:
@@ -47,10 +45,8 @@ async def connect(host: str, port: int = 8899, family: str = None, comm_addr: in
 
     Raise InverterError if unable to contact or recognise supported inverter.
     """
-    if "ET" == family:
+    if "ET" == family or "EH" == family or "BT" == family or "BH" == family:
         inverter = ET(host, port, comm_addr, timeout, retries)
-    elif "EH" == family:
-        inverter = EH(host, port, comm_addr, timeout, retries)
     elif "ES" == family or "EM" == family or "BP" == family:
         inverter = ES(host, port, comm_addr, timeout, retries)
     elif "DT" == family or "NS" == family or "XS" == family:
@@ -107,19 +103,14 @@ async def discover(host: str, port: int = 8899, timeout: int = 2, retries: int =
         response = await Aa55ProtocolCommand("010200", "0182").execute(host, port, timeout, retries)
         model_name = response[12:22].decode("ascii").rstrip()
         serial_number = response[38:54].decode("ascii")
-        if "ETU" in serial_number:
-            logger.debug(f"Detected ET inverter {model_name}, S/N:{serial_number}")
+        if "ETU" in serial_number or "EHU" in serial_number or "BTU" in serial_number or "BHU" in serial_number:
+            logger.debug(f"Detected ET/EH/BT/BH inverter {model_name}, S/N:{serial_number}")
             i = ET(host, port, None, timeout, retries)
             await i.read_device_info()
             return i
         elif "ESU" in serial_number or "EMU" in serial_number or "BPU" in serial_number or "BPS" in serial_number:
             logger.debug(f"Detected ES/EM/BP inverter {model_name}, S/N:{serial_number}")
             i = ES(host, port, None, timeout, retries)
-            await i.read_device_info()
-            return i
-        elif "EHU" in serial_number:
-            logger.debug(f"Detected EH inverter {model_name}, S/N:{serial_number}")
-            i = EH(host, port, None, timeout, retries)
             await i.read_device_info()
             return i
     except InverterError as ex:
