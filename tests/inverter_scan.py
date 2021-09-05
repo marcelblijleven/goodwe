@@ -4,7 +4,8 @@ import binascii
 import logging
 import sys
 
-from goodwe.goodwe import search_inverters, discover, InverterError
+import goodwe
+from goodwe.exceptions import InverterError
 from goodwe.protocol import ProtocolCommand
 
 logging.basicConfig(
@@ -42,7 +43,7 @@ def omnik_command(logger_sn):
     return frame_bytes.hex()
 
 
-result = asyncio.run(search_inverters()).decode("utf-8").split(",")
+result = asyncio.run(goodwe.search_inverters()).decode("utf-8").split(",")
 print(f"Located inverter at IP: {result[0]}, mac: {result[1]}, name: {result[2]}")
 
 # EM/ES
@@ -59,7 +60,7 @@ sn = "".join(reversed([sn[i:i + 2] for i in range(0, len(sn), 2)]))
 try_command(omnik_command(sn), result[0])
 
 print(f"Identifying inverter at IP: {result[0]}")
-inverter = asyncio.run(discover(result[0], 8899))
+inverter = asyncio.run(goodwe.discover(result[0], 8899))
 print(
     f"Identified inverter model: {inverter.model_name}, serialNr: {inverter.serial_number}"
 )

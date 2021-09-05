@@ -3,8 +3,7 @@ import asyncio
 import logging
 import sys
 
-import goodwe as inverter
-import goodwe.protocol
+import goodwe
 
 logging.basicConfig(
     format="%(asctime)-15s %(funcName)s(%(lineno)d) - %(levelname)s: %(message)s",
@@ -20,7 +19,7 @@ COMM_ADDR = None  # Usually 0xf7 for ET/EH or 0x7f for DT/D-NS/XS, or None for d
 TIMEOUT = 1
 RETRIES = 3
 
-inverter = asyncio.run(inverter.connect(IP_ADDRESS, PORT, FAMILY, COMM_ADDR, TIMEOUT, RETRIES))
+inverter = asyncio.run(goodwe.connect(IP_ADDRESS, PORT, FAMILY, COMM_ADDR, TIMEOUT, RETRIES))
 print(f"Identified inverter\n"
       f"- Model: {inverter.model_name}\n"
       f"- SerialNr: {inverter.serial_number}\n"

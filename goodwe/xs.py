@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class GoodWeXSProcessor(AbstractDataProcessor):
 
     def __init__(self):
-        self.dummy_inverter = DT("localhost", 8899)
+        self.dummy_inverter = DT("localhost")
 
     def process_data(self, data: bytes) -> ProcessorResult:
         """Process the data provided by the GoodWe XS inverter and return ProcessorResult"""
