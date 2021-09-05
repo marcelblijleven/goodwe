@@ -174,7 +174,7 @@ class Float(Sensor):
         self.scale = scale
 
     def read_value(self, data: io.BytesIO):
-        return read_float4(data) / self.scale
+        return round(read_float4(data) / self.scale, 3)
 
 
 class Timestamp(Sensor):
