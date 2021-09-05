@@ -20,6 +20,7 @@ DT_FAMILY = ["DT", "NS", "XS"]
 # Serial number tags to identify inverter type
 ET_MODEL_TAGS = ["ETU", "EHU", "BTU", "BHU"]
 ES_MODEL_TAGS = ["ESU", "EMU", "BPU", "BPS"]
+DT_MODEL_TAGS = ["DTU", "DTN", "DSN"]
 
 # supported inverter protocols
 _SUPPORTED_PROTOCOLS = [ET, DT, ES]
@@ -110,6 +111,10 @@ async def discover(host: str, port: int = 8899, timeout: int = 1, retries: int =
             if model_tag in serial_number:
                 logger.debug(f"Detected ES/EM/BP inverter {model_name}, S/N:{serial_number}")
                 inverter_class = ES
+        for model_tag in DT_MODEL_TAGS:
+            if model_tag in serial_number:
+                logger.debug(f"Detected DT/D-NS/XS inverter {model_name}, S/N:{serial_number}")
+                inverter_class = DT
         if inverter_class:
             i = inverter_class(host, port, 0, timeout, retries)
             await i.read_device_info()
