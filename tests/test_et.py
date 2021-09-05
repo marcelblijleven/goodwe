@@ -52,7 +52,7 @@ class GW10K_ET_Test(EtMock):
 
     def test_GW10K_ET_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(142, len(data))
+        self.assertEqual(145, len(data))
 
         # for sensor in ET.sensors():
         #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")
@@ -129,6 +129,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('work_mode_label', 'Normal (On-Grid)', '', data)
         self.assertSensor('operation_mode', 0, '', data)
         self.assertSensor('error_codes', 0, '', data)
+        self.assertSensor('errors', '', '', data)
         self.assertSensor("e_total", 6085.3, 'kWh', data)
         self.assertSensor("e_day", 12.5, 'kWh', data)
         self.assertSensor("e_total_exp", 4718.6, 'kWh', data)
@@ -157,7 +158,9 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor("battery_warning_l", 0, "", data)
         self.assertSensor("battery_protocol", 0, "", data)
         self.assertSensor("battery_error_h", 0, "", data)
+        self.assertSensor("battery_error", "", "", data)
         self.assertSensor("battery_warning_h", 0, "", data)
+        self.assertSensor("battery_warning", "", "", data)
         self.assertSensor("battery_sw_version", 0, "", data)
         self.assertSensor("battery_hw_version", 0, "", data)
         self.assertSensor("battery_max_cell_temp_id", 0, "", data)
@@ -227,7 +230,7 @@ class GW6000_EH_Test(EtMock):
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(98, len(data))
+        self.assertEqual(99, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
         self.assertSensor('ipv1', 2.6, 'A', data)
@@ -280,6 +283,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('work_mode_label', 'Normal (On-Grid)', '', data)
         self.assertSensor('operation_mode', -1, '', data)
         self.assertSensor('error_codes', 0, '', data)
+        self.assertSensor('errors', '', '', data)
         self.assertSensor("e_total", 59.4, 'kWh', data)
         self.assertSensor("e_day", 22.0, 'kWh', data)
         self.assertSensor("e_total_exp", 58.6, 'kWh', data)

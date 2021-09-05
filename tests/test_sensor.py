@@ -80,3 +80,9 @@ class TestUtils(TestCase):
 
         data = io.BytesIO(bytes.fromhex("00020972"))
         self.assertEqual(13349.0, testee.read(data))
+
+    def test_decode_bitmap(self):
+        self.assertEqual('', decode_bitmap(0, ERROR_CODES))
+        self.assertEqual('Utility Loss', decode_bitmap(512, ERROR_CODES))
+        self.assertEqual(', Utility Loss', decode_bitmap(516, ERROR_CODES))
+        self.assertEqual('Utility Loss, Vac Failure', decode_bitmap(131584, ERROR_CODES))
