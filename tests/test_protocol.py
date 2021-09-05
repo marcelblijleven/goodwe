@@ -9,8 +9,7 @@ class TestUDPClientProtocol(TestCase):
     def setUp(self) -> None:
         self.future = mock.Mock()
         #        self.processor = mock.Mock()
-        self.protocol = UdpInverterProtocol(request=bytes.fromhex('636f666665650d0a'), validator=lambda x: True,
-                                          on_response_received=self.future)
+        self.protocol = UdpInverterProtocol(bytes.fromhex('636f666665650d0a'), lambda x: True, self.future, 1, 3)
 
     def test_datagram_received(self):
         data = b'this is mock data'
@@ -44,7 +43,7 @@ class TestUDPClientProtocol(TestCase):
 
         transport.sendto.assert_called_with(self.protocol.request)
         mock_get_event_loop.assert_called()
-        mock_loop.call_later.assert_called_with(2, mock_retry_mechanism)
+        mock_loop.call_later.assert_called_with(1, mock_retry_mechanism)
 
     def test_connection_lost(self):
         self.future.done.return_value = True

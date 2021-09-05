@@ -12,7 +12,7 @@ class DtMock(TestCase, DT):
 
     def __init__(self, methodName='runTest'):
         TestCase.__init__(self, methodName)
-        DT.__init__(self, "localhost", 8899)
+        DT.__init__(self, "localhost")
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
         self._mock_responses = {}
 
