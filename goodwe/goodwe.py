@@ -32,7 +32,7 @@ class GoodWeInverter:
             raise ProcessingException
 
 
-async def connect(host: str, port: int = 8899, family: str = None, comm_addr: int = None, timeout: int = 2,
+async def connect(host: str, port: int = 8899, family: str = None, comm_addr: int = None, timeout: int = 1,
                   retries: int = 3) -> Inverter:
     """Contact the inverter at the specified host/port and answer appropriate Inverter instance.
     To improve performance, it is recommended to provide the inverter family name,
@@ -90,7 +90,7 @@ async def search_inverters() -> bytes:
         transport.close()
 
 
-async def discover(host: str, port: int = 8899, timeout: int = 2, retries: int = 3) -> Inverter:
+async def discover(host: str, port: int = 8899, timeout: int = 1, retries: int = 3) -> Inverter:
     """Contact the inverter at the specified value and answer appropriate Inverter instance
 
     Raise InverterError if unable to contact or recognise supported inverter

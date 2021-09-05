@@ -17,7 +17,7 @@ IP_ADDRESS = "192.168.1.14"
 PORT = 8899
 FAMILY = "ET"  # One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
 COMM_ADDR = None  # Usually 0xf7 for ET/EH or 0x7f for DT/D-NS/XS, or None for default value
-TIMEOUT = 2
+TIMEOUT = 1
 RETRIES = 3
 
 inverter = asyncio.run(inverter.connect(IP_ADDRESS, PORT, FAMILY, COMM_ADDR, TIMEOUT, RETRIES))
