@@ -36,16 +36,16 @@ class EsMock(TestCase, ES):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
 
 class GW5048_EM_Test(EsMock):
 
     def __init__(self, methodName='runTest'):
         EsMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-EM_running_data.hex')
-
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
 
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -126,10 +126,6 @@ class GW5048_EM_No_Batt_Test(EsMock):
         EsMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-EM-no-bat_running_data.hex')
 
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
-
     def test_GW5048_EM_no_batt_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(67, len(data))
@@ -208,10 +204,6 @@ class GW5048D_ES_Test(EsMock):
         EsMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048D-ES_running_data.hex')
 
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
-
     def test_GW5048D_ES_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(67, len(data))
@@ -289,10 +281,6 @@ class GW5000S_BP_Test(EsMock):
     def __init__(self, methodName='runTest'):
         EsMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5000S-BP_running_data.hex')
-
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
 
     def test_GW5000S_BP_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))

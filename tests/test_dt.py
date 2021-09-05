@@ -37,19 +37,9 @@ class DtMock(TestCase, DT):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
-
-class GW8K_DT(DT):
-
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        """Mock UDP communication"""
-        if command == self._READ_DEVICE_RUNNING_DATA:
-            with open(root_dir + '/sample/dt/GW8K-DT_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        elif command == self._READ_DEVICE_VERSION_INFO:
-            with open(root_dir + '/sample/dt/GW8K-DT_device_info.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        else:
-            raise ValueError
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
 
 
 class GW6000_DT_Test(DtMock):
@@ -57,10 +47,6 @@ class GW6000_DT_Test(DtMock):
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW6000-DT_running_data.hex')
-
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
 
     def test_GW6000_DT_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -150,10 +136,6 @@ class GW8K_DT_Test(DtMock):
         DtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW8K-DT_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW8K-DT_device_info.hex')
-
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
 
     def test_GW8K_DT_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))

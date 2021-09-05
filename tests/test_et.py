@@ -37,6 +37,10 @@ class EtMock(TestCase, ET):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
 
 class GW10K_ET_Test(EtMock):
 
@@ -45,10 +49,6 @@ class GW10K_ET_Test(EtMock):
         self.mock_response(self._READ_RUNNING_DATA, 'GW10K-ET_running_data.hex')
         self.mock_response(self._READ_METER_DATA, 'GW10K-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW10K-ET_battery_info.hex')
-
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
 
     def test_GW10K_ET_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -216,10 +216,6 @@ class GW6000_EH_Test(EtMock):
         EtMock.__init__(self, methodName)
         self.mock_response(self._READ_RUNNING_DATA, 'GW6000_EH_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW6000_EH_device_info.hex')
-
-    @classmethod
-    def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
 
     def test_GW6000_EH_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
