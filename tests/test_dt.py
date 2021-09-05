@@ -4,20 +4,38 @@ from datetime import datetime
 from unittest import TestCase
 
 from goodwe.dt import DT
+from goodwe.exceptions import RequestFailedException
 from goodwe.protocol import ProtocolCommand
 
-root_dir = os.path.dirname(os.path.abspath(__file__))
 
+class DtMock(TestCase, DT):
 
-class GW6000_DT(DT):
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        DT.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self._mock_responses = {}
+
+    def mock_response(self, command: ProtocolCommand, filename: str):
+        self._mock_responses[command] = filename
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == self._READ_DEVICE_RUNNING_DATA:
-            with open(root_dir + '/sample/dt/GW6000-DT_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        filename = self._mock_responses.get(command)
+        if filename is not None:
+            with open(root_dir + '/sample/dt/' + filename, 'r') as f:
+                response = bytes.fromhex(f.read())
+                if not command.validator(response):
+                    raise RequestFailedException
+                return response
         else:
-            raise ValueError
+            self.request = command.request
+            return bytes.fromhex("010203040506070809")
+
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
 
 class GW8K_DT(DT):
@@ -34,20 +52,15 @@ class GW8K_DT(DT):
             raise ValueError
 
 
-class GW6000_DT_Test(TestCase, GW6000_DT):
+class GW6000_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW6000_DT.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        DtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW6000-DT_running_data.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW6000_DT_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -130,20 +143,17 @@ class GW6000_DT_Test(TestCase, GW6000_DT):
         self.assertSensor('xx142', 0, '', data)
         self.assertSensor('xx144', 100, '', data)
 
-class GW8K_DT_Test(TestCase, GW8K_DT):
+
+class GW8K_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW8K_DT.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        DtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW8K-DT_running_data.hex')
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW8K-DT_device_info.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW8K_DT_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))

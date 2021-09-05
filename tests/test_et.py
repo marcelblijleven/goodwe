@@ -7,62 +7,48 @@ from goodwe.et import ET
 from goodwe.exceptions import RequestFailedException
 from goodwe.protocol import ProtocolCommand
 
-root_dir = os.path.dirname(os.path.abspath(__file__))
 
+class EtMock(TestCase, ET):
 
-class GW10K_ET(ET):
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        ET.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self._mock_responses = {}
+
+    def mock_response(self, command: ProtocolCommand, filename: str):
+        self._mock_responses[command] = filename
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == self._READ_RUNNING_DATA:
-            with open(root_dir + '/sample/et/GW10K-ET_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        elif command == self._READ_METER_DATA:
-            with open(root_dir + '/sample/et/GW10K-ET_meter_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        elif command == self._READ_BATTERY_INFO:
-            with open(root_dir + '/sample/et/GW10K-ET_battery_info.hex', 'r') as f:
-                return bytes.fromhex(f.read())
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        filename = self._mock_responses.get(command)
+        if filename is not None:
+            with open(root_dir + '/sample/et/' + filename, 'r') as f:
+                response = bytes.fromhex(f.read())
+                if not command.validator(response):
+                    raise RequestFailedException
+                return response
         else:
             self.request = command.request
             return bytes.fromhex("010203040506070809")
 
-
-class GW6000_EH(ET):
-
-    def mock_response(self, command: ProtocolCommand, filename: str) -> bytes:
-        with open(root_dir + '/sample/et/' + filename, 'r') as f:
-            response = bytes.fromhex(f.read())
-            if not command.validator(response):
-                raise RequestFailedException
-            return response
-
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        """Mock UDP communication"""
-        if command == self._READ_RUNNING_DATA:
-            return self.mock_response(command, 'GW6000_EH_running_data1.hex')
-        elif command == self._READ_METER_DATA:
-            return bytes.fromhex('')
-        elif command == self._READ_DEVICE_VERSION_INFO:
-            return self.mock_response(command, 'GW6000_EH_device_info.hex')
-        else:
-            raise ValueError
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
 
-class GW10K_ET_Test(TestCase, GW10K_ET):
+class GW10K_ET_Test(EtMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW10K_ET.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_RUNNING_DATA, 'GW10K-ET_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, 'GW10K-ET_meter_data.hex')
+        self.mock_response(self._READ_BATTERY_INFO, 'GW10K-ET_battery_info.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW10K_ET_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -224,20 +210,16 @@ class GW10K_ET_Test(TestCase, GW10K_ET):
         self.assertEqual('f706b12c00147ba6', self.request.hex())
 
 
-class GW6000_EH_Test(TestCase, GW6000_EH):
+class GW6000_EH_Test(EtMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW6000_EH.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_RUNNING_DATA, 'GW6000_EH_running_data.hex')
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW6000_EH_device_info.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW6000_EH_device_info(self):
         self.loop.run_until_complete(self.read_device_info())

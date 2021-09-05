@@ -3,69 +3,49 @@ import os
 from unittest import TestCase
 
 from goodwe.es import ES
+from goodwe.exceptions import RequestFailedException
 from goodwe.protocol import ProtocolCommand
 
-root_dir = os.path.dirname(os.path.abspath(__file__))
 
+class EsMock(TestCase, ES):
 
-class GW5048_EM(ES):
+    def __init__(self, methodName='runTest'):
+        TestCase.__init__(self, methodName)
+        ES.__init__(self, "localhost", 8899)
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self._mock_responses = {}
 
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        """Mock UDP communication"""
-        if command == self._READ_DEVICE_RUNNING_DATA:
-            with open(root_dir + '/sample/es/GW5048-EM_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        else:
-            raise ValueError
-
-
-class GW5048_EM_No_Batt(ES):
+    def mock_response(self, command: ProtocolCommand, filename: str):
+        self._mock_responses[command] = filename
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
         """Mock UDP communication"""
-        if command == self._READ_DEVICE_RUNNING_DATA:
-            with open(root_dir + '/sample/es/GW5048-EM-no-bat_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        else:
-            raise ValueError
-
-
-class GW5048D_ES(ES):
-
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        """Mock UDP communication"""
-        if command == self._READ_DEVICE_RUNNING_DATA:
-            with open(root_dir + '/sample/es/GW5048D-ES_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        filename = self._mock_responses.get(command)
+        if filename is not None:
+            with open(root_dir + '/sample/es/' + filename, 'r') as f:
+                response = bytes.fromhex(f.read())
+                if not command.validator(response):
+                    raise RequestFailedException
+                return response
         else:
             self.request = command.request
             return bytes.fromhex("010203040506070809")
 
+    def assertSensor(self, sensor, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor))
+        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
-class GW5000S_BP(ES):
 
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        """Mock UDP communication"""
-        if command == self._READ_DEVICE_RUNNING_DATA:
-            with open(root_dir + '/sample/es/GW5000S-BP_running_data.hex', 'r') as f:
-                return bytes.fromhex(f.read())
-        else:
-            raise ValueError
-
-class GW5048_EM_Test(TestCase, GW5048_EM):
+class GW5048_EM_Test(EsMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW5048_EM.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        EsMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-EM_running_data.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -139,20 +119,16 @@ class GW5048_EM_Test(TestCase, GW5048_EM):
 
         self.assertSensor('house_consumption', 1118, 'W', data)
 
-class GW5048_EM_No_Batt_Test(TestCase, GW5048_EM_No_Batt):
+
+class GW5048_EM_No_Batt_Test(EsMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW5048_EM_No_Batt.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        EsMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-EM-no-bat_running_data.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW5048_EM_no_batt_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -225,20 +201,16 @@ class GW5048_EM_No_Batt_Test(TestCase, GW5048_EM_No_Batt):
         self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 234, 'W', data)
 
-class GW5048D_ES_Test(TestCase, GW5048D_ES):
+
+class GW5048D_ES_Test(EsMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW5048D_ES.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        EsMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048D-ES_running_data.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW5048D_ES_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -311,20 +283,16 @@ class GW5048D_ES_Test(TestCase, GW5048D_ES):
         self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 467, 'W', data)
 
-class GW5000S_BP_Test(TestCase, GW5000S_BP):
+
+class GW5000S_BP_Test(EsMock):
 
     def __init__(self, methodName='runTest'):
-        TestCase.__init__(self, methodName)
-        GW5000S_BP.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        EsMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5000S-BP_running_data.hex')
 
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
 
     def test_GW5000S_BP_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -398,16 +366,13 @@ class GW5000S_BP_Test(TestCase, GW5000S_BP):
         self.assertSensor('house_consumption', 143, 'W', data)
 
     def test_set_grid_export_limit(self):
-        testee = GW5048D_ES("localhost", 8899)
-        self.loop.run_until_complete(testee.set_grid_export_limit(100))
-        self.assertEqual('aa55c07f033502006402dc', testee.request.hex())
+        self.loop.run_until_complete(self.set_grid_export_limit(100))
+        self.assertEqual('aa55c07f033502006402dc', self.request.hex())
 
     def test_set_work_mode(self):
-        testee = GW5048D_ES("localhost", 8899)
-        self.loop.run_until_complete(testee.set_work_mode(1))
-        self.assertEqual('aa55c07f03590101029c', testee.request.hex())
+        self.loop.run_until_complete(self.set_work_mode(1))
+        self.assertEqual('aa55c07f03590101029c', self.request.hex())
 
     def test_set_ongrid_battery_dod(self):
-        testee = GW5048D_ES("localhost", 8899)
-        self.loop.run_until_complete(testee.set_ongrid_battery_dod(80))
-        self.assertEqual('aa55c07f023905056001001402f8', testee.request.hex())
+        self.loop.run_until_complete(self.set_ongrid_battery_dod(80))
+        self.assertEqual('aa55c07f023905056001001402f8', self.request.hex())
