@@ -18,7 +18,7 @@ logging.basicConfig(
 def try_command(command, ip):
     print(f"Trying command: {command}")
     try:
-        response = asyncio.run(ProtocolCommand(bytes.fromhex(command), lambda x: True).execute(result[0], 8899))
+        response = asyncio.run(ProtocolCommand(bytes.fromhex(command), lambda x: True).execute(result[0]))
         print(f"Response to {command} command: {response.hex()}")
     except InverterError as err:
         print(f"No response to {command} command")
@@ -60,7 +60,7 @@ sn = "".join(reversed([sn[i:i + 2] for i in range(0, len(sn), 2)]))
 try_command(omnik_command(sn), result[0])
 
 print(f"Identifying inverter at IP: {result[0]}")
-inverter = asyncio.run(goodwe.discover(result[0], 8899))
+inverter = asyncio.run(goodwe.discover(result[0]))
 print(
     f"Identified inverter model: {inverter.model_name}, serialNr: {inverter.serial_number}"
 )

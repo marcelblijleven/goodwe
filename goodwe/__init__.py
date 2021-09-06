@@ -55,38 +55,6 @@ async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: in
     return inverter
 
 
-async def search_inverters() -> bytes:
-    """Scan the network for inverters.
-    Answer the inverter discovery response string (which includes it IP address)
-
-    Raise InverterError if unable to contact any inverter
-    """
-    logger.debug("Searching inverters by broadcast to port 48899")
-    loop = asyncio.get_running_loop()
-    on_response_received = loop.create_future()
-    transport, _ = await loop.create_datagram_endpoint(
-        lambda: UdpInverterProtocol(
-            "WIFIKIT-214028-READ".encode("utf-8"),
-            lambda r: True,
-            on_response_received,
-            1, 3
-        ),
-        remote_addr=("255.255.255.255", 48899),
-        allow_broadcast=True,
-    )
-    try:
-        await on_response_received
-        result = on_response_received.result()
-        if result is not None:
-            return result
-        else:
-            raise InverterError("No response received to broadcast request")
-    except asyncio.CancelledError:
-        raise InverterError("No valid response received to broadcast request") from None
-    finally:
-        transport.close()
-
-
 async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
     """Contact the inverter at the specified value and answer appropriate Inverter instance
 
@@ -137,3 +105,35 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
         f"host={host}, or your inverter is not supported yet.\n"
         f"Failures={str(failures)}"
     )
+
+
+async def search_inverters() -> bytes:
+    """Scan the network for inverters.
+    Answer the inverter discovery response string (which includes it IP address)
+
+    Raise InverterError if unable to contact any inverter
+    """
+    logger.debug("Searching inverters by broadcast to port 48899")
+    loop = asyncio.get_running_loop()
+    on_response_received = loop.create_future()
+    transport, _ = await loop.create_datagram_endpoint(
+        lambda: UdpInverterProtocol(
+            "WIFIKIT-214028-READ".encode("utf-8"),
+            lambda r: True,
+            on_response_received,
+            1, 3
+        ),
+        remote_addr=("255.255.255.255", 48899),
+        allow_broadcast=True,
+    )
+    try:
+        await on_response_received
+        result = on_response_received.result()
+        if result is not None:
+            return result
+        else:
+            raise InverterError("No response received to broadcast request")
+    except asyncio.CancelledError:
+        raise InverterError("No valid response received to broadcast request") from None
+    finally:
+        transport.close()
