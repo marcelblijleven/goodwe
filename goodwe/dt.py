@@ -21,14 +21,14 @@ class DT(Inverter):
         Calculated("ppv2", 0,
                    lambda data, _: round(read_voltage(data, 10) * read_current(data, 12)),
                    "PV2 Power", "W", Kind.PV),
-        Integer("xx14", 14, "Unknown sensor@14"),
-        Integer("xx16", 16, "Unknown sensor@16"),
-        Integer("xx18", 18, "Unknown sensor@18"),
-        Integer("xx20", 20, "Unknown sensor@20"),
-        Integer("xx22", 22, "Unknown sensor@22"),
-        Integer("xx24", 24, "Unknown sensor@24"),
-        Integer("xx26", 26, "Unknown sensor@26"),
-        Integer("xx28", 28, "Unknown sensor@28"),
+        # Integer("vpv3", 14, "PV3 Voltage"),
+        # Integer("ipv3", 16, "PV3 Current"),
+        # Integer("vpv4", 18, "PV4 Voltage"),
+        # Integer("ipv4", 20, "PV4 Current"),
+        # Integer("vpv5", 22, "PV5 Voltage"),
+        # Integer("ipv5", 24, "PV5 Current"),
+        # Integer("vpv6", 26, "PV6 Voltage"),
+        # Integer("ipv6", 28, "PV6 Current"),
         Voltage("vline1", 30, "On-grid L1-L2 Voltage", Kind.AC),
         Voltage("vline2", 32, "On-grid L2-L3 Voltage", Kind.AC),
         Voltage("vline3", 34, "On-grid L3-L1 Voltage", Kind.AC),
@@ -54,9 +54,8 @@ class DT(Inverter):
         Power("ppv", 56, "PV Power", Kind.PV),
         Integer("work_mode", 58, "Work Mode code"),
         Enum2("work_mode_label", 58, WORK_MODES, "Work Mode"),
-        Integer("xx60", 60, "Unknown sensor@60"),
-        Integer("xx62", 62, "Unknown sensor@62"),
-        Integer("xx64", 64, "Unknown sensor@64"),
+        Long("error_codes", 60, "Error Codes"),
+        Integer("warning_code", 64, "Warning code"),
         Integer("xx66", 66, "Unknown sensor@66"),
         Integer("xx68", 68, "Unknown sensor@68"),
         Integer("xx70", 70, "Unknown sensor@70"),
@@ -165,6 +164,7 @@ class DT(Inverter):
         return data
 
     async def set_ongrid_battery_dod(self, dod: int):
+        # This is inverter type without batteries
         pass
 
     async def set_work_mode(self, work_mode: int):
