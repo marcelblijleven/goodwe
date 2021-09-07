@@ -376,6 +376,6 @@ def decode_bitmap(value: int, bitmap: Dict[int, str]) -> str:
     result = []
     for i in range(32):
         if bits & 0x1 == 1:
-            result.append(bitmap.get(i))
+            result.append(bitmap.get(i, f'err{i}'))
         bits = bits >> 1
     return ", ".join(result)

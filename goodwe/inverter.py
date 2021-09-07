@@ -1,10 +1,12 @@
 import io
+import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, Tuple, Optional
 
 from .protocol import ProtocolCommand
 
+logger = logging.getLogger(__name__)
 
 class SensorKind(Enum):
     """
@@ -181,5 +183,9 @@ class Inverter:
             result = {}
             for sensor in sensors:
                 if incl_xx or not sensor.id_.startswith("xx"):
-                    result[sensor.id_] = sensor.read(buffer)
+                    try:
+                        result[sensor.id_] = sensor.read(buffer)
+                    except ValueError as e:
+                        logger.exception(f'Error reading sensor {sensor.id_}')
+                        result[sensor.id_] = None
             return result
