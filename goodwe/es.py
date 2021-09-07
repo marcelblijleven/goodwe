@@ -92,7 +92,9 @@ class ES(Inverter):
         Decimal("meter_power_factor", 83, 100, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
         Integer("xx85", 85, "Unknown sensor@85"),
         Integer("xx87", 87, "Unknown sensor@87"),
-        Long("diagnose_result", 89, "Diag Status"),
+        Calculated("diagnose_result", 0,
+                   lambda data, _: decode_bitmap(read_bytes4(data, 89), DIAG_STATUS_CODES),
+                   "Diag Status", ""),
         Energy4("e_total_exp", 93, "Total Energy (export)", Kind.GRID),
         Energy4("e_total_imp", 97, "Total Energy (import)", Kind.GRID),
         #Voltage("vpv3", 101, "PV3 Voltage", Kind.PV),  # modbus 0x500
