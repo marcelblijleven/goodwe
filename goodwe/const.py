@@ -195,6 +195,36 @@ ERROR_CODES: Dict[int, str] = {
     0: 'GFCI Device Check Failure',
 }
 
+DIAG_STATUS_CODES: Dict[int, str] = {
+    0: "Battery does not discharge: Battery Voltage Low",
+    1: "Battery does not discharge: Battery SOC Low",
+    2: "Battery does not discharge: Battery SOC In Back",
+    3: "Battery does not discharge: BMS Discharge Disable",
+    4: "Battery does not discharge: Discharge Time On",
+    5: "Battery does not discharge: Charge Time On",
+    6: "Battery does not discharge: Discharge Drive On",
+    7: "Effect battery discharge: discharge current limited by BMS is low",
+    8: "Effect battery discharge: discharge current limited on APP setting is low",
+    9: "Battery does not discharge: Meter communication Loss",
+    10: "Battery does not discharge: Meter Connect Reverse",
+    11: "Battery does not discharge: Self Use Load Light",
+    12: "Battery does not discharge: EMS Discharge current is zero",
+    13: "Battery does not discharge: Discharge BUS High",
+    14: "Battery does not charge: Battery Disconnect",
+    15: "Battery does not charge: Battery Overcharge",
+    16: "Battery does not charge: BMS Over Temperature",
+    17: "Battery does not charge: BMS Over Charge",
+    18: "Battery does not charge: Battery BMS does not allow charge",
+    19: "Self Use Off",
+    20: "SOC Delta OverRange",
+    21: "Battery Self Discharge",
+    22: "Battery SOC Low under off-grid status",
+    23: "Grid Wave Unstable",
+    24: "Feed Power Limit",
+    25: "PF Value Set",
+    26: "Real Power Limit",
+}
+
 BMS_ALARM_CODES: Dict[int, str] = {
     15: 'Charging over-voltage 3',
     14: 'Discharge under-voltage 3',

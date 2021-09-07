@@ -143,7 +143,9 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor("e_bat_charge_day", 5.3, 'kWh', data)
         self.assertSensor("e_bat_discharge_total", 2442.1, 'kWh', data)
         self.assertSensor("e_bat_discharge_day", 2.9, 'kWh', data)
-        self.assertSensor('diagnose_result', 117442560, '', data)
+        self.assertSensor('diagnose_result',
+                          'Battery does not discharge: Self Use Load Light, Feed Power Limit, PF Value Set, Real Power Limit',
+                          '', data)
         self.assertSensor('house_consumption', 968, 'W', data)
         self.assertSensor('battery_bms', 255, '', data)
         self.assertSensor('battery_index', 256, '', data)
@@ -297,5 +299,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor("e_bat_charge_day", 0.0, 'kWh', data)
         self.assertSensor("e_bat_discharge_total", 0.0, 'kWh', data)
         self.assertSensor("e_bat_discharge_day", 0.0, 'kWh', data)
-        self.assertSensor('diagnose_result', 117983303, '', data)
+        self.assertSensor('diagnose_result',
+                          'Battery does not discharge: Battery Voltage Low, Battery does not discharge: Battery SOC Low, Battery does not discharge: Battery SOC In Back, Battery does not discharge: Discharge Drive On, Battery does not discharge: Self Use Load Light, Battery does not charge: Battery Disconnect, Self Use Off, Feed Power Limit, PF Value Set, Real Power Limit',
+                          '', data)
         self.assertSensor('house_consumption', 1711, 'W', data)
