@@ -82,7 +82,7 @@ class ET(Inverter):
         Temp("temperature_air", 148, "Inverter Temperature (Air))", Kind.AC),
         Temp("temperature_module", 150, "Inverter Temperature (Module)"),
         Temp("temperature", 152, "Inverter Temperature (Radiator)", Kind.AC),
-        Integer("xx154", 154, "Unknown sensor@154"),
+        Integer("function_bit", 154, "Function Bit"),
         Voltage("bus_voltage", 156, "Bus Voltage", None),
         Voltage("nbus_voltage", 158, "NBus Voltage", None),
         Voltage("vbattery1", 160, "Battery Voltage", Kind.BAT),  # modbus 35180
@@ -236,7 +236,6 @@ class ET(Inverter):
         self._READ_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x891c, 0x007d)
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
-        self._GET_WORK_MODE: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0xb798, 0x0001)
         self._has_battery: bool = True
         self._is_single_phase: bool = False
         self._sensors = self.__all_sensors

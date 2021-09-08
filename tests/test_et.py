@@ -114,7 +114,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('temperature_air', 51.0, 'C', data)
         self.assertSensor('temperature_module', 0, 'C', data)
         self.assertSensor('temperature', 58.7, 'C', data)
-        self.assertSensor('xx154', 0, '', data)
+        self.assertSensor('function_bit', 0, '', data)
         self.assertSensor('bus_voltage', 803.6, 'V', data)
         self.assertSensor('nbus_voltage', 401.8, 'V', data)
         self.assertSensor('vbattery1', 254.2, 'V', data)
@@ -144,7 +144,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor("e_bat_discharge_total", 2442.1, 'kWh', data)
         self.assertSensor("e_bat_discharge_day", 2.9, 'kWh', data)
         self.assertSensor('diagnose_result',
-                          'Battery does not discharge: Self Use Load Light, Feed Power Limit, PF Value Set, Real Power Limit',
+                          'Self Use Load Light, Feed Power Limit, PF Value Set, Real Power Limit',
                           '', data)
         self.assertSensor('house_consumption', 968, 'W', data)
         self.assertSensor('battery_bms', 255, '', data)
@@ -270,7 +270,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('temperature_air', 60.4, 'C', data)
         self.assertSensor('temperature_module', 3276.7, 'C', data)
         self.assertSensor('temperature', 38.6, 'C', data)
-        self.assertSensor('xx154', 256, '', data)
+        self.assertSensor('function_bit', 256, '', data)
         self.assertSensor('bus_voltage', 380.6, 'V', data)
         self.assertSensor('nbus_voltage', -0.1, 'V', data)
         self.assertSensor('vbattery1', 0.0, 'V', data)
@@ -300,6 +300,6 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor("e_bat_discharge_total", 0.0, 'kWh', data)
         self.assertSensor("e_bat_discharge_day", 0.0, 'kWh', data)
         self.assertSensor('diagnose_result',
-                          'Battery does not discharge: Battery Voltage Low, Battery does not discharge: Battery SOC Low, Battery does not discharge: Battery SOC In Back, Battery does not discharge: Discharge Drive On, Battery does not discharge: Self Use Load Light, Battery does not charge: Battery Disconnect, Self Use Off, Feed Power Limit, PF Value Set, Real Power Limit',
+                          'Battery Voltage Low, Battery SOC Low, Battery SOC In Back, Discharge Drive On, Self Use Load Light, Battery does not charge: Battery Disconnect, Self Use Off, Feed Power Limit, PF Value Set, Real Power Limit',
                           '', data)
         self.assertSensor('house_consumption', 1711, 'W', data)
