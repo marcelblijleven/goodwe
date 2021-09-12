@@ -117,7 +117,7 @@ class GW5048_EM_Test(EsMock):
         self.assertSensor('e_bat_charge_total', 0, 'kWh', data)
         self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
 
-        self.assertSensor('house_consumption', 1118, 'W', data)
+        self.assertSensor('house_consumption', 1965, 'W', data)
 
 
 class GW5048_EM_No_Batt_Test(EsMock):
@@ -273,7 +273,7 @@ class GW5048D_ES_Test(EsMock):
         self.assertSensor('igrid_wo', 0, 'A', data)
         self.assertSensor('e_bat_charge_total', 0, 'kWh', data)
         self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
-        self.assertSensor('house_consumption', 467, 'W', data)
+        self.assertSensor('house_consumption', 1002, 'W', data)
 
 
 class GW5000S_BP_Test(EsMock):

@@ -52,7 +52,7 @@ class GW10K_ET_Test(EtMock):
 
     def test_GW10K_ET_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(145, len(data))
+        self.assertEqual(144, len(data))
 
         # for sensor in ET.sensors():
         #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")
@@ -107,9 +107,8 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('load_p1', 224, 'W', data)
         self.assertSensor('load_p2', 80, 'W', data)
         self.assertSensor('load_p3', 233, 'W', data)
-        self.assertSensor('load_ptotal', 537, 'W', data)
+        self.assertSensor('load_ptotal', 522, 'W', data)
         self.assertSensor('backup_ptotal', 312, 'W', data)
-        self.assertSensor('pload', 522, 'W', data)
         self.assertSensor('ups_load', 4, '%', data)
         self.assertSensor('temperature_air', 51.0, 'C', data)
         self.assertSensor('temperature_module', 0, 'C', data)
@@ -146,7 +145,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('diagnose_result',
                           'Self-use load light, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 968, 'W', data)
+        self.assertSensor('house_consumption', 834, 'W', data)
         self.assertSensor('battery_bms', 255, '', data)
         self.assertSensor('battery_index', 256, '', data)
         self.assertSensor('battery_status', 1, '', data)
@@ -232,7 +231,7 @@ class GW6000_EH_Test(EtMock):
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(99, len(data))
+        self.assertEqual(98, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
         self.assertSensor('ipv1', 2.6, 'A', data)
@@ -263,9 +262,8 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('load_mode1', 0, '', data)
         self.assertSensor('backup_p1', 0, 'W', data)
         self.assertSensor('load_p1', 1724, 'W', data)
-        self.assertSensor('load_ptotal', 4294837948, 'W', data)  # TODO fix 3f calculation
+        self.assertSensor('load_ptotal', 1725, 'W', data)
         self.assertSensor('backup_ptotal', 0, 'W', data)
-        self.assertSensor('pload', 1725, 'W', data)
         self.assertSensor('ups_load', 0, '%', data)
         self.assertSensor('temperature_air', 60.4, 'C', data)
         self.assertSensor('temperature_module', 3276.7, 'C', data)
@@ -302,4 +300,4 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('diagnose_result',
                           'Battery voltage low, Battery SOC low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected, Self-use off, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 1711, 'W', data)
+        self.assertSensor('house_consumption', 1724, 'W', data)

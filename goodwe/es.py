@@ -14,7 +14,7 @@ class ES(Inverter):
     _READ_DEVICE_SETTINGS_DATA: ProtocolCommand = Aa55ProtocolCommand("010900", "0189")
 
     __sensors: Tuple[Sensor, ...] = (
-        Voltage("vpv1", 0, "PV1 Voltage", Kind.PV), # modbus 0x500
+        Voltage("vpv1", 0, "PV1 Voltage", Kind.PV),  # modbus 0x500
         Current("ipv1", 2, "PV1 Current", Kind.PV),
         Calculated("ppv1", 0, lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)), "PV1 Power", "W",
                    Kind.PV),
@@ -32,7 +32,7 @@ class ES(Inverter):
                    "PV Power", "W", Kind.PV),
         Voltage("vbattery1", 10, "Battery Voltage", Kind.BAT),  # modbus 0x506
         # Voltage("vbattery2", 12, "Battery Voltage 2", Kind.BAT),
-        Integer("battery_status", 14, "Battery Status", "",  Kind.BAT),
+        Integer("battery_status", 14, "Battery Status", "", Kind.BAT),
         Temp("battery_temperature", 16, "Battery Temperature", Kind.BAT),
         Calculated("ibattery1", 18,
                    lambda data, _: abs(read_current(data, 18)) * (-1 if read_byte(data, 30) == 3 else 1),
@@ -97,9 +97,9 @@ class ES(Inverter):
                    "Diag Status", ""),
         Energy4("e_total_exp", 93, "Total Energy (export)", Kind.GRID),
         Energy4("e_total_imp", 97, "Total Energy (import)", Kind.GRID),
-        #Voltage("vpv3", 101, "PV3 Voltage", Kind.PV),  # modbus 0x500
-        #Current("ipv3", 103, "PV3 Current", Kind.PV),
-        #Byte("pv3_mode", 104, "PV1 Mode", "", Kind.PV),
+        # Voltage("vpv3", 101, "PV3 Voltage", Kind.PV),  # modbus 0x500
+        # Current("ipv3", 103, "PV3 Current", Kind.PV),
+        # Byte("pv3_mode", 104, "PV1 Mode", "", Kind.PV),
         Voltage("vgrid_uo", 105, "On-grid Uo Voltage", Kind.AC),
         Current("igrid_uo", 107, "On-grid Uo Current", Kind.AC),
         Voltage("vgrid_wo", 109, "On-grid Wo Voltage", Kind.AC),
@@ -107,13 +107,13 @@ class ES(Inverter):
         Energy4("e_bat_charge_total", 113, "Total Battery Charge", Kind.BAT),
         Energy4("e_bat_discharge_total", 117, "Total Battery Discharge", Kind.BAT),
 
-        # ppv1 + ppv2 + pbattery - pgrid
+        # ppv1 + ppv2 + pbattery + pback_up - pgrid
         Calculated("house_consumption", 0,
                    lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
-                       read_voltage(data, 5) * read_current(data, 7)) + (
-                                           abs(round(read_voltage(data, 10) * read_current(data, 18)))
-                                           * (-1 if read_byte(data, 30) == 3 else 1)
-                                   ) - (abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
+                       read_voltage(data, 5) * read_current(data, 7)) +
+                                   (abs(round(read_voltage(data, 10) * read_current(data, 18))) *
+                                    (-1 if read_byte(data, 30) == 3 else 1)) + read_power2(data, 81) -
+                                   (abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
                    "House Comsumption", "W", Kind.AC),
     )
 

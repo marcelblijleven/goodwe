@@ -72,12 +72,8 @@ class ET(Inverter):
         Power4("load_p1", 126, "Load L1", Kind.AC),
         Power4("load_p2", 130, "Load L2", Kind.AC),
         Power4("load_p3", 134, "Load L3", Kind.AC),
-        # load_p1 + load_p2 + load_p3
-        Calculated("load_ptotal", 0,
-                   lambda data, _: read_power(data, 126) + read_power(data, 130) + read_power(data, 134),
-                   "Load Total", "W", Kind.AC),
-        Power4("backup_ptotal", 138, "Back-up Power", Kind.UPS),
-        Power4("pload", 142, "Load", Kind.AC),
+        Power4("backup_ptotal", 138, "Back-up Load", Kind.UPS),
+        Power4("load_ptotal", 142, "Load", Kind.AC),
         Integer("ups_load", 146, "Ups Load", "%", Kind.UPS),
         Temp("temperature_air", 148, "Inverter Temperature (Air))", Kind.AC),
         Temp("temperature_module", 150, "Inverter Temperature (Module)"),
@@ -119,11 +115,9 @@ class ET(Inverter):
         Calculated("diagnose_result", 0,
                    lambda data, _: decode_bitmap(read_bytes4(data, 240), DIAG_STATUS_CODES),
                    "Diag Status", ""),
-        # ppv1 + ppv2 + pbattery - active_power
+        # total_inverter_power - active_power
         Calculated("house_consumption", 0,
-                   lambda data, _: read_power(data, 10) +
-                   read_power(data, 18) + round(read_voltage(data, 160) * read_current(data, 162)) -
-                   read_power(data, 78),
+                   lambda data, _: read_power(data, 74) - read_power(data, 78),
                    "House Comsumption", "W", Kind.AC),
     )
 
