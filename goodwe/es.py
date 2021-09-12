@@ -89,7 +89,7 @@ class ES(Inverter):
         Calculated("plant_power", 0,
                    lambda data, _: round(read_power2(data, 47) + read_power2(data, 81)),
                    "Plant Power", "W", Kind.AC),
-        Decimal("meter_power_factor", 83, 100, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
+        Decimal("meter_power_factor", 83, 1000, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
         Integer("xx85", 85, "Unknown sensor@85"),
         Integer("xx87", 87, "Unknown sensor@87"),
         Calculated("diagnose_result", 0,

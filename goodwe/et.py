@@ -121,8 +121,9 @@ class ET(Inverter):
                    "Diag Status", ""),
         # ppv1 + ppv2 + pbattery - active_power
         Calculated("house_consumption", 0,
-                   lambda data, _: read_power(data, 10) + read_power(data, 18) + round(
-                       read_voltage(data, 160) * read_current(data, 162)) - read_power(data, 78),
+                   lambda data, _: read_power(data, 10) +
+                   read_power(data, 18) + round(read_voltage(data, 160) * read_current(data, 162)) -
+                   read_power(data, 78),
                    "House Comsumption", "W", Kind.AC),
     )
 
@@ -174,10 +175,10 @@ class ET(Inverter):
         Power("active_power3", 14, "Active Power L3", Kind.GRID),
         Integer("active_power_total", 16, "Active Power Total", "W", Kind.GRID),
         Integer("reactive_power_total", 18, "Reactive Power Total", "W", Kind.GRID),
-        Decimal("meter_power_factor1", 20, 100, "Meter Power Factor L1", "", Kind.GRID),
-        Decimal("meter_power_factor2", 22, 100, "Meter Power Factor L2", "", Kind.GRID),
-        Decimal("meter_power_factor3", 24, 100, "Meter Power Factor L3", "", Kind.GRID),
-        Decimal("meter_power_factor", 26, 100, "Meter Power Factor", "", Kind.GRID),
+        Decimal("meter_power_factor1", 20, 1000, "Meter Power Factor L1", "", Kind.GRID),
+        Decimal("meter_power_factor2", 22, 1000, "Meter Power Factor L2", "", Kind.GRID),
+        Decimal("meter_power_factor3", 24, 1000, "Meter Power Factor L3", "", Kind.GRID),
+        Decimal("meter_power_factor", 26, 1000, "Meter Power Factor", "", Kind.GRID),
         Frequency("meter_freq", 28, "Meter Frequency", Kind.GRID),  # modbus 36014
         Float("meter_e_total_exp", 30, 1000, "Meter Total Energy (export)", "kWh", Kind.GRID),
         Float("meter_e_total_imp", 34, 1000, "Meter Total Energy (import)", "kWh", Kind.GRID),
