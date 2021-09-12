@@ -9,6 +9,9 @@ Library for connecting to GoodWe inverter over local network and retrieving runt
 It has been reported to work on GoodWe ET, EH, BT, BH, ES, EM, DT, D-NS, XS and BP families of inverters.
 It may work on other inverters as well, as long as they listen on UDP port 8899 and respond to one of supported communication protocols.
 
+(If you can't communicate with the inverter despite your model is listed above, it is possible you have old ARM firmware version.
+Usually the ARM firmware (not inverter firmware) has to be >=13. You should ask manufacturer support to upgrade your ARM firmware to be able to communicate with inveter via UDP.) 
+
 ## Usage
 1. Install this package `pip install goodwe`
 2. Write down your GoodWe inverter's IP address (or invoke `goodwe.search_inverters()`)
