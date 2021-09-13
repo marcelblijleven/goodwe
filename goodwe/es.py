@@ -107,12 +107,9 @@ class ES(Inverter):
         Energy4("e_bat_charge_total", 113, "Total Battery Charge", Kind.BAT),
         Energy4("e_bat_discharge_total", 117, "Total Battery Discharge", Kind.BAT),
 
-        # ppv1 + ppv2 + pbattery + pback_up - pgrid
+        # pload + pback_up - pgrid
         Calculated("house_consumption", 0,
-                   lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
-                       read_voltage(data, 5) * read_current(data, 7)) +
-                                   (abs(round(read_voltage(data, 10) * read_current(data, 18))) *
-                                    (-1 if read_byte(data, 30) == 3 else 1)) + read_power2(data, 81) -
+                   lambda data, _: read_power2(data, 47) + read_power2(data, 81) -
                                    (abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
                    "House Comsumption", "W", Kind.AC),
     )
