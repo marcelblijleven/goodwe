@@ -1,6 +1,6 @@
 from typing import Dict
 
-GOODWE_PORT = 8899
+GOODWE_UDP_PORT = 8899
 
 BATTERY_MODES_ET: Dict[int, str] = {
     0: "No battery",

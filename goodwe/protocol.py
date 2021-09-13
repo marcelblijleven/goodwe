@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Tuple, Optional, Callable
 
-from .const import GOODWE_PORT
+from .const import GOODWE_UDP_PORT
 from .exceptions import MaxRetriesException, RequestFailedException
 from .modbus import create_modbus_request, validate_modbus_response, MODBUS_READ_CMD, MODBUS_WRITE_CMD
 
@@ -97,7 +97,7 @@ class ProtocolCommand:
             lambda: UdpInverterProtocol(
                 self.request, self.validator, on_response_received, timeout, retries
             ),
-            remote_addr=(host, GOODWE_PORT),
+            remote_addr=(host, GOODWE_UDP_PORT),
         )
         try:
             await on_response_received
