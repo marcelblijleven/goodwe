@@ -252,7 +252,7 @@ class ET(Inverter):
         self.model_name = response[22:32].decode("ascii").rstrip()
         self.dsp1_sw_version = read_unsigned_int(response, 32)
         self.dsp2_sw_version = read_unsigned_int(response, 34)
-        self.dsp_spn_version = read_unsigned_int(response, 36)
+        self.dsp_svn_version = read_unsigned_int(response, 36)
         self.arm_sw_version = read_unsigned_int(response, 38)
         self.arm_svn_version = read_unsigned_int(response, 40)
         self.software_version = response[42:54].decode("ascii")

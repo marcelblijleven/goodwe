@@ -122,11 +122,10 @@ class DT(Inverter):
         response = response[5:-2]
         self.model_name = response[22:32].decode("ascii").rstrip()
         self.serial_number = response[6:22].decode("ascii")
-        self.software_version = "{}.{}.{:02x}".format(
-            int.from_bytes(response[66:68], byteorder='big'),
-            int.from_bytes(response[68:70], byteorder='big'),
-            int.from_bytes(response[70:72], byteorder='big'),
-        )
+        self.dsp1_sw_version = read_unsigned_int(response, 66)
+        self.dsp2_sw_version = read_unsigned_int(response, 68)
+        self.arm_sw_version = read_unsigned_int(response, 70)
+        self.software_version = "{}.{}.{:02x}".format(self.dsp1_sw_version, self.dsp2_sw_version, self.arm_sw_version)
 
         if "DSN" in self.serial_number:
             self._is_single_phase = True
