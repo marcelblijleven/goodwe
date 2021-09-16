@@ -5,7 +5,7 @@ from typing import Type
 from .dt import DT
 from .es import ES
 from .et import ET
-from .exceptions import InverterError
+from .exceptions import InverterError, RequestFailedException
 from .goodwe import GoodWeXSProcessor, AbstractDataProcessor, GoodWeInverter
 from .inverter import Inverter, Sensor, SensorKind
 from .protocol import UdpInverterProtocol, Aa55ProtocolCommand

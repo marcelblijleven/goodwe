@@ -4,9 +4,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, Tuple, Optional
 
+from .exceptions import MaxRetriesException, RequestFailedException
 from .protocol import ProtocolCommand
 
 logger = logging.getLogger(__name__)
+
 
 class SensorKind(Enum):
     """
@@ -56,11 +58,14 @@ class Inverter:
     Common superclass for various inverter models implementations.
     Represents the inverter state and its basic behavior
     """
+
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         self.host = host
         self.comm_addr = comm_addr
         self.timeout = timeout
         self.retries = retries
+        self._consecutive_failures_count: int = 0
+
         self.model_name: str = None
         self.serial_number: str = None
         self.software_version: str = None
@@ -75,7 +80,17 @@ class Inverter:
         self.arm_version: str = None
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        return await command.execute(self.host, self.timeout, self.retries)
+        try:
+            result = await command.execute(self.host, self.timeout, self.retries)
+            self._consecutive_failures_count = 0
+            return result
+        except MaxRetriesException:
+            self._consecutive_failures_count += 1
+            raise RequestFailedException(f'No valid response received even after {self.retries} retries',
+                                         self._consecutive_failures_count)
+        except RequestFailedException as ex:
+            self._consecutive_failures_count += 1
+            raise RequestFailedException(ex.message, self._consecutive_failures_count)
 
     async def read_device_info(self):
         """
@@ -185,7 +200,7 @@ class Inverter:
                 if incl_xx or not sensor.id_.startswith("xx"):
                     try:
                         result[sensor.id_] = sensor.read(buffer)
-                    except ValueError as e:
+                    except ValueError:
                         logger.exception(f'Error reading sensor {sensor.id_}')
                         result[sensor.id_] = None
             return result

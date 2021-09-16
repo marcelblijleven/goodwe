@@ -3,7 +3,18 @@ class InverterError(Exception):
 
 
 class RequestFailedException(InverterError):
-    """Indicates requesting inverter data was unsuccessful"""
+    """
+    Indicates request sent to inverter has failed and did not yield in valid response,
+    even after several retries.
+
+    Attributes:
+        message -- explanation of the error
+        consecutive_failures_count -- number requests failed in a consecutive streak
+    """
+
+    def __init__(self, message: str = '', consecutive_failures_count: int = 0):
+        self.message: str = message
+        self.consecutive_failures_count: int = consecutive_failures_count
 
 
 class ProcessingException(InverterError):
