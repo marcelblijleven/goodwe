@@ -112,7 +112,8 @@ class ET(Inverter):
         Energy("e_bat_charge_day", 216, "Today Battery Charge", Kind.BAT),
         Energy4("e_bat_discharge_total", 218, "Total Battery Discharge", Kind.BAT),
         Energy("e_bat_discharge_day", 222, "Today Battery Discharge", Kind.BAT),
-        Calculated("diagnose_result", 0,
+        Long("diagnose_result", 240, "Diag Status Code"),
+        Calculated("diagnose_result_label", 0,
                    lambda data, _: decode_bitmap(read_bytes4(data, 240), DIAG_STATUS_CODES),
                    "Diag Status", ""),
         # ppv1 + ppv2 + pbattery - active_power

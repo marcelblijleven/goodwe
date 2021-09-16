@@ -49,7 +49,7 @@ class GW5048_EM_Test(EsMock):
 
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(67, len(data))
+        self.assertEqual(68, len(data))
 
         self.assertSensor('vpv1', 130.8, 'V', data)
         self.assertSensor('ipv1', 0.3, 'A', data)
@@ -107,7 +107,8 @@ class GW5048_EM_Test(EsMock):
         self.assertSensor('meter_power_factor', 0.001, '', data)
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', -3, '', data)
-        self.assertSensor('diagnose_result', 'Discharge Driver On', '', data)
+        self.assertSensor('diagnose_result', 64, '', data)
+        self.assertSensor('diagnose_result_label', 'Discharge Driver On', '', data)
         self.assertSensor('e_total_exp', 512.9, 'kWh', data)
         self.assertSensor('e_total_imp', 33653839.0, 'kWh', data)
         self.assertSensor('vgrid_uo', 0, 'V', data)
@@ -128,7 +129,7 @@ class GW5048_EM_No_Batt_Test(EsMock):
 
     def test_GW5048_EM_no_batt_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(67, len(data))
+        self.assertEqual(68, len(data))
 
         self.assertSensor('vpv1', 334.3, 'V', data)
         self.assertSensor('ipv1', 0.4, 'A', data)
@@ -186,7 +187,8 @@ class GW5048_EM_No_Batt_Test(EsMock):
         self.assertSensor('meter_power_factor', 0.001, '', data)
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', -35, '', data)
-        self.assertSensor('diagnose_result', 'Battery voltage low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected', '', data)
+        self.assertSensor('diagnose_result', 18501, '', data)
+        self.assertSensor('diagnose_result_label', 'Battery voltage low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected', '', data)
         self.assertSensor('e_total_exp', 512.9, 'kWh', data)
         self.assertSensor('e_total_imp', 33653889.9, 'kWh', data)
         self.assertSensor('vgrid_uo', 0, 'V', data)
@@ -206,7 +208,7 @@ class GW5048D_ES_Test(EsMock):
 
     def test_GW5048D_ES_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(67, len(data))
+        self.assertEqual(68, len(data))
 
         self.assertSensor('vpv1', 0.0, 'V', data)
         self.assertSensor('ipv1', 0.1, 'A', data)
@@ -264,7 +266,8 @@ class GW5048D_ES_Test(EsMock):
         self.assertSensor('meter_power_factor', 0.001, '', data)
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', 5, '', data)
-        self.assertSensor('diagnose_result', 'Discharge Driver On, Export power limit set, PF value set, Real power limit set', '', data)
+        self.assertSensor('diagnose_result', 117440576, '', data)
+        self.assertSensor('diagnose_result_label', 'Discharge Driver On, Export power limit set, PF value set, Real power limit set', '', data)
         self.assertSensor('e_total_exp', 0, 'kWh', data)
         self.assertSensor('e_total_imp', 0, 'kWh', data)
         self.assertSensor('vgrid_uo', 0, 'V', data)
@@ -284,7 +287,7 @@ class GW5000S_BP_Test(EsMock):
 
     def test_GW5000S_BP_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(67, len(data))
+        self.assertEqual(68, len(data))
 
         self.assertSensor('vpv1', 374.9, 'V', data)
         self.assertSensor('ipv1', 2.2, 'A', data)
@@ -342,7 +345,8 @@ class GW5000S_BP_Test(EsMock):
         self.assertSensor('meter_power_factor', 0.001, '', data)
         self.assertSensor('xx85', 0, '', data)
         self.assertSensor('xx87', 211, '', data)
-        self.assertSensor('diagnose_result', 'Charge time on, Self-use off', '', data)
+        self.assertSensor('diagnose_result', 524320, '', data)
+        self.assertSensor('diagnose_result_label', 'Charge time on, Self-use off', '', data)
         self.assertSensor('e_total_exp', 538.4, 'kWh', data)
         self.assertSensor('e_total_imp', 48713267.2, 'kWh', data)
         self.assertSensor('vgrid_uo', 0, 'V', data)

@@ -52,7 +52,7 @@ class GW10K_ET_Test(EtMock):
 
     def test_GW10K_ET_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(144, len(data))
+        self.assertEqual(145, len(data))
 
         # for sensor in ET.sensors():
         #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")
@@ -142,7 +142,8 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor("e_bat_charge_day", 5.3, 'kWh', data)
         self.assertSensor("e_bat_discharge_total", 2442.1, 'kWh', data)
         self.assertSensor("e_bat_discharge_day", 2.9, 'kWh', data)
-        self.assertSensor('diagnose_result',
+        self.assertSensor('diagnose_result', 117442560, '', data)
+        self.assertSensor('diagnose_result_label',
                           'Self-use load light, Export power limit set, PF value set, Real power limit set',
                           '', data)
         self.assertSensor('house_consumption', 968, 'W', data)
@@ -231,7 +232,7 @@ class GW6000_EH_Test(EtMock):
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(98, len(data))
+        self.assertEqual(99, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
         self.assertSensor('ipv1', 2.6, 'A', data)
@@ -297,7 +298,8 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor("e_bat_charge_day", 0.0, 'kWh', data)
         self.assertSensor("e_bat_discharge_total", 0.0, 'kWh', data)
         self.assertSensor("e_bat_discharge_day", 0.0, 'kWh', data)
-        self.assertSensor('diagnose_result',
+        self.assertSensor('diagnose_result', 117983303, '', data)
+        self.assertSensor('diagnose_result_label',
                           'Battery voltage low, Battery SOC low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected, Self-use off, Export power limit set, PF value set, Real power limit set',
                           '', data)
         self.assertSensor('house_consumption', 1711, 'W', data)
