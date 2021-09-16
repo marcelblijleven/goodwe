@@ -115,10 +115,14 @@ class ET(Inverter):
         Calculated("diagnose_result", 0,
                    lambda data, _: decode_bitmap(read_bytes4(data, 240), DIAG_STATUS_CODES),
                    "Diag Status", ""),
-        # total_inverter_power - active_power
+        # ppv1 + ppv2 + pbattery - active_power
         Calculated("house_consumption", 0,
-                   lambda data, _: read_power(data, 74) - read_power(data, 78),
-                   "House Comsumption", "W", Kind.AC),
+                   lambda data, _:
+                   read_power(data, 10) +
+                   read_power(data, 18) +
+                   round(read_voltage(data, 160) * read_current(data, 162)) -
+                   read_power(data, 78),
+                   "House Consumption", "W", Kind.AC),
     )
 
     # Modbus registers from offset 0x9088 (37000)
