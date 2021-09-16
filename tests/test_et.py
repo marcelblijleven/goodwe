@@ -145,7 +145,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('diagnose_result',
                           'Self-use load light, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 834, 'W', data)
+        self.assertSensor('house_consumption', 968, 'W', data)
         self.assertSensor('battery_bms', 255, '', data)
         self.assertSensor('battery_index', 256, '', data)
         self.assertSensor('battery_status', 1, '', data)
@@ -300,4 +300,4 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('diagnose_result',
                           'Battery voltage low, Battery SOC low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected, Self-use off, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 1724, 'W', data)
+        self.assertSensor('house_consumption', 1711, 'W', data)
