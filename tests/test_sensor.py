@@ -69,17 +69,19 @@ class TestUtils(TestCase):
         data = io.BytesIO(bytes.fromhex("fffffffd"))
         self.assertEqual(-3, testee.read(data))
 
-    def test_power_k(self):
-        testee = PowerK("", 0, "", None)
+    def test_energy(self):
+        testee = Energy("", 0, "", None)
 
         data = io.BytesIO(bytes.fromhex("0972"))
         self.assertEqual(241.8, testee.read(data))
 
-    def test_power_k4(self):
-        testee = PowerK4("", 0, "", None)
+    def test_energy4(self):
+        testee = Energy4("", 0, "", None)
 
         data = io.BytesIO(bytes.fromhex("00020972"))
         self.assertEqual(13349.0, testee.read(data))
+        data = io.BytesIO(bytes.fromhex("ffffffff"))
+        self.assertIsNone(testee.read(data))
 
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))

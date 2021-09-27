@@ -63,44 +63,32 @@ class Power4(Sensor):
         return read_power(data)
 
 
-class PowerK(Sensor):
-    """Sensor representing power [kW] value encoded in 2 bytes"""
-
-    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "kW", kind)
-
-    def read_value(self, data: io.BytesIO):
-        return read_power_k2(data)
-
-
-class PowerK4(Sensor):
-    """Sensor representing power [kW] value encoded in 2 bytes"""
-
-    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "kW", kind)
-
-    def read_value(self, data: io.BytesIO):
-        return read_power_k(data)
-
-
 class Energy(Sensor):
-    """Sensor representing power [W] value encoded in 2 bytes"""
+    """Sensor representing energy [kWh] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, "kWh", kind)
 
     def read_value(self, data: io.BytesIO):
-        return read_power_k2(data)
+        value = read_bytes2(data)
+        if value == -1:
+            return None
+        else:
+            return float(value) / 10
 
 
 class Energy4(Sensor):
-    """Sensor representing power [W] value encoded in 4 bytes"""
+    """Sensor representing energy [kWh] value encoded in 4 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, "kWh", kind)
 
     def read_value(self, data: io.BytesIO):
-        return read_power_k(data)
+        value = read_bytes4(data)
+        if value == -1:
+            return None
+        else:
+            return float(value) / 10
 
 
 class Temp(Sensor):
@@ -308,22 +296,6 @@ def read_power2(buffer: io.BytesIO, offset: int = None) -> int:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     return value
-
-
-def read_power_k(buffer: io.BytesIO, offset: int = None) -> float:
-    """Retrieve power [kW] value (4 bytes) from buffer"""
-    if offset:
-        buffer.seek(offset)
-    value = int.from_bytes(buffer.read(4), byteorder="big", signed=True)
-    return float(value) / 10
-
-
-def read_power_k2(buffer: io.BytesIO, offset: int = None) -> float:
-    """Retrieve power [kW] value (2 bytes) from buffer"""
-    if offset:
-        buffer.seek(offset)
-    value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
-    return float(value) / 10
 
 
 def read_freq(buffer: io.BytesIO, offset: int = None) -> float:
