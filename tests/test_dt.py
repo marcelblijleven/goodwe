@@ -130,6 +130,12 @@ class GW8K_DT_Test(DtMock):
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW8K-DT_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW8K-DT_device_info.hex')
 
+    def test_GW8K_DT_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW8K-DT', self.model_name)
+        self.assertEqual('00000DTS00000000', self.serial_number)
+        self.assertEqual('1010.1010.08', self.software_version)
+
     def test_GW8K_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data(True))
