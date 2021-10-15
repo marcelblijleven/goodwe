@@ -10,7 +10,7 @@ It has been reported to work on GoodWe ET, EH, BT, BH, ES, EM, DT, MS, D-NS, XS 
 It may work on other inverters as well, as long as they listen on UDP port 8899 and respond to one of supported communication protocols.
 
 (If you can't communicate with the inverter despite your model is listed above, it is possible you have old ARM firmware version.
-Usually the ARM firmware (not inverter firmware) has to be >=13. You should ask manufacturer support to upgrade your ARM firmware to be able to communicate with inveter via UDP.) 
+You should ask manufacturer support to upgrade your ARM firmware (not just inverter firmware) to be able to communicate with the inveter via UDP.) 
 
 ## Usage
 1. Install this package `pip install goodwe`
@@ -52,7 +52,6 @@ asyncio.run(get_data())
 ## References and useful links
 
 - https://github.com/mletenay/home-assistant-goodwe-inverter
-- https://github.com/tkubec/GoodWe
 - https://github.com/yasko-pv/modbus-log
-- https://github.com/MiG-41/Modbus-GoodWe-DT
+- https://github.com/tkubec/GoodWe
 - https://github.com/OpenEMS/openems
