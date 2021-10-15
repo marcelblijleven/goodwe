@@ -21,14 +21,17 @@ class DT(Inverter):
         Calculated("ppv2", 0,
                    lambda data, _: round(read_voltage(data, 10) * read_current(data, 12)),
                    "PV2 Power", "W", Kind.PV),
-        # Integer("vpv3", 14, "PV3 Voltage"),
-        # Integer("ipv3", 16, "PV3 Current"),
-        # Integer("vpv4", 18, "PV4 Voltage"),
-        # Integer("ipv4", 20, "PV4 Current"),
-        # Integer("vpv5", 22, "PV5 Voltage"),
-        # Integer("ipv5", 24, "PV5 Current"),
-        # Integer("vpv6", 26, "PV6 Voltage"),
-        # Integer("ipv6", 28, "PV6 Current"),
+        Voltage("vpv3", 14, "PV3 Voltage", Kind.PV),
+        Current("ipv3", 16, "PV3 Current", Kind.PV),
+        Calculated("ppv3", 0,
+                   lambda data, _: round(read_voltage(data, 14) * read_current(data, 16)),
+                   "PV3 Power", "W", Kind.PV),
+        # Voltage("vpv4", 14, "PV4 Voltage", Kind.PV),
+        # Current("ipv4", 16, "PV4 Current", Kind.PV),
+        # Voltage("vpv5", 14, "PV5 Voltage", Kind.PV),
+        # Current("ipv5", 16, "PV5 Current", Kind.PV),
+        # Voltage("vpv6", 14, "PV6 Voltage", Kind.PV),
+        # Current("ipv6", 16, "PV7 Current", Kind.PV),
         Voltage("vline1", 30, "On-grid L1-L2 Voltage", Kind.AC),
         Voltage("vline2", 32, "On-grid L2-L3 Voltage", Kind.AC),
         Voltage("vline3", 34, "On-grid L3-L1 Voltage", Kind.AC),
@@ -109,13 +112,16 @@ class DT(Inverter):
             self.comm_addr = 0x7f
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x7531, 0x0028)
         self._READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x7594, 0x0049)
-        self._is_single_phase: bool = False
         self._sensors = self.__all_sensors
         self._settings = self.__all_settings
 
     @staticmethod
     def _is_not_3phase_sensor(s: Sensor) -> bool:
         return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_ and not s.id_.startswith('xx'))
+
+    @staticmethod
+    def _is_not_pv3_sensor(s: Sensor) -> bool:
+        return not s.id_.endswith('pv3')
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -127,10 +133,17 @@ class DT(Inverter):
         self.arm_sw_version = read_unsigned_int(response, 70)
         self.software_version = "{}.{}.{:02x}".format(self.dsp1_sw_version, self.dsp2_sw_version, self.arm_sw_version)
 
-        if "DSN" in self.serial_number:
-            self._is_single_phase = True
+        if "DSN" in self.serial_number or "MSU" in self.serial_number:
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
+
+        if "MSU" in self.serial_number:
+            # this is 3 PV strings inverter, keep all sensors
+            pass
+        else:
+            # this is only 2 PV strings inverter
+            self._sensors = tuple(filter(self._is_not_pv3_sensor, self._sensors))
+        pass
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)

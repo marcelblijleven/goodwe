@@ -236,7 +236,6 @@ class ET(Inverter):
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._has_battery: bool = True
-        self._is_single_phase: bool = False
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_meter = self.__all_sensors_meter
@@ -264,7 +263,6 @@ class ET(Inverter):
         self.arm_version = response[54:66].decode("ascii")
 
         if "EHU" in self.serial_number:
-            self._is_single_phase = True
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
 
