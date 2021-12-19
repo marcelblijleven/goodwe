@@ -1,5 +1,6 @@
 from typing import Tuple
 
+from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand
@@ -150,7 +151,7 @@ class DT(Inverter):
         data = self._map_response(raw_data[5:-2], self._sensors, include_unknown_sensors)
         return data
 
-    async def read_settings(self, setting_id: str) -> Any:
+    async def read_setting(self, setting_id: str) -> Any:
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
@@ -158,7 +159,7 @@ class DT(Inverter):
         with io.BytesIO(raw_data[5:-2]) as buffer:
             return setting.read_value(buffer)
 
-    async def write_settings(self, setting_id: str, value: Any):
+    async def write_setting(self, setting_id: str, value: Any):
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
@@ -171,19 +172,30 @@ class DT(Inverter):
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}
         for setting in self.settings():
-            value = await self.read_settings(setting.id_)
+            value = await self.read_setting(setting.id_)
             data[setting.id_] = value
         return data
 
-    async def set_ongrid_battery_dod(self, dod: int):
-        # This is inverter type without batteries
-        pass
+    async def get_grid_export_limit(self) -> int:
+        raise InverterError("Operation not supported")
 
-    async def set_work_mode(self, work_mode: int):
-        if work_mode == 0:
+    async def set_grid_export_limit(self, dod: int):
+        raise InverterError("Operation not supported")
+
+    async def get_operation_mode(self) -> int:
+        raise InverterError("Operation not supported")
+
+    async def set_operation_mode(self, operation_mode: int):
+        if operation_mode == 0:
             await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0x9d8b, 0))
-        elif work_mode == 3:
+        elif operation_mode == 3:
             await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0x9d8a, 0))
+
+    async def get_ongrid_battery_dod(self) -> int:
+        raise InverterError("Operation not supported, inverter has no batteries")
+
+    async def set_ongrid_battery_dod(self, dod: int):
+        raise InverterError("Operation not supported, inverter has no batteries")
 
     def sensors(self) -> Tuple[Sensor, ...]:
         return self._sensors

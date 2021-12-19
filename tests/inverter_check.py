@@ -25,11 +25,11 @@ print(f"Identified inverter\n"
       f"- Version: {inverter.software_version}"
       )
 
-response = asyncio.run(inverter.read_runtime_data(True))
+#response = asyncio.run(inverter.read_runtime_data(True))
 
-for sensor in inverter.sensors():
-    if sensor.id_ in response:
-        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
+#for sensor in inverter.sensors():
+#    if sensor.id_ in response:
+#        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
 
 # response = asyncio.run(goodwe.protocol.ModbusReadCommand(0x88b8, 43).execute(IP_ADDRESS, PORT))
 # print(response.hex())
@@ -39,3 +39,9 @@ for sensor in inverter.sensors():
 # for setting in inverter.settings():
 #    value = asyncio.run(inverter.read_settings(setting.id_))
 #    print(f"{setting.id_}: \t\t {setting.name} = {value} {setting.unit}")
+
+#asyncio.run(inverter.set_operation_mode(2))
+response = asyncio.run(inverter.get_operation_mode())
+print(response)
+#response = asyncio.run(inverter.write_setting('grid_export_limit', 3999))
+#print(response)

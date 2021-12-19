@@ -1,5 +1,6 @@
 from typing import Tuple
 
+from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, Aa55ProtocolCommand
@@ -154,14 +155,20 @@ class ES(Inverter):
         data = self._map_response(raw_data[7:-2], self.__sensors, include_unknown_sensors)
         return data
 
-    async def read_settings(self, setting_id: str) -> Any:
+    async def read_setting(self, setting_id: str) -> Any:
         all_settings = await self.read_settings_data()
         return all_settings.get(setting_id)
+
+    async def write_setting(self, setting_id: str, value: Any):
+        raise InverterError("Operation not supported")
 
     async def read_settings_data(self) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
         data = self._map_response(raw_data[7:-2], self.__settings)
         return data
+
+    async def get_grid_export_limit(self) -> int:
+        return await self.read_setting('grid_up_limit')
 
     async def set_grid_export_limit(self, export_limit: int):
         if export_limit >= 0 or export_limit <= 10000:
@@ -169,11 +176,17 @@ class ES(Inverter):
                 Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
             )
 
-    async def set_work_mode(self, work_mode: int):
-        if work_mode in (0, 1, 2):
+    async def get_operation_mode(self) -> int:
+        return await self.read_setting('work_mode')
+
+    async def set_operation_mode(self, operation_mode: int):
+        if operation_mode in (0, 1, 2, 3):
             await self._read_from_socket(
-                Aa55ProtocolCommand("035901" + "{:02x}".format(work_mode), "03D9")
+                Aa55ProtocolCommand("035901" + "{:02x}".format(operation_mode), "03D9")
             )
+
+    async def get_ongrid_battery_dod(self) -> int:
+        return await self.read_setting('dod')
 
     async def set_ongrid_battery_dod(self, dod: int):
         if 0 <= dod <= 89:

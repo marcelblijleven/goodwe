@@ -279,7 +279,7 @@ class ET(Inverter):
         data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
         return data
 
-    async def read_settings(self, setting_id: str) -> Any:
+    async def read_setting(self, setting_id: str) -> Any:
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
@@ -287,7 +287,7 @@ class ET(Inverter):
         with io.BytesIO(raw_data[5:-2]) as buffer:
             return setting.read_value(buffer)
 
-    async def write_settings(self, setting_id: str, value: Any):
+    async def write_setting(self, setting_id: str, value: Any):
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
@@ -300,21 +300,30 @@ class ET(Inverter):
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}
         for setting in self.settings():
-            value = await self.read_settings(setting.id_)
+            value = await self.read_setting(setting.id_)
             data[setting.id_] = value
         return data
 
+    async def get_grid_export_limit(self) -> int:
+        return await self.read_setting('grid_export_limit')
+
     async def set_grid_export_limit(self, export_limit: int):
         if export_limit >= 0 or export_limit <= 10000:
-            return await self.write_settings('grid_export_limit', export_limit)
+            return await self.write_setting('grid_export_limit', export_limit)
 
-    async def set_work_mode(self, work_mode: int):
-        if work_mode in (0, 1, 2):
-            return await self.write_settings('work_mode', work_mode)
+    async def get_operation_mode(self) -> int:
+        return await self.read_setting('work_mode')
+
+    async def set_operation_mode(self, operation_mode: int):
+        if operation_mode in (0, 1, 2, 3):
+            return await self.write_setting('work_mode', operation_mode)
+
+    async def get_ongrid_battery_dod(self) -> int:
+        return 100 - await self.read_setting('battery_discharge_depth')
 
     async def set_ongrid_battery_dod(self, dod: int):
         if 0 <= dod <= 89:
-            return await self.write_settings('battery_discharge_depth', 100 - dod)
+            return await self.write_setting('battery_discharge_depth', 100 - dod)
 
     def sensors(self) -> Tuple[Sensor, ...]:
         if self._has_battery:

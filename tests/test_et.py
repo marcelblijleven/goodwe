@@ -192,23 +192,35 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('meter_e_total_imp', 3254.462, 'kWh', data)
 
     def test_GW10K_ET_read_setting(self):
-        self.loop.run_until_complete(self.read_settings('work_mode'))
+        self.loop.run_until_complete(self.read_setting('work_mode'))
         self.assertEqual('f703b798000136c7', self.request.hex())
 
-        self.loop.run_until_complete(self.read_settings('grid_export_limit'))
+        self.loop.run_until_complete(self.read_setting('grid_export_limit'))
         self.assertEqual('f703b996000155ec', self.request.hex())
 
     def test_GW10K_ET_write_setting(self):
-        self.loop.run_until_complete(self.write_settings('grid_export_limit', 100))
+        self.loop.run_until_complete(self.write_setting('grid_export_limit', 100))
         self.assertEqual('f706b996006459c7', self.request.hex())
+
+    def test_get_grid_export_limit(self):
+        self.loop.run_until_complete(self.get_grid_export_limit())
+        self.assertEqual('f703b996000155ec', self.request.hex())
 
     def test_set_grid_export_limit(self):
         self.loop.run_until_complete(self.set_grid_export_limit(100))
         self.assertEqual('f706b996006459c7', self.request.hex())
 
-    def test_set_work_mode(self):
-        self.loop.run_until_complete(self.set_work_mode(1))
+    def test_get_operation_mode(self):
+        self.loop.run_until_complete(self.get_operation_mode())
+        self.assertEqual('f703b798000136c7', self.request.hex())
+
+    def test_set_operation_mode(self):
+        self.loop.run_until_complete(self.set_operation_mode(1))
         self.assertEqual('f706b7980001fac7', self.request.hex())
+
+    def test_get_ongrid_battery_dod(self):
+        self.loop.run_until_complete(self.get_ongrid_battery_dod())
+        self.assertEqual('f703b12c00017669', self.request.hex())
 
     def test_set_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.set_ongrid_battery_dod(80))

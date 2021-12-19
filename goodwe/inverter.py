@@ -110,14 +110,14 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def read_settings(self, setting_id: str) -> Any:
+    async def read_setting(self, setting_id: str) -> Any:
         """
-        Read the value of specific inverter settings/configuration parameter.
+        Read the value of specific inverter setting/configuration parameter.
         Setting must be in list provided by settings() method, otherwise ValueError is raised.
         """
         raise NotImplementedError()
 
-    async def write_settings(self, setting_id: str, value: Any):
+    async def write_setting(self, setting_id: str, value: Any):
         """
         Set the value of specific inverter settings/configuration parameter.
         Setting must be in list provided by settings() method, otherwise ValueError is raised.
@@ -145,6 +145,12 @@ class Inverter:
         """
         return await self._read_from_socket(ProtocolCommand(command, validator))
 
+    async def get_grid_export_limit(self) -> int:
+        """
+        Get the current grid export limit in W
+        """
+        raise NotImplementedError()
+
     async def set_grid_export_limit(self, export_limit: int):
         """
         BEWARE !!!
@@ -155,16 +161,34 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def set_work_mode(self, work_mode: int):
+    async def get_operation_mode(self) -> int:
+        """
+        Get the inverter operation mode
+        0 - General mode
+        1 - Off grid mode
+        2 - Backup mode
+        3 - Eco mode
+        """
+        raise NotImplementedError()
+
+    async def set_operation_mode(self, operation_mode: int):
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
         Use with caution and at your own risk !
 
-        Set the inverter work mode
+        Set the inverter operation mode
         0 - General mode
         1 - Off grid mode
         2 - Backup mode
+        3 - Eco mode
+        """
+        raise NotImplementedError()
+
+    async def get_ongrid_battery_dod(self) -> int:
+        """
+        Get the On-Grid Battery DoD
+        0% - 89%
         """
         raise NotImplementedError()
 

@@ -356,13 +356,25 @@ class GW5000S_BP_Test(EsMock):
         # self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 143, 'W', data)
 
+    def test_get_grid_export_limit(self):
+        self.loop.run_until_complete(self.get_grid_export_limit())
+        self.assertEqual('aa55c07f0109000248', self.request.hex())
+
     def test_set_grid_export_limit(self):
         self.loop.run_until_complete(self.set_grid_export_limit(100))
         self.assertEqual('aa55c07f033502006402dc', self.request.hex())
 
-    def test_set_work_mode(self):
-        self.loop.run_until_complete(self.set_work_mode(1))
+    def test_get_operation_mode(self):
+        self.loop.run_until_complete(self.get_operation_mode())
+        self.assertEqual('aa55c07f0109000248', self.request.hex())
+
+    def test_set_operation_mode(self):
+        self.loop.run_until_complete(self.set_operation_mode(1))
         self.assertEqual('aa55c07f03590101029c', self.request.hex())
+
+    def test_get_ongrid_battery_dod(self):
+        self.loop.run_until_complete(self.get_ongrid_battery_dod())
+        self.assertEqual('aa55c07f0109000248', self.request.hex())
 
     def test_set_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.set_ongrid_battery_dod(80))
