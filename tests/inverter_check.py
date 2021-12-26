@@ -25,7 +25,7 @@ print(f"Identified inverter\n"
       f"- Version: {inverter.software_version}"
       )
 
-#response = asyncio.run(inverter.read_runtime_data(True))
+response = asyncio.run(inverter.read_runtime_data(True))
 
 #for sensor in inverter.sensors():
 #    if sensor.id_ in response:
@@ -41,7 +41,15 @@ print(f"Identified inverter\n"
 #    print(f"{setting.id_}: \t\t {setting.name} = {value} {setting.unit}")
 
 #asyncio.run(inverter.set_operation_mode(2))
-response = asyncio.run(inverter.get_operation_mode())
-print(response)
+#response = asyncio.run(inverter.get_operation_mode())
+#print(response)
 #response = asyncio.run(inverter.write_setting('grid_export_limit', 3999))
 #print(response)
+
+async def run_in_parallel(inverter):
+    a, b, c, = await asyncio.gather(inverter.get_grid_export_limit(), inverter.get_ongrid_battery_dod(), inverter.read_runtime_data())
+    print(a)
+    print(b)
+    print(c)
+
+asyncio.run(run_in_parallel(inverter))

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import asyncio
 import io
 import logging
 from dataclasses import dataclass
@@ -60,37 +63,57 @@ class Inverter:
     """
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        self.host = host
-        self.comm_addr = comm_addr
-        self.timeout = timeout
-        self.retries = retries
+        self.host: str = host
+        self.comm_addr: int = comm_addr
+        self.timeout: int = timeout
+        self.retries: int = retries
+        self._running_loop: asyncio.AbstractEventLoop | None = None
+        self._lock: asyncio.Lock | None = None
         self._consecutive_failures_count: int = 0
 
-        self.model_name: str = None
-        self.serial_number: str = None
-        self.software_version: str = None
-        self.modbus_version: int = None
-        self.rated_power: int = None
-        self.ac_output_type: int = None
-        self.dsp1_sw_version: int = None
-        self.dsp2_sw_version: int = None
-        self.dsp_svn_version: int = None
-        self.arm_sw_version: int = None
-        self.arm_svn_version: int = None
-        self.arm_version: str = None
+        self.model_name: str | None = None
+        self.serial_number: str | None = None
+        self.software_version: str | None = None
+        self.modbus_version: int | None = None
+        self.rated_power: int | None = None
+        self.ac_output_type: int | None = None
+        self.dsp1_sw_version: int | None = None
+        self.dsp2_sw_version: int | None = None
+        self.dsp_svn_version: int | None = None
+        self.arm_sw_version: int | None = None
+        self.arm_svn_version: int | None = None
+        self.arm_version: str | None = None
+
+    def _ensure_lock(self) -> None:
+        """Validate (or create) asyncio Lock.
+
+           The asyncio.Lock must always be created from within's asyncio loop,
+           so it cannot be eagerly created in constructor.
+           Additionally, since asyncio.run() creates and closes its own loop,
+           the lock's scope (its creating loop) mus be verified to support proper
+           behavior in subsequent asyncio.run() invocations.
+        """
+        if self._lock and self._running_loop == asyncio.get_event_loop():
+            pass
+        else:
+            logger.debug('Creating lock instance for current event loop.')
+            self._lock = asyncio.Lock()
+            self._running_loop = asyncio.get_event_loop()
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        try:
-            result = await command.execute(self.host, self.timeout, self.retries)
-            self._consecutive_failures_count = 0
-            return result
-        except MaxRetriesException:
-            self._consecutive_failures_count += 1
-            raise RequestFailedException(f'No valid response received even after {self.retries} retries',
-                                         self._consecutive_failures_count)
-        except RequestFailedException as ex:
-            self._consecutive_failures_count += 1
-            raise RequestFailedException(ex.message, self._consecutive_failures_count)
+        self._ensure_lock()
+        async with self._lock:
+            try:
+                result = await command.execute(self.host, self.timeout, self.retries)
+                self._consecutive_failures_count = 0
+                return result
+            except MaxRetriesException:
+                self._consecutive_failures_count += 1
+                raise RequestFailedException(f'No valid response received even after {self.retries} retries',
+                                             self._consecutive_failures_count)
+            except RequestFailedException as ex:
+                self._consecutive_failures_count += 1
+                raise RequestFailedException(ex.message, self._consecutive_failures_count)
 
     async def read_device_info(self):
         """
