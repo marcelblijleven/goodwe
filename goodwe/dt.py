@@ -104,6 +104,9 @@ class DT(Inverter):
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
         Integer("work_mode", 40331, "Work Mode", "", Kind.AC),
+
+        Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
+        Integer("grid_export_limit", 40336, "Grid Export Limit", "W", Kind.GRID),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -177,13 +180,14 @@ class DT(Inverter):
         return data
 
     async def get_grid_export_limit(self) -> int:
-        raise InverterError("Operation not supported")
+        return await self.read_setting('grid_export_limit')
 
-    async def set_grid_export_limit(self, dod: int):
-        raise InverterError("Operation not supported")
+    async def set_grid_export_limit(self, export_limit: int):
+        if export_limit >= 0 or export_limit <= 10000:
+            return await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_mode(self) -> int:
-        raise InverterError("Operation not supported")
+        return await self.read_setting('work_mode')
 
     async def set_operation_mode(self, operation_mode: int):
         if operation_mode == 0:
