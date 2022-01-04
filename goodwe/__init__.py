@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 # Inverter family names
 ET_FAMILY = ["ET", "EH", "BT", "BH"]
 ES_FAMILY = ["ES", "EM", "BP"]
-DT_FAMILY = ["DT", "NS", "XS"]
+DT_FAMILY = ["DT", "MS", "NS", "XS"]
 
 # Serial number tags to identify inverter type
 ET_MODEL_TAGS = ["ETU", "EHU", "BTU", "BHU"]
 ES_MODEL_TAGS = ["ESU", "EMU", "BPU", "BPS"]
-DT_MODEL_TAGS = ["DTU", "DTN", "DSN"]
+DT_MODEL_TAGS = ["DTU", "MSU", "DTN", "DSN"]
 
 # supported inverter protocols
 _SUPPORTED_PROTOCOLS = [ET, DT, ES]
@@ -30,10 +30,10 @@ async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: in
     """Contact the inverter at the specified host/port and answer appropriate Inverter instance.
 
     The specific inverter family/type will be detected automatically, but it can be passed explicitly.
-    Supported inverter family names are ET, EH, BT, BH, ES, EM, DT, NS, XS, BP.
+    Supported inverter family names are ET, EH, BT, BH, ES, EM, BP, DT, MS, D-NS and XS.
 
     Inverter communication address may be explicitly passed, if not the usual default value
-    will be used (0xf7 for ET/EH/BT/BH/ES/EM/BP inverters, 0x7f for DT/D-NS/XS inverters).
+    will be used (0xf7 for ET/EH/BT/BH/ES/EM/BP inverters, 0x7f for DT/MS/D-NS/XS inverters).
 
     Since the UDP communication is by definition unreliable, when no (valid) response is received by the specified
     timeout, it is considered lost and the command will be re-tried up to retries times.
@@ -80,7 +80,7 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
                 inverter_class = ES
         for model_tag in DT_MODEL_TAGS:
             if model_tag in serial_number:
-                logger.debug(f"Detected DT/D-NS/XS inverter {model_name}, S/N:{serial_number}")
+                logger.debug(f"Detected DT/MS/D-NS/XS inverter {model_name}, S/N:{serial_number}")
                 inverter_class = DT
         if inverter_class:
             i = inverter_class(host, 0, timeout, retries)
