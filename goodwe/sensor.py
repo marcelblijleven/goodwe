@@ -6,6 +6,8 @@ from typing import Any, Callable, Optional
 from .const import *
 from .inverter import Sensor, SensorKind
 
+DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
 
 class Voltage(Sensor):
     """Sensor representing voltage [V] value encoded in 2 bytes"""
@@ -200,6 +202,37 @@ class Enum2(Sensor):
 
     def read_value(self, data: io.BytesIO):
         return self.labels.get(read_bytes2(data))
+
+
+class EcoMode(Sensor):
+    """Sensor representing Eco Mode Battery Power Group encoded in 6 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str):
+        super().__init__(id_, offset, name, 8, "", SensorKind.BAT)
+
+    def read_value(self, data: io.BytesIO):
+        start_h = read_byte(data)
+        start_m = read_byte(data)
+        end_h = read_byte(data)
+        end_m = read_byte(data)
+        power = read_bytes2(data)  # negative=charge, positive=discharge
+        read_byte(data)
+        bits = bin(read_byte(data))
+        daynames = list(DAY_NAMES)
+        days = ""
+        for each in bits[::-1]:
+            if each == '1':
+                if len(days) > 0:
+                    days += ","
+                days += daynames[0]
+            daynames.pop(0)
+        return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}%"
+
+    def encode_value(self, value: Any) -> bytes:
+        if isinstance(value, str):
+            raise ValueError
+        else:
+            return value
 
 
 class Calculated(Sensor):

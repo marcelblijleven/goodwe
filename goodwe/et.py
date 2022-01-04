@@ -201,7 +201,7 @@ class ET(Inverter):
     __all_settings: Tuple[Sensor, ...] = (
         Integer("comm_address", 45127, "Communication Address", ""),
 
-        Timestamp("time", 45200, "Inverter time", ""),
+        Timestamp("time", 45200, "Inverter time"),
 
         Integer("cold_start", 45248, "Cold Start", "", Kind.AC),
         Integer("shadow_scan", 45251, "Shadow Scan", "", Kind.PV),
@@ -226,6 +226,15 @@ class ET(Inverter):
 
         Integer("grid_export", 47509, "Grid Export Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 47510, "Grid Export Limit", "W", Kind.GRID),
+
+        EcoMode("eco_mode_1", 47515, "Eco Mode Power Group 1"),
+        # Byte("eco_mode_1_switch", 47518, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
+        EcoMode("eco_mode_2", 47519, "Eco Mode Power Group 2"),
+        # Byte("eco_mode_2_switch", 47522, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
+        EcoMode("eco_mode_3", 47523, "Eco Mode Power Group 3"),
+        # Byte("eco_mode_3_switch", 47526, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
+        EcoMode("eco_mode_4", 47527, "Eco Mode Power Group 4"),
+        # Byte("eco_mode_4_switch", 47530, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -285,7 +294,8 @@ class ET(Inverter):
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
-        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, setting.size_ // 2))
+        count = (setting.size_ + (setting.size_ % 2)) // 2
+        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
         with io.BytesIO(raw_data[5:-2]) as buffer:
             return setting.read_value(buffer)
 
@@ -294,7 +304,7 @@ class ET(Inverter):
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)
-        if len(raw_value) == 2:
+        if len(raw_value) <= 2:
             value = int.from_bytes(raw_value, byteorder="big", signed=True)
             await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
         else:

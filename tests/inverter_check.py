@@ -25,11 +25,13 @@ print(f"Identified inverter\n"
       f"- Version: {inverter.software_version}"
       )
 
-response = asyncio.run(inverter.read_runtime_data(True))
+# response = asyncio.run(inverter.read_runtime_data(True))
 
 ## Set inverter time
 #
-# print(asyncio.run(inverter.read_setting('time')))
+print(asyncio.run(inverter.read_setting('time')))
+# print(asyncio.run(inverter.write_setting('eco_mode_1_switch', -127)))
+print(asyncio.run(inverter.read_setting('eco_mode_2')))
 # asyncio.run(inverter.write_setting('time', datetime.datetime.now()))
 # print(asyncio.run(inverter.read_setting('time')))
 

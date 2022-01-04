@@ -6,7 +6,7 @@ from goodwe.sensor import *
 class TestUtils(TestCase):
 
     def test_byte(self):
-        testee = Byte("", 0, "", None)
+        testee = Byte("", 0, "", "", None)
 
         data = io.BytesIO(bytes.fromhex("0c"))
         self.assertEqual(12, testee.read(data))
@@ -17,7 +17,7 @@ class TestUtils(TestCase):
         self.assertEqual("f0", testee.encode_value(-16).hex())
 
     def test_integer(self):
-        testee = Integer("", 0, "", None)
+        testee = Integer("", 0, "", "", None)
 
         data = io.BytesIO(bytes.fromhex("0031"))
         self.assertEqual(49, testee.read(data))
@@ -28,7 +28,7 @@ class TestUtils(TestCase):
         self.assertEqual("ff9e", testee.encode_value(-98).hex())
 
     def test_decimal(self):
-        testee = Decimal("", 0, 10, "", None)
+        testee = Decimal("", 0, 10, "", "", None)
 
         data = io.BytesIO(bytes.fromhex("0031"))
         self.assertEqual(4.9, testee.read(data))
@@ -90,6 +90,12 @@ class TestUtils(TestCase):
         self.assertEqual(datetime(2022, 1, 4, 18, 30, 25), testee.read(data))
         self.assertEqual("160104121e19", testee.encode_value(datetime(2022, 1, 4, 18, 30, 25)).hex())
         self.assertEqual("160104121e19", testee.encode_value("2022-01-04T18:30:25").hex())
+
+    def test_eco_mode(self):
+        testee = EcoMode("", 0, "")
+
+        data = io.BytesIO(bytes.fromhex("0d1e0e28ffc4ff1a"))
+        self.assertEqual("13:30-14:40 Mon,Wed,Thu -60%", testee.read(data))
 
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
