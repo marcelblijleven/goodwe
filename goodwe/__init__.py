@@ -8,7 +8,7 @@ from .et import ET
 from .exceptions import InverterError, RequestFailedException
 from .goodwe import GoodWeXSProcessor, AbstractDataProcessor, GoodWeInverter
 from .inverter import Inverter, Sensor, SensorKind
-from .protocol import UdpInverterProtocol, Aa55ProtocolCommand
+from .protocol import ProtocolCommand, UdpInverterProtocol, Aa55ProtocolCommand
 
 logger = logging.getLogger(__name__)
 
@@ -115,20 +115,16 @@ async def search_inverters() -> bytes:
     """
     logger.debug("Searching inverters by broadcast to port 48899")
     loop = asyncio.get_running_loop()
-    on_response_received = loop.create_future()
+    command = ProtocolCommand("WIFIKIT-214028-READ".encode("utf-8"), lambda r: True)
+    command.response_future = loop.create_future()
     transport, _ = await loop.create_datagram_endpoint(
-        lambda: UdpInverterProtocol(
-            "WIFIKIT-214028-READ".encode("utf-8"),
-            lambda r: True,
-            on_response_received,
-            1, 3
-        ),
+        lambda: UdpInverterProtocol(command, 1, 3),
         remote_addr=("255.255.255.255", 48899),
         allow_broadcast=True,
     )
     try:
-        await on_response_received
-        result = on_response_received.result()
+        await command.response_future
+        result = command.response_future.result()
         if result is not None:
             return result
         else:
