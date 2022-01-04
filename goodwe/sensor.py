@@ -11,7 +11,7 @@ class Voltage(Sensor):
     """Sensor representing voltage [V] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "V", kind)
+        super().__init__(id_, offset, name, 2, "V", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_voltage(data)
@@ -24,7 +24,7 @@ class Current(Sensor):
     """Sensor representing current [A] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "A", kind)
+        super().__init__(id_, offset, name, 2, "A", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_current(data)
@@ -37,7 +37,7 @@ class Frequency(Sensor):
     """Sensor representing frequency [Hz] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "Hz", kind)
+        super().__init__(id_, offset, name, 2, "Hz", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_freq(data)
@@ -47,7 +47,7 @@ class Power(Sensor):
     """Sensor representing power [W] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "W", kind)
+        super().__init__(id_, offset, name, 2, "W", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_power2(data)
@@ -57,7 +57,7 @@ class Power4(Sensor):
     """Sensor representing power [W] value encoded in 4 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "W", kind)
+        super().__init__(id_, offset, name, 4, "W", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_power(data)
@@ -67,7 +67,7 @@ class Energy(Sensor):
     """Sensor representing energy [kWh] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "kWh", kind)
+        super().__init__(id_, offset, name, 2, "kWh", kind)
 
     def read_value(self, data: io.BytesIO):
         value = read_bytes2(data)
@@ -81,7 +81,7 @@ class Energy4(Sensor):
     """Sensor representing energy [kWh] value encoded in 4 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
-        super().__init__(id_, offset, name, "kWh", kind)
+        super().__init__(id_, offset, name, 4, "kWh", kind)
 
     def read_value(self, data: io.BytesIO):
         value = read_bytes4(data)
@@ -95,7 +95,7 @@ class Temp(Sensor):
     """Sensor representing temperature [C] value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, "C", kind)
+        super().__init__(id_, offset, name, 2, "C", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_temp(data)
@@ -105,7 +105,7 @@ class Byte(Sensor):
     """Sensor representing signed int value encoded in 1 byte"""
 
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 1, unit, kind)
 
     def read_value(self, data: io.BytesIO):
         return read_byte(data)
@@ -118,7 +118,7 @@ class Integer(Sensor):
     """Sensor representing signed int value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 2, unit, kind)
 
     def read_value(self, data: io.BytesIO):
         return read_bytes2(data)
@@ -131,7 +131,7 @@ class Long(Sensor):
     """Sensor representing signed int value encoded in 4 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 4, unit, kind)
 
     def read_value(self, data: io.BytesIO):
         return read_bytes4(data)
@@ -144,7 +144,7 @@ class Decimal(Sensor):
     """Sensor representing signed decimal value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, scale: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 2, unit, kind)
         self.scale = scale
 
     def read_value(self, data: io.BytesIO):
@@ -158,7 +158,7 @@ class Float(Sensor):
     """Sensor representing signed int value encoded in 4 bytes"""
 
     def __init__(self, id_: str, offset: int, scale: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 4, unit, kind)
         self.scale = scale
 
     def read_value(self, data: io.BytesIO):
@@ -169,10 +169,13 @@ class Timestamp(Sensor):
     """Sensor representing datetime value encoded in 6 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, "", kind)
+        super().__init__(id_, offset, name, 6, "", kind)
 
     def read_value(self, data: io.BytesIO):
         return read_datetime(data)
+
+    def encode_value(self, value: Any) -> bytes:
+        return encode_datetime(value)
 
 
 class Enum(Sensor):
@@ -180,7 +183,7 @@ class Enum(Sensor):
 
     def __init__(self, id_: str, offset: int, labels: Dict, name: str, unit: str = "",
                  kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 1, unit, kind)
         self.labels: Dict = labels
 
     def read_value(self, data: io.BytesIO):
@@ -192,7 +195,7 @@ class Enum2(Sensor):
 
     def __init__(self, id_: str, offset: int, labels: Dict, name: str, unit: str = "",
                  kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 2, unit, kind)
         self.labels: Dict = labels
 
     def read_value(self, data: io.BytesIO):
@@ -204,7 +207,7 @@ class Calculated(Sensor):
 
     def __init__(self, id_: str, offset: int, getter: Callable[[io.BytesIO, int], Any], name: str, unit: str,
                  kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, unit, kind)
+        super().__init__(id_, offset, name, 0, unit, kind)
         self._getter: Callable[[io.BytesIO, int], Any] = getter
 
     def read_value(self, data: io.BytesIO) -> Any:
@@ -325,6 +328,23 @@ def read_datetime(buffer: io.BytesIO, offset: int = None) -> datetime:
     minute = int.from_bytes(buffer.read(1), byteorder='big')
     second = int.from_bytes(buffer.read(1), byteorder='big')
     return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+
+
+def encode_datetime(value: Any) -> bytes:
+    """Encode datetime value to raw (6 bytes) payload"""
+    timestamp = value
+    if isinstance(value, str):
+        timestamp = datetime.fromisoformat(value)
+
+    result = bytes([
+        timestamp.year - 2000,
+        timestamp.month,
+        timestamp.day,
+        timestamp.hour,
+        timestamp.minute,
+        timestamp.second,
+    ])
+    return result
 
 
 def read_grid_mode(buffer: io.BytesIO, offset: int = None) -> int:

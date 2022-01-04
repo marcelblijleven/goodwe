@@ -31,7 +31,7 @@ class EtMock(TestCase, ET):
                 return response
         else:
             self.request = command.request
-            return bytes.fromhex("010203040506070809")
+            return bytes.fromhex("aa55f700010203040506070809")
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
@@ -198,9 +198,15 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.read_setting('grid_export_limit'))
         self.assertEqual('f703b996000155ec', self.request.hex())
 
+        self.loop.run_until_complete(self.read_setting('time'))
+        self.assertEqual('f703b090000337b0', self.request.hex())
+
     def test_GW10K_ET_write_setting(self):
         self.loop.run_until_complete(self.write_setting('grid_export_limit', 100))
         self.assertEqual('f706b996006459c7', self.request.hex())
+
+        self.loop.run_until_complete(self.write_setting('time', datetime(2022, 1, 4, 18, 30, 25)))
+        self.assertEqual('f710b090000306160104121e19a961', self.request.hex())
 
     def test_get_grid_export_limit(self):
         self.loop.run_until_complete(self.get_grid_export_limit())

@@ -7,7 +7,8 @@ from typing import Tuple, Optional, Callable
 
 from .const import GOODWE_UDP_PORT
 from .exceptions import MaxRetriesException, RequestFailedException
-from .modbus import create_modbus_request, validate_modbus_response, MODBUS_READ_CMD, MODBUS_WRITE_CMD
+from .modbus import create_modbus_request, create_modbus_multi_request, validate_modbus_response, MODBUS_READ_CMD, \
+    MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +186,7 @@ class ModbusProtocolCommand(ProtocolCommand):
     Some values may span more registers (i.e. 4bytes measurement value over 2 registers).
 
     Every request usually starts with communication address (usually 0xF7, but can be changed).
-    Second byte is the modbus command - 0x03 read multiple, 0x06 write single, 0x09 write multiple.
+    Second byte is the modbus command - 0x03 read multiple, 0x06 write single, 0x10 write multiple.
     Bytes 3-4 represent the register address (or start of range)
     Bytes 5-6 represent the command parameter (range size or actual value for write).
     Last 2 bytes of request is the CRC-16 (modbus flavor) of the request.
@@ -196,9 +197,9 @@ class ModbusProtocolCommand(ProtocolCommand):
     Last 2 bytes of response is again the CRC-16 of the response.
     """
 
-    def __init__(self, comm_addr: int, cmd: int, offset: int, value: int):
+    def __init__(self, request: bytes, cmd: int, offset: int, value: int):
         super().__init__(
-            create_modbus_request(comm_addr, cmd, offset, value),
+            request,
             lambda x: validate_modbus_response(x, cmd, offset, value),
         )
 
@@ -209,13 +210,28 @@ class ModbusReadCommand(ModbusProtocolCommand):
     """
 
     def __init__(self, comm_addr: int, offset: int, count: int):
-        super().__init__(comm_addr, MODBUS_READ_CMD, offset, count)
+        super().__init__(
+            create_modbus_request(comm_addr, MODBUS_READ_CMD, offset, count),
+            MODBUS_READ_CMD, offset, count)
 
 
 class ModbusWriteCommand(ModbusProtocolCommand):
     """
-    Inverter modbus WRITE command setting to modbus register # <register> value <value>
+    Inverter modbus WRITE command setting single modbus register # <register> value <value>
     """
 
     def __init__(self, comm_addr: int, register: int, value: int):
-        super().__init__(comm_addr, MODBUS_WRITE_CMD, register, value)
+        super().__init__(
+            create_modbus_request(comm_addr, MODBUS_WRITE_CMD, register, value),
+            MODBUS_WRITE_CMD, register, value)
+
+
+class ModbusWriteMultiCommand(ModbusProtocolCommand):
+    """
+    Inverter modbus WRITE command setting multiple modbus register # <register> value <value>
+    """
+
+    def __init__(self, comm_addr: int, offset: int, values: bytes):
+        super().__init__(
+            create_modbus_multi_request(comm_addr, MODBUS_WRITE_MULTI_CMD, offset, values),
+            MODBUS_WRITE_MULTI_CMD, offset, len(values) // 2)

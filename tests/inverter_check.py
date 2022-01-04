@@ -27,7 +27,13 @@ print(f"Identified inverter\n"
 
 response = asyncio.run(inverter.read_runtime_data(True))
 
-#for sensor in inverter.sensors():
+## Set inverter time
+#
+# print(asyncio.run(inverter.read_setting('time')))
+# asyncio.run(inverter.write_setting('time', datetime.datetime.now()))
+# print(asyncio.run(inverter.read_setting('time')))
+
+# for sensor in inverter.sensors():
 #    if sensor.id_ in response:
 #        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
 
@@ -40,16 +46,16 @@ response = asyncio.run(inverter.read_runtime_data(True))
 #    value = asyncio.run(inverter.read_settings(setting.id_))
 #    print(f"{setting.id_}: \t\t {setting.name} = {value} {setting.unit}")
 
-#asyncio.run(inverter.set_operation_mode(2))
-#response = asyncio.run(inverter.get_operation_mode())
-#print(response)
-#response = asyncio.run(inverter.write_setting('grid_export_limit', 3999))
-#print(response)
+# asyncio.run(inverter.set_operation_mode(2))
+# response = asyncio.run(inverter.get_operation_mode())
+# print(response)
+# response = asyncio.run(inverter.write_setting('grid_export_limit', 3999))
+# print(response)
 
-async def run_in_parallel(inverter):
-    a, b, c, = await asyncio.gather(inverter.get_grid_export_limit(), inverter.get_ongrid_battery_dod(), inverter.read_runtime_data())
-    print(a)
-    print(b)
-    print(c)
+# async def run_in_parallel(inverter):
+#    a, b, c, = await asyncio.gather(inverter.get_grid_export_limit(), inverter.get_ongrid_battery_dod(), inverter.read_runtime_data())
+#    print(a)
+#    print(b)
+#    print(c)
 
-asyncio.run(run_in_parallel(inverter))
+# asyncio.run(run_in_parallel(inverter))

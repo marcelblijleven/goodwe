@@ -2,7 +2,7 @@ from typing import Tuple
 
 from .inverter import Inverter
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand
+from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
 
@@ -201,6 +201,8 @@ class ET(Inverter):
     __all_settings: Tuple[Sensor, ...] = (
         Integer("comm_address", 45127, "Communication Address", ""),
 
+        Timestamp("time", 45200, "Inverter time", ""),
+
         Integer("cold_start", 45248, "Cold Start", "", Kind.AC),
         Integer("shadow_scan", 45251, "Shadow Scan", "", Kind.PV),
         Integer("backup_supply", 45252, "Backup Supply", "", Kind.UPS),
@@ -283,7 +285,7 @@ class ET(Inverter):
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
-        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, setting.size_ // 2))
         with io.BytesIO(raw_data[5:-2]) as buffer:
             return setting.read_value(buffer)
 
@@ -292,10 +294,11 @@ class ET(Inverter):
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)
-        if len(raw_value) > 2:
-            raise NotImplementedError()
-        value = int.from_bytes(raw_value, byteorder="big", signed=True)
-        await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+        if len(raw_value) == 2:
+            value = int.from_bytes(raw_value, byteorder="big", signed=True)
+            await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+        else:
+            await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}

@@ -3,7 +3,7 @@ from typing import Tuple
 from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand
+from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
 
@@ -103,6 +103,8 @@ class DT(Inverter):
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
+        Timestamp("time", 40313, "Inverter time", ""),
+
         Integer("work_mode", 40331, "Work Mode", "", Kind.AC),
 
         Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
@@ -158,7 +160,7 @@ class DT(Inverter):
         setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
-        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, setting.size_ // 2))
         with io.BytesIO(raw_data[5:-2]) as buffer:
             return setting.read_value(buffer)
 
@@ -167,10 +169,11 @@ class DT(Inverter):
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)
-        if len(raw_value) > 2:
-            raise NotImplementedError()
-        value = int.from_bytes(raw_value, byteorder="big", signed=True)
-        await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+        if len(raw_value) == 2:
+            value = int.from_bytes(raw_value, byteorder="big", signed=True)
+            await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+        else:
+            await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}

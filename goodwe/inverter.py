@@ -39,6 +39,7 @@ class Sensor:
     id_: str
     offset: int
     name: str
+    size_: int
     unit: str
     kind: Optional[SensorKind]
 

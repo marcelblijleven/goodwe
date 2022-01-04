@@ -83,6 +83,14 @@ class TestUtils(TestCase):
         data = io.BytesIO(bytes.fromhex("ffffffff"))
         self.assertIsNone(testee.read(data))
 
+    def test_timestamp(self):
+        testee = Timestamp("", 0, "", None)
+
+        data = io.BytesIO(bytes.fromhex("160104121e19"))
+        self.assertEqual(datetime(2022, 1, 4, 18, 30, 25), testee.read(data))
+        self.assertEqual("160104121e19", testee.encode_value(datetime(2022, 1, 4, 18, 30, 25)).hex())
+        self.assertEqual("160104121e19", testee.encode_value("2022-01-04T18:30:25").hex())
+
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
         self.assertEqual('Utility Loss', decode_bitmap(512, ERROR_CODES))
