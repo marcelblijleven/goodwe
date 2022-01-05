@@ -156,11 +156,21 @@ class ES(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
-        all_settings = await self.read_settings_data()
-        return all_settings.get(setting_id)
+        if setting_id == 'time':
+            # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
+            # There does not seem to be time setting/sensor evailable (or is not known)
+            return datetime.now()
+        else:
+            all_settings = await self.read_settings_data()
+            return all_settings.get(setting_id)
 
     async def write_setting(self, setting_id: str, value: Any):
-        raise InverterError("Operation not supported")
+        if setting_id == 'time':
+            await self._read_from_socket(
+                Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
+            )
+        else:
+            raise InverterError("Operation not supported")
 
     async def read_settings_data(self) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
