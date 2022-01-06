@@ -8,7 +8,7 @@ from .sensor import *
 
 
 class DT(Inverter):
-    """Class representing inverter of DT, D-NS and XS families"""
+    """Class representing inverter of DT/MS/D-NS/XS families"""
 
     __all_sensors: Tuple[Sensor, ...] = (
         Timestamp("timestamp", 0, "Timestamp"),

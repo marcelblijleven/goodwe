@@ -8,7 +8,7 @@ from .sensor import *
 
 
 class ES(Inverter):
-    """Class representing inverter of ES/EM family"""
+    """Class representing inverter of ES/EM/BP family"""
 
     _READ_DEVICE_VERSION_INFO: ProtocolCommand = Aa55ProtocolCommand("010200", "0182")
     _READ_DEVICE_RUNNING_DATA: ProtocolCommand = Aa55ProtocolCommand("010600", "0186")
@@ -194,6 +194,7 @@ class ES(Inverter):
             await self._read_from_socket(
                 Aa55ProtocolCommand("035901" + "{:02x}".format(operation_mode), "03D9")
             )
+            self.reset_inverter()
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting('dod')
@@ -203,6 +204,9 @@ class ES(Inverter):
             await self._read_from_socket(
                 Aa55ProtocolCommand("023905056001" + "{:04x}".format(100 - dod), "02b9")
             )
+
+    async def reset_inverter(self) -> None:
+        await self._read_from_socket(Aa55ProtocolCommand("031d00", "039d"))
 
     def sensors(self) -> Tuple[Sensor, ...]:
         return self.__sensors
