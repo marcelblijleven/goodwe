@@ -8,6 +8,19 @@ MODBUS_READ_CMD: int = 0x3
 MODBUS_WRITE_CMD: int = 0x6
 MODBUS_WRITE_MULTI_CMD: int = 0x10
 
+FAILURE_CODES = {
+    1: "ILLEGAL FUNCTION",
+    2: "ILLEGAL DATA ADDRESS",
+    3: "ILLEGAL DATA VALUE",
+    4: "SLAVE DEVICE FAILURE",
+    5: "ACKNOWLEDGE",
+    6: "SLAVE DEVICE BUSY",
+    7: "NEGATIVE ACKNOWLEDGEMENT",
+    8: "MEMORY PARITY ERROR",
+    10: "GATEWAY PATH UNAVAILABLE",
+    11: "GATEWAY TARGET DEVICE FAILED TO RESPOND",
+}
+
 
 def _create_crc16_table() -> tuple:
     """Construct (modbus) CRC-16 table"""
@@ -97,7 +110,9 @@ def validate_modbus_response(data: bytes, cmd: int, offset: int, value: int) -> 
         logger.debug(f'Response is too short.')
         return False
     if data[3] != cmd:
-        logger.debug(f'Response returned command failure: {data[3]}, expected {cmd}.')
+        failure_code = FAILURE_CODES.get(data[4], "UNKNOWN")
+        logger.debug(
+            f'Response is command failure: {failure_code}.')
         return False
     if data[3] == MODBUS_READ_CMD:
         if data[4] != value * 2:
