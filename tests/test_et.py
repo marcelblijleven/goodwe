@@ -220,9 +220,9 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.get_operation_mode())
         self.assertEqual('f703b798000136c7', self.request.hex())
 
-    def test_set_operation_mode(self):
-        self.loop.run_until_complete(self.set_operation_mode(1))
-        self.assertEqual('f706b7980001fac7', self.request.hex())
+    #    def test_set_operation_mode(self):
+    #        self.loop.run_until_complete(self.set_operation_mode(1))
+    #        self.assertEqual('f706b7980001fac7', self.request.hex())
 
     def test_get_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.get_ongrid_battery_dod())

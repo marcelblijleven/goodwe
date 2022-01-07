@@ -203,10 +203,10 @@ class ET(Inverter):
 
         Timestamp("time", 45200, "Inverter time"),
 
+        Integer("sensitivity_check", 45246, "Sensitivity Check Mode", "", Kind.AC),
         Integer("cold_start", 45248, "Cold Start", "", Kind.AC),
         Integer("shadow_scan", 45251, "Shadow Scan", "", Kind.PV),
         Integer("backup_supply", 45252, "Backup Supply", "", Kind.UPS),
-        Integer("sensitivity_check", 45246, "Sensitivity Check Mode", "", Kind.AC),
 
         Integer("battery_capacity", 45350, "Battery Capacity", "Ah", Kind.BAT),
         Integer("battery_modules", 45351, "Battery Modules", "", Kind.BAT),
@@ -320,23 +320,31 @@ class ET(Inverter):
     async def get_grid_export_limit(self) -> int:
         return await self.read_setting('grid_export_limit')
 
-    async def set_grid_export_limit(self, export_limit: int):
+    async def set_grid_export_limit(self, export_limit: int) -> None:
         if export_limit >= 0 or export_limit <= 10000:
-            return await self.write_setting('grid_export_limit', export_limit)
+            await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int):
+    async def set_operation_mode(self, operation_mode: int) -> None:
         if operation_mode in (0, 1, 2, 3):
-            return await self.write_setting('work_mode', operation_mode)
+            await self.write_setting('work_mode', operation_mode)
+            if operation_mode == 1:
+                await self._set_offline(True)
+                await self.write_setting('backup_supply', 1)
+                await self.write_setting('cold_start', 4)
+            else:
+                await self._set_offline(False)
+            if operation_mode < 3:
+                await self._clear_battery_mode_param()
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting('battery_discharge_depth')
 
-    async def set_ongrid_battery_dod(self, dod: int):
+    async def set_ongrid_battery_dod(self, dod: int) -> None:
         if 0 <= dod <= 89:
-            return await self.write_setting('battery_discharge_depth', 100 - dod)
+            await self.write_setting('battery_discharge_depth', 100 - dod)
 
     def sensors(self) -> Tuple[Sensor, ...]:
         if self._has_battery:
@@ -346,3 +354,10 @@ class ET(Inverter):
 
     def settings(self) -> Tuple[Sensor, ...]:
         return self._settings
+
+    async def _clear_battery_mode_param(self) -> None:
+        await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0xb9ad, 1))
+
+    async def _set_offline(self, mode: bool) -> None:
+        value = bytes.fromhex('00070000') if mode else bytes.fromhex('00010000')
+        await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, 0xb997, value))

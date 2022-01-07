@@ -186,14 +186,14 @@ class DT(Inverter):
     async def get_grid_export_limit(self) -> int:
         return await self.read_setting('grid_export_limit')
 
-    async def set_grid_export_limit(self, export_limit: int):
+    async def set_grid_export_limit(self, export_limit: int) -> None:
         if export_limit >= 0 or export_limit <= 10000:
             return await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int):
+    async def set_operation_mode(self, operation_mode: int) -> None:
         if operation_mode == 0:
             await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0x9d8b, 0))
         elif operation_mode == 3:
@@ -202,7 +202,7 @@ class DT(Inverter):
     async def get_ongrid_battery_dod(self) -> int:
         raise InverterError("Operation not supported, inverter has no batteries")
 
-    async def set_ongrid_battery_dod(self, dod: int):
+    async def set_ongrid_battery_dod(self, dod: int) -> None:
         raise InverterError("Operation not supported, inverter has no batteries")
 
     def sensors(self) -> Tuple[Sensor, ...]:

@@ -175,7 +175,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def set_grid_export_limit(self, export_limit: int):
+    async def set_grid_export_limit(self, export_limit: int) -> None:
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
@@ -195,7 +195,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def set_operation_mode(self, operation_mode: int):
+    async def set_operation_mode(self, operation_mode: int) -> None:
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
@@ -216,7 +216,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def set_ongrid_battery_dod(self, ongrid_battery_dod: int):
+    async def set_ongrid_battery_dod(self, ongrid_battery_dod: int) -> None:
         """
         BEWARE !!!
         This method modifies On-Grid Battery DoD parameter accessible to installers only.
