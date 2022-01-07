@@ -81,7 +81,7 @@ class Inverter:
         self.dsp1_sw_version: int | None = None
         self.dsp2_sw_version: int | None = None
         self.dsp_svn_version: int | None = None
-        self.arm_sw_version: int | None = None
+        self.arm_sw_version: int = 0
         self.arm_svn_version: int | None = None
         self.arm_version: str | None = None
 

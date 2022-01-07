@@ -146,9 +146,12 @@ class ES(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
+        self.arm_version = response[7:12].decode("ascii").rstrip()
         self.model_name = response[12:22].decode("ascii").rstrip()
         self.serial_number = response[38:54].decode("ascii")
         self.software_version = response[58:70].decode("ascii")
+        if len(self.arm_version) >= 5:
+            self.arm_sw_version = int(self.arm_version[4])
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
@@ -190,11 +193,18 @@ class ES(Inverter):
         return await self.read_setting('work_mode')
 
     async def set_operation_mode(self, operation_mode: int):
-        if operation_mode in (0, 1, 2, 3):
-            await self._read_from_socket(
-                Aa55ProtocolCommand("035901" + "{:02x}".format(operation_mode), "03D9")
-            )
-            self.reset_inverter()
+        if operation_mode == 0:
+            await self._set_general_mode()
+            await self.reset_inverter()
+        elif operation_mode == 1:
+            await self._set_offgrid_mode()
+            await self.reset_inverter()
+        elif operation_mode == 2:
+            await self._set_backup_mode()
+            await self.reset_inverter()
+        elif operation_mode == 3:
+            await self._set_work_mode(3)
+            await self.reset_inverter()
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting('dod')
@@ -213,3 +223,85 @@ class ES(Inverter):
 
     def settings(self) -> Tuple[Sensor, ...]:
         return self.__settings
+
+    async def _set_general_mode(self) -> None:
+        if self.arm_sw_version >= 7:
+            if self._supports_new_eco_mode():
+                await self._clear_battery_mode_param()
+            else:
+                await self._set_limit_power_for_charge(0, 0, 0, 0, 0)
+                await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
+                await self._clear_battery_mode_param()
+        else:
+            await self._set_limit_power_for_charge(0, 0, 0, 0, 0)
+            await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
+        await self._set_offgrid_work_mode(0)
+        await self._set_work_mode(0)
+
+    async def _set_backup_mode(self) -> None:
+        if self.arm_sw_version >= 7:
+            if self._supports_new_eco_mode():
+                await self._clear_battery_mode_param()
+            else:
+                await self._clear_battery_mode_param()
+                await self._set_limit_power_for_charge(0, 0, 23, 59, 10)
+        else:
+            await self._set_limit_power_for_charge(0, 0, 23, 59, 10)
+            await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
+        await self._set_offgrid_work_mode(0)
+        await self._set_work_mode(2)
+
+    async def _set_offgrid_mode(self) -> None:
+        if self.arm_sw_version >= 7:
+            await self._clear_battery_mode_param()
+        else:
+            await self._set_limit_power_for_charge(0, 0, 23, 59, 0)
+            await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
+        await self._set_offgrid_work_mode(1)
+        await self._set_relay_control(3)
+        await self._set_store_energy_mode(0)
+        await self._set_work_mode(1)
+
+    async def _clear_battery_mode_param(self) -> None:
+        await self._read_from_socket(Aa55ProtocolCommand("0239050700010001", "02B9"))
+
+    async def _set_limit_power_for_charge(self, startH: int, startM: int, stopH: int, stopM: int, limit: int) -> None:
+        await self._read_from_socket(Aa55ProtocolCommand("032c05" + "{:02x}".format(limit)
+                                                         + "{:02x}".format(startH) + "{:02x}".format(startM)
+                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM), "03AC"))
+
+    async def _set_limit_power_for_discharge(self, startH: int, startM: int, stopH: int, stopM: int,
+                                             limit: int) -> None:
+        await self._read_from_socket(Aa55ProtocolCommand("032d05" + "{:02x}".format(limit)
+                                                         + "{:02x}".format(startH) + "{:02x}".format(startM)
+                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM), "03AD"))
+
+    async def _set_offgrid_work_mode(self, mode: int) -> None:
+        await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
+
+    def _supports_new_eco_mode(self) -> bool:
+        # TODO check also inverter sw version
+        return self.arm_sw_version >= 14
+
+    async def _set_relay_control(self, mode: int) -> None:
+        param = 0
+        if mode == 2:
+            param = 16
+        elif mode == 3:
+            param = 48
+        await self._read_from_socket(Aa55ProtocolCommand("03270200" + "{:02x}".format(param), "03B7"))
+
+    async def _set_store_energy_mode(self, mode: int) -> None:
+        param = 0
+        if mode == 0:
+            param = 4
+        elif mode == 1:
+            param = 2
+        elif mode == 2:
+            param = 8
+        elif mode == 3:
+            param = 1
+        await self._read_from_socket(Aa55ProtocolCommand("032601" + "{:02x}".format(param), "03B6"))
+
+    async def _set_work_mode(self, mode: int) -> None:
+        await self._read_from_socket(Aa55ProtocolCommand("035901" + "{:02x}".format(mode), "03D9"))

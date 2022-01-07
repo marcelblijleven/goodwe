@@ -47,6 +47,14 @@ class GW5048_EM_Test(EsMock):
     def __init__(self, methodName='runTest'):
         EsMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-EM_running_data.hex')
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW5048-EM_device_info.hex')
+
+    def test_GW5048_EM_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW5048-EM', self.model_name)
+        self.assertEqual('00000EMU00AW0000', self.serial_number)
+        self.assertEqual('09098', self.arm_version)
+        self.assertEqual(8, self.arm_sw_version)
 
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -372,9 +380,9 @@ class GW5000S_BP_Test(EsMock):
         self.loop.run_until_complete(self.get_operation_mode())
         self.assertEqual('aa55c07f0109000248', self.request.hex())
 
-    def test_set_operation_mode(self):
-        self.loop.run_until_complete(self.set_operation_mode(1))
-        self.assertEqual('aa55c07f03590101029c', self.request.hex())
+    #    def test_set_operation_mode(self):
+    #        self.loop.run_until_complete(self.set_operation_mode(1))
+    #        self.assertEqual('aa55c07f03590101029c', self.request.hex())
 
     def test_get_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.get_ongrid_battery_dod())
