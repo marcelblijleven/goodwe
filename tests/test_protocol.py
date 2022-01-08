@@ -8,14 +8,15 @@ from goodwe.protocol import UdpInverterProtocol, ModbusReadCommand, ModbusWriteC
 class TestUDPClientProtocol(TestCase):
     def setUp(self) -> None:
         self.command = ProtocolCommand(bytes.fromhex('636f666665650d0a'), lambda x: True)
-        self.command.response_future = mock.Mock()
+        self.response_future = mock.Mock()
         #        self.processor = mock.Mock()
-        self.protocol = UdpInverterProtocol(self.command, 1, 3)
+        self.protocol = UdpInverterProtocol(self.response_future, self.command, 1, 3)
 
     def test_datagram_received(self):
         data = b'this is mock data'
         self.protocol.datagram_received(data, ('127.0.0.1', 1337))
-        self.command.response_future.set_result.assert_called_once()
+        self.response_future.set_result.assert_called_once()
+
     #        self.processor.assert_called_once_with(data)
 
     #    def test_datagram_received_process_exception(self):
@@ -30,7 +31,7 @@ class TestUDPClientProtocol(TestCase):
     def test_error_received(self):
         exc = Exception('something went wrong')
         self.protocol.error_received(exc)
-        self.command.response_future.set_exception.assert_called_once_with(exc)
+        self.response_future.set_exception.assert_called_once_with(exc)
 
     @mock.patch('goodwe.protocol.asyncio.get_event_loop')
     def test_connection_made(self, mock_get_event_loop):
@@ -47,19 +48,19 @@ class TestUDPClientProtocol(TestCase):
         mock_loop.call_later.assert_called_with(1, mock_retry_mechanism)
 
     def test_connection_lost(self):
-        self.command.response_future.done.return_value = True
+        self.response_future.done.return_value = True
         self.protocol.connection_lost(None)
-        self.command.response_future.cancel.assert_not_called()
+        self.response_future.cancel.assert_not_called()
 
     def test_connection_lost_not_done(self):
-        self.command.response_future.done.return_value = False
+        self.response_future.done.return_value = False
         self.protocol.connection_lost(None)
-        self.command.response_future.cancel.assert_called()
+        self.response_future.cancel.assert_called()
 
     def test_retry_mechanism(self):
         self.protocol._transport = mock.Mock()
         self.protocol._send_message = mock.Mock()
-        self.command.response_future.done.return_value = True
+        self.response_future.done.return_value = True
         self.protocol._retry_mechanism()
 
         self.protocol._transport.close.assert_called()
@@ -75,7 +76,7 @@ class TestUDPClientProtocol(TestCase):
         mock_loop.call_later = call_later
 
         self.protocol._transport = mock.Mock()
-        self.command.response_future.done.side_effect = [False, False, True]
+        self.response_future.done.side_effect = [False, False, True]
         self.protocol._retry_mechanism()
 
         self.protocol._transport.close.assert_called()
@@ -91,9 +92,9 @@ class TestUDPClientProtocol(TestCase):
         mock_loop.call_later = call_later
 
         self.protocol._transport = mock.Mock()
-        self.command.response_future.done.side_effect = [False, False, False, False, False]
+        self.response_future.done.side_effect = [False, False, False, False, False]
         self.protocol._retry_mechanism()
-        self.command.response_future.set_exception.assert_called_once_with(MaxRetriesException)
+        self.response_future.set_exception.assert_called_once_with(MaxRetriesException)
         self.assertEqual(self.protocol._retries, 3)
 
     def test_modbus_read_command(self):
