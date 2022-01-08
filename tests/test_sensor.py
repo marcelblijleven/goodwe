@@ -95,7 +95,7 @@ class TestUtils(TestCase):
         testee = EcoMode("", 0, "")
 
         data = io.BytesIO(bytes.fromhex("0d1e0e28ffc4ff1a"))
-        self.assertEqual("13:30-14:40 Mon,Wed,Thu -60%", testee.read(data))
+        self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% On", testee.read(data))
 
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))

@@ -23,5 +23,3 @@ class ProcessingException(InverterError):
 
 class MaxRetriesException(InverterError):
     """Indicates the maximum number of retries has been reached"""
-
-

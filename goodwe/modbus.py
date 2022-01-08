@@ -107,38 +107,36 @@ def validate_modbus_response(data: bytes, cmd: int, offset: int, value: int) -> 
     data[-2:] is crc-16 checksum
     """
     if len(data) <= 4:
-        logger.debug(f'Response is too short.')
+        logger.debug("Response is too short.")
         return False
     if data[3] != cmd:
-        failure_code = FAILURE_CODES.get(data[4], "UNKNOWN")
-        logger.debug(
-            f'Response is command failure: {failure_code}.')
+        logger.debug("Response is command failure: %s.", FAILURE_CODES.get(data[4], "UNKNOWN"))
         return False
     if data[3] == MODBUS_READ_CMD:
         if data[4] != value * 2:
-            logger.debug(f'Response has unexpected length: {data[4]}, expected {value * 2}.')
+            logger.debug("Response has unexpected length: %d, expected %d.", data[4], value * 2)
             return False
         expected_length = data[4] + 7
         if len(data) < expected_length:
-            logger.debug(f'Response is too short: {len(data)}, expected {expected_length}.')
+            logger.debug("Response is too short: %d, expected %d.", len(data), expected_length)
             return False
     elif data[3] in (MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD):
         if len(data) < 10:
-            logger.debug(f'Response has unexpected length: {len(data)}, expected {10}.')
+            logger.debug("Response has unexpected length: %d, expected %d.", len(data), 10)
             return False
         expected_length = 10
         response_offset = int.from_bytes(data[4:6], byteorder='big')
         if response_offset != offset:
-            logger.debug(f'Response has wrong offset: {response_offset}, expected {offset}.')
+            logger.debug("Response has wrong offset: %X, expected %X.", response_offset, offset)
             return False
         response_value = int.from_bytes(data[6:8], byteorder='big')
         if response_value != value:
-            logger.debug(f'Response has wrong value: {response_value}, expected {value}.')
+            logger.debug("Response has wrong value: %X, expected %X.", response_value, value)
             return False
     else:
         expected_length = len(data)
     checksum_offset = expected_length - 2
     if _modbus_checksum(data[2:checksum_offset]) != ((data[checksum_offset + 1] << 8) + data[checksum_offset]):
-        logger.debug(f'Response CRC-16 checksum does not match.')
+        logger.debug("Response CRC-16 checksum does not match.")
         return False
     return True

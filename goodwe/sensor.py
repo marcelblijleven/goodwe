@@ -216,17 +216,9 @@ class EcoMode(Sensor):
         end_h = read_byte(data)
         end_m = read_byte(data)
         power = read_bytes2(data)  # negative=charge, positive=discharge
-        read_byte(data)
-        bits = bin(read_byte(data))
-        daynames = list(DAY_NAMES)
-        days = ""
-        for each in bits[::-1]:
-            if each == '1':
-                if len(days) > 0:
-                    days += ","
-                days += daynames[0]
-            daynames.pop(0)
-        return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}%"
+        on_off = read_byte(data)
+        days = decode_day_of_week(read_byte(data))
+        return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}% {'On' if on_off != 0 else 'Off'}"
 
     def encode_value(self, value: Any) -> bytes:
         if isinstance(value, str):
@@ -404,3 +396,16 @@ def decode_bitmap(value: int, bitmap: Dict[int, str]) -> str:
             result.append(bitmap.get(i, f'err{i}'))
         bits = bits >> 1
     return ", ".join(result)
+
+
+def decode_day_of_week(data: int) -> str:
+    bits = bin(data)
+    daynames = list(DAY_NAMES)
+    days = ""
+    for each in bits[::-1]:
+        if each == '1':
+            if len(days) > 0:
+                days += ","
+            days += daynames[0]
+        daynames.pop(0)
+    return days

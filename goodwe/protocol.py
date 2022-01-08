@@ -37,7 +37,7 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
         if exc is not None:
-            logger.debug(f'Socket closed with error: {exc}')
+            logger.debug("Socket closed with error: %s.", exc)
         # Cancel Future on connection lost
         if not self.response_future.done():
             self.response_future.cancel()
@@ -45,21 +45,21 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
         if self.command.validator(data):
-            logger.debug(f'Received: {data.hex()}')
+            logger.debug("Received: %s", data.hex())
             self.response_future.set_result(data)
         else:
-            logger.debug(f'Received invalid response: {data.hex()}')
+            logger.debug("Received invalid response: %s", data.hex())
             self._retries += 1
             self._send_request()
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
-        logger.debug(f'Received error: {exc}')
+        logger.debug("Received error: %s", exc)
         self.response_future.set_exception(exc)
 
     def _send_request(self) -> None:
         """Send message via transport"""
-        logger.debug('Sending: %s%s', self.command,
+        logger.debug("Sending: %s%s", self.command,
                      f' - retry #{self._retries}/{self._max_retries}' if self._retries > 0 else '')
         self._transport.sendto(self.command.request)
         asyncio.get_event_loop().call_later(self._retry_timeout, self._retry_mechanism)
@@ -69,11 +69,11 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
         if self.response_future.done():
             self._transport.close()
         elif self._retries < self._max_retries:
-            logger.debug('Failed to receive response to %s in time (%ds).', self.command, self._retry_timeout)
+            logger.debug("Failed to receive response to %s in time (%ds).", self.command, self._retry_timeout)
             self._retries += 1
             self._send_request()
         else:
-            logger.debug('Max number of retries (%d) reached, request %s failed.', self._max_retries, self.command)
+            logger.debug("Max number of retries (%d) reached, request %s failed.", self._max_retries, self.command)
             self.response_future.set_exception(MaxRetriesException)
 
 
@@ -108,11 +108,11 @@ class ProtocolCommand:
                 return result
             else:
                 raise RequestFailedException(
-                    "No response received to '" + self.request.hex() + "' request"
+                    "No response received to '" + self.request.hex() + "' request."
                 )
         except asyncio.CancelledError:
             raise RequestFailedException(
-                "No valid response received to '" + self.request.hex() + "' request"
+                "No valid response received to '" + self.request.hex() + "' request."
             ) from None
         finally:
             transport.close()
@@ -164,14 +164,14 @@ class Aa55ProtocolCommand(ProtocolCommand):
                 or len(data) != data[6] + 9
                 or (response_type and int(response_type, 16) != int.from_bytes(data[4:6], byteorder="big", signed=True))
         ):
-            logger.debug(f'Response has unexpected length: {len(data)}, expected {data[6] + 9}.')
+            logger.debug("Response has unexpected length: %d, expected %d.", len(data), data[6] + 9)
             return False
         else:
             checksum = 0
             for each in data[:-2]:
                 checksum += each
             if checksum != int.from_bytes(data[-2:], byteorder="big", signed=True):
-                logger.debug(f'Response checksum does not match.')
+                logger.debug("Response checksum does not match.")
                 return False
             return True
 

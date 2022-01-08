@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Tuple
 
 from .exceptions import InverterError
@@ -157,7 +159,7 @@ class DT(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
-        setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
@@ -166,7 +168,7 @@ class DT(Inverter):
             return setting.read_value(buffer)
 
     async def write_setting(self, setting_id: str, value: Any):
-        setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)
@@ -200,10 +202,10 @@ class DT(Inverter):
             await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0x9d8a, 0))
 
     async def get_ongrid_battery_dod(self) -> int:
-        raise InverterError("Operation not supported, inverter has no batteries")
+        raise InverterError("Operation not supported, inverter has no batteries.")
 
     async def set_ongrid_battery_dod(self, dod: int) -> None:
-        raise InverterError("Operation not supported, inverter has no batteries")
+        raise InverterError("Operation not supported, inverter has no batteries.")
 
     def sensors(self) -> Tuple[Sensor, ...]:
         return self._sensors

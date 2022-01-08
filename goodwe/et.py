@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Tuple
 
 from .inverter import Inverter
@@ -291,7 +293,7 @@ class ET(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
-        setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
@@ -300,7 +302,7 @@ class ET(Inverter):
             return setting.read_value(buffer)
 
     async def write_setting(self, setting_id: str, value: Any):
-        setting: Sensor = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from typing import Type
@@ -41,18 +43,18 @@ async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: in
     Raise InverterError if unable to contact or recognise supported inverter.
     """
     if family in ET_FAMILY:
-        inverter = ET(host, comm_addr, timeout, retries)
+        inv = ET(host, comm_addr, timeout, retries)
     elif family in ES_FAMILY:
-        inverter = ES(host, comm_addr, timeout, retries)
+        inv = ES(host, comm_addr, timeout, retries)
     elif family in DT_FAMILY:
-        inverter = DT(host, comm_addr, timeout, retries)
+        inv = DT(host, comm_addr, timeout, retries)
     else:
         return await discover(host, timeout, retries)
 
-    logger.debug(f"Connecting to {family} family inverter at {host}")
-    await inverter.read_device_info()
-    logger.debug(f"Connected to inverter {inverter.model_name}, S/N:{inverter.serial_number}")
-    return inverter
+    logger.debug("Connecting to %s family inverter at %s.", family, host)
+    await inv.read_device_info()
+    logger.debug("Connected to inverter %s, S/N:%s.", inv.model_name, inv.serial_number)
+    return inv
 
 
 async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
@@ -64,23 +66,23 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
 
     # Try the common AA55C07F0102000241 command first and detect inverter type from serial_number
     try:
-        logger.debug(f"Probing inverter at {host}")
+        logger.debug("Probing inverter at %s.", host)
         response = await Aa55ProtocolCommand("010200", "0182").execute(host, timeout, retries)
         model_name = response[12:22].decode("ascii").rstrip()
         serial_number = response[38:54].decode("ascii")
 
-        inverter_class: Type[Inverter] = ET
+        inverter_class: Type[Inverter] | None = None
         for model_tag in ET_MODEL_TAGS:
             if model_tag in serial_number:
-                logger.debug(f"Detected ET/EH/BT/BH inverter {model_name}, S/N:{serial_number}")
+                logger.debug("Detected ET/EH/BT/BH inverter %s, S/N:%s.", model_name, serial_number)
                 inverter_class = ET
         for model_tag in ES_MODEL_TAGS:
             if model_tag in serial_number:
-                logger.debug(f"Detected ES/EM/BP inverter {model_name}, S/N:{serial_number}")
+                logger.debug("Detected ES/EM/BP inverter %s, S/N:%s.", model_name, serial_number)
                 inverter_class = ES
         for model_tag in DT_MODEL_TAGS:
             if model_tag in serial_number:
-                logger.debug(f"Detected DT/MS/D-NS/XS inverter {model_name}, S/N:{serial_number}")
+                logger.debug("Detected DT/MS/D-NS/XS inverter %s, S/N:%s.", model_name, serial_number)
                 inverter_class = DT
         if inverter_class:
             i = inverter_class(host, 0, timeout, retries)
@@ -91,12 +93,12 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
         failures.append(ex)
 
     # Probe inverter specific protocols
-    for inverter in _SUPPORTED_PROTOCOLS:
-        i = inverter(host, 0, timeout, retries)
+    for inv in _SUPPORTED_PROTOCOLS:
+        i = inv(host, 0, timeout, retries)
         try:
-            logger.debug(f"Probing {inverter.__name__} inverter at {host}")
+            logger.debug("Probing %s inverter at %s.", inv.__name__, host)
             await i.read_device_info()
-            logger.debug(f"Detected {inverter.__name__} protocol inverter {i.model_name}, S/N:{i.serial_number}")
+            logger.debug("Detected %s family inverter %s, S/N:%s.", inv.__name__, i.model_name, i.serial_number)
             return i
         except InverterError as ex:
             failures.append(ex)
@@ -116,20 +118,20 @@ async def search_inverters() -> bytes:
     logger.debug("Searching inverters by broadcast to port 48899")
     loop = asyncio.get_running_loop()
     command = ProtocolCommand("WIFIKIT-214028-READ".encode("utf-8"), lambda r: True)
-    command.response_future = loop.create_future()
+    response_future = loop.create_future()
     transport, _ = await loop.create_datagram_endpoint(
-        lambda: UdpInverterProtocol(command, 1, 3),
+        lambda: UdpInverterProtocol(response_future, command, 1, 3),
         remote_addr=("255.255.255.255", 48899),
         allow_broadcast=True,
     )
     try:
-        await command.response_future
-        result = command.response_future.result()
+        await response_future
+        result = response_future.result()
         if result is not None:
             return result
         else:
-            raise InverterError("No response received to broadcast request")
+            raise InverterError("No response received to broadcast request.")
     except asyncio.CancelledError:
-        raise InverterError("No valid response received to broadcast request") from None
+        raise InverterError("No valid response received to broadcast request.") from None
     finally:
         transport.close()

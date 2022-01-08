@@ -85,7 +85,7 @@ class Inverter:
         self.arm_svn_version: int | None = None
         self.arm_version: str | None = None
 
-    def _ensure_lock(self) -> None:
+    def _ensure_lock(self) -> asyncio.Lock:
         """Validate (or create) asyncio Lock.
 
            The asyncio.Lock must always be created from within's asyncio loop,
@@ -95,15 +95,15 @@ class Inverter:
            behavior in subsequent asyncio.run() invocations.
         """
         if self._lock and self._running_loop == asyncio.get_event_loop():
-            pass
+            return self._lock
         else:
-            logger.debug('Creating lock instance for current event loop.')
+            logger.debug("Creating lock instance for current event loop.")
             self._lock = asyncio.Lock()
             self._running_loop = asyncio.get_event_loop()
+            return self._lock
 
     async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
-        self._ensure_lock()
-        async with self._lock:
+        async with self._ensure_lock():
             try:
                 result = await command.execute(self.host, self.timeout, self.retries)
                 self._consecutive_failures_count = 0
@@ -216,7 +216,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def set_ongrid_battery_dod(self, ongrid_battery_dod: int) -> None:
+    async def set_ongrid_battery_dod(self, dod: int) -> None:
         """
         BEWARE !!!
         This method modifies On-Grid Battery DoD parameter accessible to installers only.
@@ -249,6 +249,6 @@ class Inverter:
                     try:
                         result[sensor.id_] = sensor.read(buffer)
                     except ValueError:
-                        logger.exception(f'Error reading sensor {sensor.id_}')
+                        logger.exception("Error reading sensor %s.", sensor.id_)
                         result[sensor.id_] = None
             return result
