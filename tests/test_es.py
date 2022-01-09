@@ -56,6 +56,8 @@ class GW5048_EM_Test(EsMock):
         self.assertEqual('1010B', self.arm_version)
         self.assertEqual(11, self.arm_sw_version)
 
+        self.assertFalse(self._supports_new_eco_mode())
+
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(60, len(data))

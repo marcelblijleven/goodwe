@@ -280,8 +280,18 @@ class ES(Inverter):
         await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
 
     def _supports_new_eco_mode(self) -> bool:
-        # TODO check also inverter sw version
-        return self.arm_sw_version >= 14
+        if self.arm_sw_version < 14:
+            return False
+        if len(self.arm_version) < 2:
+            return False
+        fw_version = int(self.arm_version[0:2])
+        if "EMU" in self.serial_number:
+            return fw_version >= 11
+        if "ESU" in self.serial_number:
+            return fw_version >= 22
+        if "BPS" in self.serial_number:
+            return fw_version >= 10
+        return False
 
     async def _set_relay_control(self, mode: int) -> None:
         param = 0
