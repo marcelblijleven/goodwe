@@ -17,6 +17,18 @@ class RequestFailedException(InverterError):
         self.consecutive_failures_count: int = consecutive_failures_count
 
 
+class RequestRejectedException(InverterError):
+    """
+    Indicates request sent to inverter was rejected and protocol exception response was received.
+
+    Attributes:
+        message -- rejection reason
+    """
+
+    def __init__(self, message: str = ''):
+        self.message: str = message
+
+
 class ProcessingException(InverterError):
     """Indicates an error occurred during processing of inverter data"""
 

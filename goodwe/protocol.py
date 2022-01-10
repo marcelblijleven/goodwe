@@ -6,7 +6,7 @@ from asyncio.futures import Future
 from typing import Tuple, Optional, Callable
 
 from .const import GOODWE_UDP_PORT
-from .exceptions import MaxRetriesException, RequestFailedException
+from .exceptions import MaxRetriesException, RequestFailedException, RequestRejectedException
 from .modbus import create_modbus_request, create_modbus_multi_request, validate_modbus_response, MODBUS_READ_CMD, \
     MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD
 
@@ -44,13 +44,17 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
 
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
-        if self.command.validator(data):
-            logger.debug("Received: %s", data.hex())
-            self.response_future.set_result(data)
-        else:
-            logger.debug("Received invalid response: %s", data.hex())
-            self._retries += 1
-            self._send_request()
+        try:
+            if self.command.validator(data):
+                logger.debug("Received: %s", data.hex())
+                self.response_future.set_result(data)
+            else:
+                logger.debug("Received invalid response: %s", data.hex())
+                self._retries += 1
+                self._send_request()
+        except RequestRejectedException as ex:
+            logger.debug("Received exception response: %s", data.hex())
+            self.response_future.set_exception(ex)
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""

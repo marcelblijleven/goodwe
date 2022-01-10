@@ -1,6 +1,7 @@
 import logging
-
 from typing import Union
+
+from .exceptions import RequestRejectedException
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +111,9 @@ def validate_modbus_response(data: bytes, cmd: int, offset: int, value: int) -> 
         logger.debug("Response is too short.")
         return False
     if data[3] != cmd:
+        failure_code = FAILURE_CODES.get(data[4], "UNKNOWN")
         logger.debug("Response is command failure: %s.", FAILURE_CODES.get(data[4], "UNKNOWN"))
-        return False
+        raise RequestRejectedException(failure_code)
     if data[3] == MODBUS_READ_CMD:
         if data[4] != value * 2:
             logger.debug("Response has unexpected length: %d, expected %d.", data[4], value * 2)

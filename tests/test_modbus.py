@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from goodwe.exceptions import RequestRejectedException
 from goodwe.modbus import create_modbus_request, create_modbus_multi_request, validate_modbus_response
 
 
@@ -10,6 +11,10 @@ class TestModbus(TestCase):
 
     def assert_response_fail(self, response: str, cmd: int, offset: int, value: int):
         self.assertFalse(validate_modbus_response(bytes.fromhex(response), cmd, offset, value))
+
+    def assert_response_rejected(self, response: str, cmd: int, offset: int, value: int):
+        self.assertRaises(RequestRejectedException,
+                          lambda: validate_modbus_response(bytes.fromhex(response), cmd, offset, value))
 
     def test_create_modbus_request(self):
         request = create_modbus_request(0xf7, 0x3, 0x88b8, 0x0021)
@@ -31,7 +36,7 @@ class TestModbus(TestCase):
         # wrong checksum
         self.assert_response_fail('aa55f70304010203043346', 0x03, 0x0401, 2)
         # failure code
-        self.assert_response_fail('aa55f783040102030405b35e', 0x03, 0x0401, 2)
+        self.assert_response_rejected('aa55f783040102030405b35e', 0x03, 0x0401, 2)
         # unexpected message length
         self.assert_response_fail('aa55f70306010203040506b417', 0x03, 0x0401, 2)
 
