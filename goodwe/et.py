@@ -329,7 +329,7 @@ class ET(Inverter):
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int) -> None:
+    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
         if operation_mode in (0, 1, 2, 3):
             await self.write_setting('work_mode', operation_mode)
             if operation_mode == 1:
@@ -340,6 +340,16 @@ class ET(Inverter):
                 await self._set_offline(False)
             if operation_mode < 3:
                 await self._clear_battery_mode_param()
+        elif operation_mode in (4, 5):
+            if operation_mode == 4:
+                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
+            else:
+                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
+            await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
+            await self.write_setting('eco_mode_3', EcoMode("3", 0, "").encode_off())
+            await self.write_setting('eco_mode_4', EcoMode("4", 0, "").encode_off())
+            await self.write_setting('work_mode', 3)
+            await self._set_offline(False)
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting('battery_discharge_depth')

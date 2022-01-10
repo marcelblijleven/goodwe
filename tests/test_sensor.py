@@ -96,6 +96,16 @@ class TestUtils(TestCase):
 
         data = io.BytesIO(bytes.fromhex("0d1e0e28ffc4ff1a"))
         self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% On", testee.read(data))
+        self.assertEqual(bytes.fromhex("0d1e0e28ffc4ff1a"), testee.encode_value(bytes.fromhex("0d1e0e28ffc4ff1a")))
+        self.assertRaises(ValueError, lambda: testee.encode_value(bytes.fromhex("0d1e0e28ffc4ffff")))
+        self.assertRaises(ValueError, lambda: testee.encode_value("some string"))
+
+        data = io.BytesIO(testee.encode_charge(-40))
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% On", testee.read(data))
+        data = io.BytesIO(testee.encode_discharge(60))
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% On", testee.read(data))
+        data = io.BytesIO(testee.encode_off())
+        self.assertEqual("48:0-48:0  100% Off", testee.read(data))
 
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))

@@ -123,9 +123,6 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('xx144', 100, '', data)
 
     def test_GW6000_DT_read_setting(self):
-        self.loop.run_until_complete(self.read_setting('work_mode'))
-        self.assertEqual('7f039d8b0001d192', self.request.hex())
-
         self.loop.run_until_complete(self.read_setting('grid_export_limit'))
         self.assertEqual('7f039d900001a195', self.request.hex())
 
@@ -146,14 +143,6 @@ class GW6000_DT_Test(DtMock):
     def test_set_grid_export_limit(self):
         self.loop.run_until_complete(self.set_grid_export_limit(100))
         self.assertEqual('7f069d900064adbe', self.request.hex())
-
-    def test_get_operation_mode(self):
-        self.loop.run_until_complete(self.get_operation_mode())
-        self.assertEqual('7f039d8b0001d192', self.request.hex())
-
-    def test_set_operation_mode(self):
-        self.loop.run_until_complete(self.set_operation_mode(0))
-        self.assertEqual('7f069d8b0000dc52', self.request.hex())
 
 
 class GW8K_DT_Test(DtMock):

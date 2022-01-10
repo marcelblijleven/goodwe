@@ -142,6 +142,12 @@ class ES(Inverter):
         Integer("soc_protect", 56, "SoC Protect"),
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
+
+        # emulated settings
+        EcoMode("eco_mode_1", 0, "Eco Mode Power Group 1"),
+        EcoMode("eco_mode_2", 0, "Eco Mode Power Group 2"),
+        EcoMode("eco_mode_3", 0, "Eco Mode Power Group 3"),
+        EcoMode("eco_mode_4", 0, "Eco Mode Power Group 4"),
     )
 
     async def read_device_info(self):
@@ -163,6 +169,14 @@ class ES(Inverter):
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
             # There does not seem to be time setting/sensor evailable (or is not known)
             return datetime.now()
+        elif setting_id == 'eco_mode_1':
+            return None
+        elif setting_id == 'eco_mode_2':
+            return None
+        elif setting_id == 'eco_mode_3':
+            return None
+        elif setting_id == 'eco_mode_4':
+            return None
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
@@ -172,6 +186,14 @@ class ES(Inverter):
             await self._read_from_socket(
                 Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
             )
+        elif setting_id == 'eco_mode_1':
+            await self._read_from_socket(Aa55ProtocolCommand("02390b070104" + value.hex(), "02b9"))
+        elif setting_id == 'eco_mode_2':
+            await self._read_from_socket(Aa55ProtocolCommand("02390b070504" + value.hex(), "02b9"))
+        elif setting_id == 'eco_mode_3':
+            await self._read_from_socket(Aa55ProtocolCommand("02390b070904" + value.hex(), "02b9"))
+        elif setting_id == 'eco_mode_4':
+            await self._read_from_socket(Aa55ProtocolCommand("02390b070d04" + value.hex(), "02b9"))
         else:
             raise InverterError("Operation not supported")
 
@@ -192,7 +214,7 @@ class ES(Inverter):
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int) -> None:
+    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
         if operation_mode == 0:
             await self._set_general_mode()
             await self.reset_inverter()
@@ -203,7 +225,17 @@ class ES(Inverter):
             await self._set_backup_mode()
             await self.reset_inverter()
         elif operation_mode == 3:
-            await self._set_work_mode(3)
+            await self._set_eco_mode(eco_mode_power)
+            await self.reset_inverter()
+        elif operation_mode in (4, 5):
+            if operation_mode == 4:
+                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
+            else:
+                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
+            await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
+            await self.write_setting('eco_mode_3', EcoMode("3", 0, "").encode_off())
+            await self.write_setting('eco_mode_4', EcoMode("4", 0, "").encode_off())
+            await self._set_eco_mode(eco_mode_power)
             await self.reset_inverter()
 
     async def get_ongrid_battery_dod(self) -> int:
@@ -261,6 +293,12 @@ class ES(Inverter):
             await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(2)
+
+    async def _set_eco_mode(self, eco_mode_power: int) -> None:
+        await self._set_limit_power_for_charge(0, 0, 23, 59, eco_mode_power)
+        await self._set_limit_power_for_discharge(0, 0, 23, 59, eco_mode_power)
+        await self._set_offgrid_work_mode(0)
+        await self._set_work_mode(3)
 
     async def _clear_battery_mode_param(self) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("0239050700010001", "02B9"))

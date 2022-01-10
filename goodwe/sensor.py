@@ -212,19 +212,47 @@ class EcoMode(Sensor):
 
     def read_value(self, data: io.BytesIO):
         start_h = read_byte(data)
+        if (start_h < 0 or start_h > 23) and start_h != 48:
+            raise ValueError()
         start_m = read_byte(data)
+        if start_m < 0 or start_m > 59:
+            raise ValueError()
         end_h = read_byte(data)
+        if (end_h < 0 or end_h > 23) and end_h != 48:
+            raise ValueError()
         end_m = read_byte(data)
+        if end_m < 0 or end_m > 59:
+            raise ValueError()
         power = read_bytes2(data)  # negative=charge, positive=discharge
+        if power < -100 or end_m > 100:
+            raise ValueError()
         on_off = read_byte(data)
-        days = decode_day_of_week(read_byte(data))
+        if on_off not in (0, -1):
+            raise ValueError()
+        day_bits = read_byte(data)
+        days = decode_day_of_week(day_bits)
+        if day_bits < 0:
+            raise ValueError()
         return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}% {'On' if on_off != 0 else 'Off'}"
 
     def encode_value(self, value: Any) -> bytes:
-        if isinstance(value, str):
-            raise ValueError
-        else:
-            return value
+        if isinstance(value, bytes) and len(value) == 8:
+            # try to read_value to check if values are valid
+            if self.read_value(io.BytesIO(value)):
+                return value
+        raise ValueError
+
+    def encode_charge(self, eco_mode_power: int) -> bytes:
+        """Answer bytes representing all the time enabled charging eco mode group"""
+        return bytes.fromhex("0000173b{:04x}ff7f".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1)))
+
+    def encode_discharge(self, eco_mode_power: int) -> bytes:
+        """Answer bytes representing all the time enabled discharging eco mode group"""
+        return bytes.fromhex("0000173b{:04x}ff7f".format(abs(eco_mode_power)))
+
+    def encode_off(self) -> bytes:
+        """Answer bytes representing empty and disabled eco mode group"""
+        return bytes.fromhex("3000300000640000")
 
 
 class Calculated(Sensor):
@@ -399,7 +427,7 @@ def decode_bitmap(value: int, bitmap: Dict[int, str]) -> str:
 
 
 def decode_day_of_week(data: int) -> str:
-    bits = bin(data)
+    bits = bin(data)[2:]
     daynames = list(DAY_NAMES)
     days = ""
     for each in bits[::-1]:

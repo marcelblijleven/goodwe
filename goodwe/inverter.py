@@ -195,7 +195,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
-    async def set_operation_mode(self, operation_mode: int) -> None:
+    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
@@ -206,6 +206,12 @@ class Inverter:
         1 - Off grid mode
         2 - Backup mode
         3 - Eco mode
+        4 - Eco mode Charge
+        5 - Eco mode Discharge
+
+        The modes 4 and 5 are not real inverter operation modes, but a convenience
+        shortcuts to enter Eco Mode with a single group valid all the time (from 00:00-23:69, Mon-Sun)
+        charging or discharging with optional charging power (%) parameter.
         """
         raise NotImplementedError()
 

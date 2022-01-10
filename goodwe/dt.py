@@ -107,8 +107,7 @@ class DT(Inverter):
     __all_settings: Tuple[Sensor, ...] = (
         Timestamp("time", 40313, "Inverter time"),
 
-        Integer("work_mode", 40331, "Work Mode", "", Kind.AC),
-
+        Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
         Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 40336, "Grid Export Limit", "W", Kind.GRID),
     )
@@ -193,13 +192,10 @@ class DT(Inverter):
             return await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_mode(self) -> int:
-        return await self.read_setting('work_mode')
+        raise InverterError("Operation not supported.")
 
-    async def set_operation_mode(self, operation_mode: int) -> None:
-        if operation_mode == 0:
-            await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0x9d8b, 0))
-        elif operation_mode == 3:
-            await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0x9d8a, 0))
+    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
+        raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:
         raise InverterError("Operation not supported, inverter has no batteries.")
