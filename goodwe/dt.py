@@ -105,11 +105,8 @@ class DT(Inverter):
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
-        Timestamp("time", 40313, "Inverter time"),
 
         Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
-        Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
-        Integer("grid_export_limit", 40336, "Grid Export Limit", "W", Kind.GRID),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
