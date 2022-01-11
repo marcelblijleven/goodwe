@@ -110,10 +110,6 @@ def validate_modbus_response(data: bytes, cmd: int, offset: int, value: int) -> 
     if len(data) <= 4:
         logger.debug("Response is too short.")
         return False
-    if data[3] != cmd:
-        failure_code = FAILURE_CODES.get(data[4], "UNKNOWN")
-        logger.debug("Response is command failure: %s.", FAILURE_CODES.get(data[4], "UNKNOWN"))
-        raise RequestRejectedException(failure_code)
     if data[3] == MODBUS_READ_CMD:
         if data[4] != value * 2:
             logger.debug("Response has unexpected length: %d, expected %d.", data[4], value * 2)
@@ -137,8 +133,15 @@ def validate_modbus_response(data: bytes, cmd: int, offset: int, value: int) -> 
             return False
     else:
         expected_length = len(data)
+
     checksum_offset = expected_length - 2
     if _modbus_checksum(data[2:checksum_offset]) != ((data[checksum_offset + 1] << 8) + data[checksum_offset]):
         logger.debug("Response CRC-16 checksum does not match.")
         return False
+
+    if data[3] != cmd:
+        failure_code = FAILURE_CODES.get(data[4], "UNKNOWN")
+        logger.debug("Response is command failure: %s.", FAILURE_CODES.get(data[4], "UNKNOWN"))
+        raise RequestRejectedException(failure_code)
+
     return True
