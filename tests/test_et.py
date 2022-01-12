@@ -36,6 +36,7 @@ class EtMock(TestCase, ET):
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+        self.sensor_map.pop(sensor)
 
     @classmethod
     def setUpClass(cls):
@@ -190,6 +191,22 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('meter_freq', 50.05, 'Hz', data)
         self.assertSensor('meter_e_total_exp', 10.514, 'kWh', data)
         self.assertSensor('meter_e_total_imp', 3254.462, 'kWh', data)
+        self.assertSensor('meter_active_power1', -57, 'W', data)
+        self.assertSensor('meter_active_power2', -46, 'W', data)
+        self.assertSensor('meter_active_power3', -6, 'W', data)
+        self.assertSensor('meter_active_power_total', -110, 'W', data)
+        self.assertSensor('meter_reactive_power1', 364, 'var', data)
+        self.assertSensor('meter_reactive_power2', 357, 'var', data)
+        self.assertSensor('meter_reactive_power3', 614, 'var', data)
+        self.assertSensor('meter_reactive_power_total', 1336, 'var', data)
+        self.assertSensor('meter_apparent_power1', -402, 'VA', data)
+        self.assertSensor('meter_apparent_power2', -372, 'VA', data)
+        self.assertSensor('meter_apparent_power3', -627, 'VA', data)
+        self.assertSensor('meter_apparent_power_total', -1403, 'VA', data)
+        self.assertSensor('meter_type', 1, '', data)
+        self.assertSensor('meter_sw_version', 3, '', data)
+
+        self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
 
     def test_GW10K_ET_read_setting(self):
         self.loop.run_until_complete(self.read_setting('work_mode'))

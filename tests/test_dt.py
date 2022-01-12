@@ -36,6 +36,7 @@ class DtMock(TestCase, DT):
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+        self.sensor_map.pop(sensor)
 
     @classmethod
     def setUpClass(cls):
@@ -61,6 +62,9 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('vpv2', 324.1, 'V', data)
         self.assertSensor('ipv2', 3.2, 'A', data)
         self.assertSensor('ppv2', 1037, 'W', data)
+        self.assertSensor('vpv3', None, 'V', data)
+        self.assertSensor('ipv3', None, 'A', data)
+        self.assertSensor('ppv3', None, 'W', data)
         self.assertSensor('vline1', -0.1, 'V', data)
         self.assertSensor('vline2', -0.1, 'V', data)
         self.assertSensor('vline3', -0.1, 'V', data)
@@ -121,6 +125,8 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('xx140', 0, '', data)
         self.assertSensor('xx142', 0, '', data)
         self.assertSensor('xx144', 100, '', data)
+
+        self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
 
     def test_GW6000_DT_read_setting(self):
         self.loop.run_until_complete(self.read_setting('shadow_scan'))

@@ -36,6 +36,7 @@ class EsMock(TestCase, ES):
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
         self.assertEqual(expected_unit, self.sensor_map.get(sensor))
+        self.sensor_map.pop(sensor)
 
     @classmethod
     def setUpClass(cls):
@@ -60,7 +61,7 @@ class GW5048_EM_Test(EsMock):
 
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(60, len(data))
+        self.assertEqual(59, len(data))
 
         self.assertSensor('vpv1', 130.8, 'V', data)
         self.assertSensor('ipv1', 0.3, 'A', data)
@@ -130,6 +131,8 @@ class GW5048_EM_Test(EsMock):
         # self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 1118, 'W', data)
 
+        self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
+
 
 class GW5048_EM_No_Batt_Test(EsMock):
 
@@ -139,7 +142,7 @@ class GW5048_EM_No_Batt_Test(EsMock):
 
     def test_GW5048_EM_no_batt_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(60, len(data))
+        self.assertEqual(59, len(data))
 
         self.assertSensor('vpv1', 334.3, 'V', data)
         self.assertSensor('ipv1', 0.4, 'A', data)
@@ -220,7 +223,7 @@ class GW5048D_ES_Test(EsMock):
 
     def test_GW5048D_ES_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(60, len(data))
+        self.assertEqual(59, len(data))
 
         self.assertSensor('vpv1', 0.0, 'V', data)
         self.assertSensor('ipv1', 0.1, 'A', data)
@@ -291,6 +294,8 @@ class GW5048D_ES_Test(EsMock):
         # self.assertSensor('e_bat_discharge_total', 0, 'kWh', data)
         self.assertSensor('house_consumption', 467, 'W', data)
 
+        self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
+
 
 class GW5000S_BP_Test(EsMock):
 
@@ -300,7 +305,7 @@ class GW5000S_BP_Test(EsMock):
 
     def test_GW5000S_BP_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(60, len(data))
+        self.assertEqual(59, len(data))
 
         self.assertSensor('vpv1', 374.9, 'V', data)
         self.assertSensor('ipv1', 2.2, 'A', data)

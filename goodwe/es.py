@@ -48,7 +48,7 @@ class ES(Inverter):
         Integer("battery_discharge_limit", 22, "Battery Discharge Limit", "A", Kind.BAT),
         Integer("battery_error", 24, "Battery Error Code", "", Kind.BAT),
         Byte("battery_soc", 26, "Battery State of Charge", "%", Kind.BAT),  # modbus 0x50E
-        Integer("warning", 27, "Warning Code", ""),
+        # Byte("cbattery2", 27, "Battery State of Charge 2", "%", Kind.BAT),
         # Byte("cbattery3", 28, "Battery State of Charge 3", "%", Kind.BAT),
         Byte("battery_soh", 29, "Battery State of Health", "%", Kind.BAT),
         Byte("battery_mode", 30, "Battery Mode code", "", Kind.BAT),
