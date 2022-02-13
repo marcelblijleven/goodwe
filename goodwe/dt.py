@@ -107,6 +107,8 @@ class DT(Inverter):
     __all_settings: Tuple[Sensor, ...] = (
 
         Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
+        Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
+        Integer("grid_export_limit", 40336, "Grid Export Limit", "%", Kind.GRID),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -185,7 +187,7 @@ class DT(Inverter):
         return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
-        if export_limit >= 0 or export_limit <= 10000:
+        if export_limit >= 0 or export_limit <= 100:
             return await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_mode(self) -> int:

@@ -136,6 +136,14 @@ class GW6000_DT_Test(DtMock):
         self.loop.run_until_complete(self.write_setting('shadow_scan', 1))
         self.assertEqual('7f069d8600018c51', self.request.hex())
 
+    def test_get_grid_export_limit(self):
+        self.loop.run_until_complete(self.get_grid_export_limit())
+        self.assertEqual('7f039d900001a195', self.request.hex())
+
+    def test_set_grid_export_limit(self):
+        self.loop.run_until_complete(self.set_grid_export_limit(100))
+        self.assertEqual('7f069d900064adbe', self.request.hex())
+
 
 class GW8K_DT_Test(DtMock):
 
