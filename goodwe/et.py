@@ -355,7 +355,7 @@ class ET(Inverter):
         return 100 - await self.read_setting('battery_discharge_depth')
 
     async def set_ongrid_battery_dod(self, dod: int) -> None:
-        if 0 <= dod <= 89:
+        if 0 <= dod <= 90:
             await self.write_setting('battery_discharge_depth', 100 - dod)
 
     def sensors(self) -> Tuple[Sensor, ...]:
