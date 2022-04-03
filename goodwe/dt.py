@@ -105,6 +105,7 @@ class DT(Inverter):
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
+        Timestamp("time", 40313, "Inverter time"),
 
         Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
         Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
