@@ -77,7 +77,7 @@ class ET(Inverter):
         Power4("backup_ptotal", 138, "Back-up Load", Kind.UPS),
         Power4("load_ptotal", 142, "Load", Kind.AC),
         Integer("ups_load", 146, "Ups Load", "%", Kind.UPS),
-        Temp("temperature_air", 148, "Inverter Temperature (Air))", Kind.AC),
+        Temp("temperature_air", 148, "Inverter Temperature (Air)", Kind.AC),
         Temp("temperature_module", 150, "Inverter Temperature (Module)"),
         Temp("temperature", 152, "Inverter Temperature (Radiator)", Kind.AC),
         Integer("function_bit", 154, "Function Bit"),
