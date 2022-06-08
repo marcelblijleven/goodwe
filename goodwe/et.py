@@ -229,13 +229,17 @@ class ET(Inverter):
         Integer("grid_export", 47509, "Grid Export Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 47510, "Grid Export Limit", "W", Kind.GRID),
 
-        EcoMode("eco_mode_1", 47515, "Eco Mode Power Group 1"),
+        EcoModeV2("eco_mode_1", 47547, "Eco Mode Power Group 1"),
+        #EcoMode("eco_mode_1", 47515, "Eco Mode Power Group 1"),
         # Byte("eco_mode_1_switch", 47518, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_2", 47519, "Eco Mode Power Group 2"),
+        EcoModeV2("eco_mode_2", 47553, "Eco Mode Power Group 2"),
+        #EcoMode("eco_mode_2", 47519, "Eco Mode Power Group 2"),
         # Byte("eco_mode_2_switch", 47522, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_3", 47523, "Eco Mode Power Group 3"),
+        EcoModeV2("eco_mode_3", 47559, "Eco Mode Power Group 3"),
+        #EcoMode("eco_mode_3", 47523, "Eco Mode Power Group 3"),
         # Byte("eco_mode_3_switch", 47526, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_4", 47527, "Eco Mode Power Group 4"),
+        EcoModeV2("eco_mode_4", 47565, "Eco Mode Power Group 4"),
+        #EcoMode("eco_mode_4", 47527, "Eco Mode Power Group 4"),
         # Byte("eco_mode_4_switch", 47530, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
 
@@ -329,7 +333,7 @@ class ET(Inverter):
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
+    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100, max_charge: int = 100) -> None:
         if operation_mode in (0, 1, 2, 3):
             await self.write_setting('work_mode', operation_mode)
             if operation_mode == 1:
@@ -342,12 +346,12 @@ class ET(Inverter):
                 await self._clear_battery_mode_param()
         elif operation_mode in (4, 5):
             if operation_mode == 4:
-                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
+                await self.write_setting('eco_mode_1', EcoModeV2("1", 0, "").encode_charge(eco_mode_power, max_charge))
             else:
-                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
-            await self.write_setting('eco_mode_3', EcoMode("3", 0, "").encode_off())
-            await self.write_setting('eco_mode_4', EcoMode("4", 0, "").encode_off())
+                await self.write_setting('eco_mode_1', EcoModeV2("1", 0, "").encode_discharge(eco_mode_power))
+            await self.write_setting('eco_mode_2', EcoModeV2("2", 0, "").encode_off())
+            await self.write_setting('eco_mode_3', EcoModeV2("3", 0, "").encode_off())
+            await self.write_setting('eco_mode_4', EcoModeV2("4", 0, "").encode_off())
             await self.write_setting('work_mode', 3)
             await self._set_offline(False)
 
