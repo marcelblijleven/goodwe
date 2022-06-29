@@ -157,7 +157,7 @@ class ES(Inverter):
         self.serial_number = response[38:54].decode("ascii")
         self.software_version = response[58:70].decode("ascii")
         if len(self.arm_version) >= 5:
-            self.arm_sw_version = int(self.arm_version[4], base=16)
+            self.arm_sw_version = int(self.arm_version[4], base=36)
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
