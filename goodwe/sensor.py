@@ -224,7 +224,7 @@ class EcoMode(Sensor):
         if end_m < 0 or end_m > 59:
             raise ValueError()
         power = read_bytes2(data)  # negative=charge, positive=discharge
-        if power < -100 or end_m > 100:
+        if power < -100 or power > 100:
             raise ValueError()
         on_off = read_byte(data)
         if on_off not in (0, -1):
@@ -281,10 +281,10 @@ class EcoModeV2(Sensor):
         if day_bits < 0:
             raise ValueError()
         power = read_bytes2(data)  # negative=charge, positive=discharge
-        if power < -100 or end_m > 100:
+        if power < -100 or power > 100:
             raise ValueError()
         max_charge = read_bytes2(data)
-        if max_charge < 0 or end_m > 100:
+        if max_charge < 0 or max_charge > 100:
             raise ValueError()
         return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}% (max charge {max_charge}%) {'On' if on_off != 0 else 'Off'}"
 
