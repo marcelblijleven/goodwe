@@ -107,6 +107,22 @@ class TestUtils(TestCase):
         data = io.BytesIO(testee.encode_off())
         self.assertEqual("48:0-48:0  100% Off", testee.read(data))
 
+    def test_eco_mode_v2(self):
+        testee = EcoModeV2("", 0, "")
+
+        data = io.BytesIO(bytes.fromhex("0d1e0e28ff1affc4005a0000"))
+        self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% (max charge 90%) On", testee.read(data))
+        self.assertEqual(bytes.fromhex("0d1e0e28ff1affc4005a0000"), testee.encode_value(bytes.fromhex("0d1e0e28ff1affc4005a0000")))
+        self.assertRaises(ValueError, lambda: testee.encode_value(bytes.fromhex("0d1e0e28ffffffc4005a0000")))
+        self.assertRaises(ValueError, lambda: testee.encode_value("some string"))
+
+        data = io.BytesIO(testee.encode_charge(-40, 80))
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% (max charge 80%) On", testee.read(data))
+        data = io.BytesIO(testee.encode_discharge(60))
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% (max charge 100%) On", testee.read(data))
+        data = io.BytesIO(testee.encode_off())
+        self.assertEqual("48:0-48:0  100% (max charge 100%) Off", testee.read(data))
+
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
         self.assertEqual('Utility Loss', decode_bitmap(512, ERROR_CODES))

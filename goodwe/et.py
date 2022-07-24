@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Tuple
 
+from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
@@ -239,6 +240,14 @@ class ET(Inverter):
         # Byte("eco_mode_4_switch", 47530, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
 
+    # Extra Modbus registers for EcoMode version 2 settings, offsets are modbus register addresses
+    __EcoModeV2_settings: Tuple[Sensor, ...] = (
+        EcoModeV2("eco_modeV2_1", 47547, "Eco Mode Version 2 Power Group 1"),
+        EcoModeV2("eco_modeV2_2", 47553, "Eco Mode Version 2 Power Group 2"),
+        EcoModeV2("eco_modeV2_3", 47559, "Eco Mode Version 2 Power Group 3"),
+        EcoModeV2("eco_modeV2_4", 47565, "Eco Mode Version 2 Power Group 4"),
+    )
+
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         super().__init__(host, comm_addr, timeout, retries)
         if not self.comm_addr:
@@ -253,6 +262,17 @@ class ET(Inverter):
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_meter = self.__all_sensors_meter
         self._settings = self.__all_settings
+
+    def _supports_eco_mode_v2(self) -> bool:
+        if not self.dsp1_sw_version:
+            return False
+        if self.dsp1_sw_version < 8:
+            return False
+        if self.dsp2_sw_version < 8:
+            return False
+        if self.arm_sw_version < 19:
+            return False
+        return True
 
     @staticmethod
     def _is_not_3phase_sensor(s: Sensor) -> bool:
@@ -278,6 +298,10 @@ class ET(Inverter):
         if "EHU" in self.serial_number:
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
+
+        if self._supports_eco_mode_v2():
+            # this inverter has eco mode version 2, adding EcoModeV2 to settings
+            self._settings = self.__all_settings + self.__EcoModeV2_settings
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -329,7 +353,7 @@ class ET(Inverter):
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
+    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100, max_charge: int = 100) -> None:
         if operation_mode in (0, 1, 2, 3):
             await self.write_setting('work_mode', operation_mode)
             if operation_mode == 1:
@@ -341,13 +365,24 @@ class ET(Inverter):
             if operation_mode < 3:
                 await self._clear_battery_mode_param()
         elif operation_mode in (4, 5):
+            ecoMode_class = EcoMode
+            ecoMode_name = 'eco_mode_'
+            if self._supports_eco_mode_v2():
+                ecoMode_class = EcoModeV2
+                ecoMode_name = 'eco_modeV2_'
+
             if operation_mode == 4:
-                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
+                if ecoMode_class == EcoModeV2:
+                    await self.write_setting('eco_modeV2_1', EcoModeV2("1", 0, "").encode_charge(eco_mode_power, max_charge))
+                else:
+                    if max_charge != 100:
+                        raise InverterError("Operation not supported")
+                    await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
             else:
-                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
-            await self.write_setting('eco_mode_3', EcoMode("3", 0, "").encode_off())
-            await self.write_setting('eco_mode_4', EcoMode("4", 0, "").encode_off())
+                await self.write_setting(ecoMode_name + '1', ecoMode_class("1", 0, "").encode_discharge(eco_mode_power))
+            await self.write_setting(ecoMode_name + '2', ecoMode_class("2", 0, "").encode_off())
+            await self.write_setting(ecoMode_name + '3', ecoMode_class("3", 0, "").encode_off())
+            await self.write_setting(ecoMode_name + '4', ecoMode_class("4", 0, "").encode_off())
             await self.write_setting('work_mode', 3)
             await self._set_offline(False)
 
