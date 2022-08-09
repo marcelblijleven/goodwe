@@ -48,7 +48,6 @@ class GW6000_DT_Test(DtMock):
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW6000-DT_running_data.hex')
-        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW8K-DT_device_info.hex')
 
     def test_GW6000_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -303,7 +302,7 @@ class GW5000D_NS_Test(DtMock):
         self.assertSensor('xx144', 84, '', data)
 
 
-class GW5000D_MS_Test(DtMock):
+class GW5000_MS_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
@@ -316,7 +315,7 @@ class GW5000D_MS_Test(DtMock):
         self.assertEqual('00000MSU00000000', self.serial_number)
         self.assertEqual('12.12.10', self.software_version)
 
-    def test_GW5000D_MS_runtime_data(self):
+    def test_GW5000_MS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(60, len(data))

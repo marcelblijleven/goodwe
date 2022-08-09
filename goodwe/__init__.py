@@ -22,7 +22,7 @@ DT_FAMILY = ["DT", "MS", "NS", "XS"]
 # Serial number tags to identify inverter type
 ET_MODEL_TAGS = ["ETU", "EHU", "BTU", "BHU"]
 ES_MODEL_TAGS = ["ESU", "EMU", "BPU", "BPS"]
-DT_MODEL_TAGS = ["DTU", "MSU", "DTN", "DSN"]
+DT_MODEL_TAGS = ["DTU", "MSU", "DTN", "DSN", "PSB", "PSC"]
 
 # supported inverter protocols
 _SUPPORTED_PROTOCOLS = [ET, DT, ES]

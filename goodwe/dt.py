@@ -10,7 +10,7 @@ from .sensor import *
 
 
 class DT(Inverter):
-    """Class representing inverter of DT/MS/D-NS/XS families"""
+    """Class representing inverter of DT/MS/D-NS/XS or GE's GEP(PSB/PSC) families"""
 
     __all_sensors: Tuple[Sensor, ...] = (
         Timestamp("timestamp", 0, "Timestamp"),
@@ -140,11 +140,11 @@ class DT(Inverter):
         self.arm_sw_version = read_unsigned_int(response, 70)
         self.software_version = "{}.{}.{:02x}".format(self.dsp1_sw_version, self.dsp2_sw_version, self.arm_sw_version)
 
-        if "DSN" in self.serial_number or "MSU" in self.serial_number:
+        if any(model in self.serial_number for model in ["DSN", "MSU", "PSB", "PSC"]):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
 
-        if "MSU" in self.serial_number:
+        if any(model in self.serial_number for model in ["MSU", "PSC"]):
             # this is 3 PV strings inverter, keep all sensors
             pass
         else:
