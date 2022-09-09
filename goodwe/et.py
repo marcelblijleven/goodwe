@@ -365,6 +365,10 @@ class ET(Inverter):
             if operation_mode < 3:
                 await self._clear_battery_mode_param()
         elif operation_mode in (4, 5):
+            if eco_mode_power < 0 or eco_mode_power > 100:
+                raise ValueError()
+            if max_charge < 0 or max_charge > 100:
+                raise ValueError()
             ecoMode_class = EcoMode
             ecoMode_name = 'eco_mode_'
             if self._supports_eco_mode_v2():
@@ -373,7 +377,8 @@ class ET(Inverter):
 
             if operation_mode == 4:
                 if ecoMode_class == EcoModeV2:
-                    await self.write_setting('eco_modeV2_1', EcoModeV2("1", 0, "").encode_charge(eco_mode_power, max_charge))
+                    await self.write_setting('eco_modeV2_1',
+                                             EcoModeV2("1", 0, "").encode_charge(eco_mode_power, max_charge))
                 else:
                     if max_charge != 100:
                         raise InverterError("Operation not supported")

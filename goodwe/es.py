@@ -304,15 +304,21 @@ class ES(Inverter):
         await self._read_from_socket(Aa55ProtocolCommand("0239050700010001", "02B9"))
 
     async def _set_limit_power_for_charge(self, startH: int, startM: int, stopH: int, stopM: int, limit: int) -> None:
-        await self._read_from_socket(Aa55ProtocolCommand("032c05" + "{:02x}".format(limit)
+        if limit < 0 or limit > 100:
+            raise ValueError()
+        await self._read_from_socket(Aa55ProtocolCommand("032c05"
                                                          + "{:02x}".format(startH) + "{:02x}".format(startM)
-                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM), "03AC"))
+                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM)
+                                                         + "{:02x}".format(limit), "03AC"))
 
     async def _set_limit_power_for_discharge(self, startH: int, startM: int, stopH: int, stopM: int,
                                              limit: int) -> None:
-        await self._read_from_socket(Aa55ProtocolCommand("032d05" + "{:02x}".format(limit)
+        if limit < 0 or limit > 100:
+            raise ValueError()
+        await self._read_from_socket(Aa55ProtocolCommand("032d05"
                                                          + "{:02x}".format(startH) + "{:02x}".format(startM)
-                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM), "03AD"))
+                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM)
+                                                         + "{:02x}".format(limit), "03AD"))
 
     async def _set_offgrid_work_mode(self, mode: int) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
