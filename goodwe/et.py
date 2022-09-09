@@ -210,6 +210,7 @@ class ET(Inverter):
         Integer("cold_start", 45248, "Cold Start", "", Kind.AC),
         Integer("shadow_scan", 45251, "Shadow Scan", "", Kind.PV),
         Integer("backup_supply", 45252, "Backup Supply", "", Kind.UPS),
+        Integer("unbalanced_output", 45264, "Unbalanced Output", "", Kind.AC),
 
         Integer("battery_capacity", 45350, "Battery Capacity", "Ah", Kind.BAT),
         Integer("battery_modules", 45351, "Battery Modules", "", Kind.BAT),
