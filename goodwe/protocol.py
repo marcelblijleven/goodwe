@@ -163,21 +163,21 @@ class Aa55ProtocolCommand(ProtocolCommand):
         data[6] is response payload length
         data[-2:] is checksum (plain sum of response data incl. header)
         """
-        if (
-                len(data) <= 8
-                or len(data) != data[6] + 9
-                or (response_type and int(response_type, 16) != int.from_bytes(data[4:6], byteorder="big", signed=True))
-        ):
+        if len(data) <= 8 or len(data) != data[6] + 9:
             logger.debug("Response has unexpected length: %d, expected %d.", len(data), data[6] + 9)
             return False
-        else:
-            checksum = 0
-            for each in data[:-2]:
-                checksum += each
-            if checksum != int.from_bytes(data[-2:], byteorder="big", signed=True):
-                logger.debug("Response checksum does not match.")
+        elif response_type:
+            data_rt_int = int.from_bytes(data[4:6], byteorder="big", signed=True)
+            if int(response_type, 16) != data_rt_int:
+                logger.debug("Response type unexpected: %04x, expected %s.", data_rt_int, response_type)
                 return False
-            return True
+        checksum = 0
+        for each in data[:-2]:
+            checksum += each
+        if checksum != int.from_bytes(data[-2:], byteorder="big", signed=True):
+            logger.debug("Response checksum does not match.")
+            return False
+        return True
 
 
 class ModbusProtocolCommand(ProtocolCommand):
