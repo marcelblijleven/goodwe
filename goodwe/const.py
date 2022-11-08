@@ -71,7 +71,7 @@ WORK_MODES_ES: Dict[int, str] = {
 
 SAFETY_COUNTRIES_ET: Dict[int, str] = {
     0: "Italy",
-    1: "Czech",
+    1: "Czechia",
     2: "Germany",
     3: "Spain",
     4: "Greece",
