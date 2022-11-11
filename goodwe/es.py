@@ -217,16 +217,12 @@ class ES(Inverter):
     async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
         if operation_mode == 0:
             await self._set_general_mode()
-            await self.reset_inverter()
         elif operation_mode == 1:
             await self._set_offgrid_mode()
-            await self.reset_inverter()
         elif operation_mode == 2:
             await self._set_backup_mode()
-            await self.reset_inverter()
         elif operation_mode == 3:
             await self._set_eco_mode(eco_mode_power)
-            await self.reset_inverter()
         elif operation_mode in (4, 5):
             if operation_mode == 4:
                 await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
@@ -236,7 +232,6 @@ class ES(Inverter):
             await self.write_setting('eco_mode_3', EcoMode("3", 0, "").encode_off())
             await self.write_setting('eco_mode_4', EcoMode("4", 0, "").encode_off())
             await self._set_eco_mode(eco_mode_power)
-            await self.reset_inverter()
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting('dod')
@@ -247,7 +242,7 @@ class ES(Inverter):
                 Aa55ProtocolCommand("023905056001" + "{:04x}".format(100 - dod), "02b9")
             )
 
-    async def reset_inverter(self) -> None:
+    async def _reset_inverter(self) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("031d00", "039d"))
 
     def sensors(self) -> Tuple[Sensor, ...]:
