@@ -133,7 +133,10 @@ class DT(Inverter):
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
         response = response[5:-2]
-        self.model_name = response[22:32].decode("ascii").rstrip()
+        try:
+            self.model_name = response[22:32].decode("ascii").rstrip()
+        except:
+            print("No model name sent from the inverter.")
         self.serial_number = response[6:22].decode("ascii")
         self.dsp1_sw_version = read_unsigned_int(response, 66)
         self.dsp2_sw_version = read_unsigned_int(response, 68)
