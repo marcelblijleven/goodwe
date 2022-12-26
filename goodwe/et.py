@@ -151,7 +151,7 @@ class ET(Inverter):
         Calculated("battery_warning", 0,
                    lambda data, _: decode_bitmap(read_bytes2(data, 28) << 16 + read_bytes2(data, 20),
                                                  BMS_WARNING_CODES),
-                   "Battery Error", "", Kind.BAT),
+                   "Battery Warning", "", Kind.BAT),
         Integer("battery_sw_version", 30, "Battery Software Version", "", Kind.BAT),
         Integer("battery_hw_version", 32, "Battery Hardware Version", "", Kind.BAT),
         Integer("battery_max_cell_temp_id", 34, "Battery Max Cell Temperature ID", "", Kind.BAT),
