@@ -28,7 +28,7 @@ DT_MODEL_TAGS = ["DTU", "MSU", "DTN", "DSN", "PSB", "PSC"]
 _SUPPORTED_PROTOCOLS = [ET, DT, ES]
 
 
-async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: int = 1, retries: int = 3, discover: bool = True) -> Inverter:
+async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: int = 1, retries: int = 3, do_discover: bool = True) -> Inverter:
     """Contact the inverter at the specified host/port and answer appropriate Inverter instance.
 
     The specific inverter family/type will be detected automatically, but it can be passed explicitly.
@@ -48,7 +48,7 @@ async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: in
         inv = ES(host, comm_addr, timeout, retries)
     elif family in DT_FAMILY:
         inv = DT(host, comm_addr, timeout, retries)
-    elif discover:
+    elif do_discover:
         return await discover(host, timeout, retries)
 
     logger.debug("Connecting to %s family inverter at %s.", family, host)
