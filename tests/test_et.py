@@ -4,8 +4,8 @@ from datetime import datetime
 from unittest import TestCase
 
 from goodwe.et import ET
-from goodwe.exceptions import RequestFailedException
 from goodwe.exceptions import InverterError
+from goodwe.exceptions import RequestFailedException
 from goodwe.protocol import ProtocolCommand
 
 
@@ -58,8 +58,8 @@ class GW10K_ET_Test(EtMock):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(145, len(data))
 
-        # for sensor in ET.sensors():
-        #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensors.get(sensor.id_)}', data)")
+        # for sensor in self.sensors():
+        #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensor_map.get(sensor.id_)}', data)")
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-22 11:11:12', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 332.6, 'V', data)
@@ -245,16 +245,16 @@ class GW10K_ET_Test(EtMock):
     #        self.assertEqual('f706b7980001fac7', self.request.hex())
 
     def test_set_operation_mode_4(self):
-        self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power = 40))
+        self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power=40))
         self.assertEqual('f710b99b0004080000173bffd8ff7f1343', self._list_of_requests[-6].hex())
 
         with self.assertRaises(InverterError) as context:
-            self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power = 40, max_charge = 80))
+            self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power=40, max_charge=80))
 
         self.assertEqual(str(InverterError("Operation not supported")), str(context.exception))
 
     def test_set_operation_mode_5(self):
-        self.loop.run_until_complete(self.set_operation_mode(5, eco_mode_power = 50))
+        self.loop.run_until_complete(self.set_operation_mode(5, eco_mode_power=50))
         self.assertEqual('f710b99b0004080000173b0032ff7f02a3', self._list_of_requests[-6].hex())
 
     def test_get_ongrid_battery_dod(self):
@@ -265,6 +265,7 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.set_ongrid_battery_dod(80))
         self.assertEqual('f706b12c00147ba6', self.request.hex())
 
+
 class GW10K_ET_Test_EcoModeV2(EtMock):
 
     def __init__(self, methodName='runTest'):
@@ -273,12 +274,13 @@ class GW10K_ET_Test_EcoModeV2(EtMock):
         asyncio.get_event_loop().run_until_complete(self.read_device_info())
 
     def test_set_operation_mode_4(self):
-        self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power = 40, max_charge = 80))
+        self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power=40, max_charge=80))
         self.assertEqual('f710b9bb00060c0000173bff7fffd80050000002cc', self._list_of_requests[-6].hex())
 
     def test_set_operation_mode_5(self):
-        self.loop.run_until_complete(self.set_operation_mode(5, eco_mode_power = 50))
+        self.loop.run_until_complete(self.set_operation_mode(5, eco_mode_power=50))
         self.assertEqual('f710b9bb00060c0000173bff7f0032006400004eda', self._list_of_requests[-6].hex())
+
 
 class GW6000_EH_Test(EtMock):
 
@@ -297,7 +299,7 @@ class GW6000_EH_Test(EtMock):
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(99, len(data))
+        self.assertEqual(89, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
         self.assertSensor('ipv1', 2.6, 'A', data)
@@ -305,7 +307,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('vpv2', 329.6, 'V', data)
         self.assertSensor('ipv2', 2.1, 'A', data)
         self.assertSensor('ppv2', 691, 'W', data)
-        self.assertSensor('ppv', 1548, 'W', data)
+        self.assertSensor('ppv', 1546, 'W', data)
         self.assertSensor('pv1_mode', 2, '', data)
         self.assertSensor('pv1_mode_label', 'PV panels connected, producing power', '', data)
         self.assertSensor('pv2_mode', 2, '', data)
@@ -367,4 +369,154 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('diagnose_result_label',
                           'Battery voltage low, Battery SOC low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected, Self-use off, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 1711, 'W', data)
+        self.assertSensor('house_consumption', 1709, 'W', data)
+
+
+class GEH10_1U_10_Test(EtMock):
+
+    def __init__(self, methodName='runTest'):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_RUNNING_DATA, 'GEH10-1U-10_running_data.hex')
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GEH10-1U-10_device_info.hex')
+
+    def test_GEH10_1U_10_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('00000HSB00000000', self.serial_number)
+
+    def test_GEH10_1U_10_runtime_data(self):
+        # Reset sensor
+        self.loop.run_until_complete(self.read_device_info())
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        self.assertEqual(125, len(data))
+
+        self.assertSensor('timestamp', datetime.strptime('2023-01-26 11:34:07', '%Y-%m-%d %H:%M:%S'), '', data)
+        self.assertSensor('vpv1', 242.3, 'V', data)
+        self.assertSensor('ipv1', 11.5, 'A', data)
+        self.assertSensor('ppv1', 2777, 'W', data)
+        self.assertSensor('vpv2', 213.5, 'V', data)
+        self.assertSensor('ipv2', 11.5, 'A', data)
+        self.assertSensor('ppv2', 2455, 'W', data)
+        self.assertSensor('vpv3', 333.3, 'V', data)
+        self.assertSensor('ipv3', 11.0, 'A', data)
+        self.assertSensor('ppv3', 3640, 'W', data)
+        self.assertSensor('vpv4', 184.5, 'V', data)
+        self.assertSensor('ipv4', 10.4, 'A', data)
+        self.assertSensor('ppv4', 1915, 'W', data)
+        self.assertSensor('ppv', 10787, 'W', data)
+        self.assertSensor('pv4_mode', 2, '', data)
+        self.assertSensor('pv4_mode_label', 'PV panels connected, producing power', '', data)
+        self.assertSensor('pv3_mode', 2, '', data)
+        self.assertSensor('pv3_mode_label', 'PV panels connected, producing power', '', data)
+        self.assertSensor('pv2_mode', 2, '', data)
+        self.assertSensor('pv2_mode_label', 'PV panels connected, producing power', '', data)
+        self.assertSensor('pv1_mode', 2, '', data)
+        self.assertSensor('pv1_mode_label', 'PV panels connected, producing power', '', data)
+        self.assertSensor('vgrid', 242.9, 'V', data)
+        self.assertSensor('igrid', 36.5, 'A', data)
+        self.assertSensor('fgrid', 49.98, 'Hz', data)
+        self.assertSensor('pgrid', 8710, 'W', data)
+        self.assertSensor('grid_mode', 1, '', data)
+        self.assertSensor('grid_mode_label', 'Connected to grid', '', data)
+        self.assertSensor('total_inverter_power', 8710, 'W', data)
+        self.assertSensor('active_power', 4277, 'W', data)
+        self.assertSensor('grid_in_out', 1, '', data)
+        self.assertSensor('grid_in_out_label', 'Exporting', '', data)
+        self.assertSensor('reactive_power', -1650, 'var', data)
+        self.assertSensor('apparent_power', 8865, 'VA', data)
+        self.assertSensor('backup_v1', 240.0, 'V', data)
+        self.assertSensor('backup_i1', 0.7, 'A', data)
+        self.assertSensor('backup_f1', 49.98, 'Hz', data)
+        self.assertSensor('load_mode1', 1, '', data)
+        self.assertSensor('backup_p1', 77, 'W', data)
+        self.assertSensor('load_p1', 4356, 'W', data)
+        self.assertSensor('backup_ptotal', 77, 'W', data)
+        self.assertSensor('load_ptotal', 4356, 'W', data)
+        self.assertSensor('ups_load', 1, '%', data)
+        self.assertSensor('temperature_air', 0.0, 'C', data)
+        self.assertSensor('temperature_module', -10.0, 'C', data)
+        self.assertSensor('temperature', 67.0, 'C', data)
+        self.assertSensor('function_bit', 257, '', data)
+        self.assertSensor('bus_voltage', 458.4, 'V', data)
+        self.assertSensor('nbus_voltage', -0.1, 'V', data)
+        self.assertSensor('vbattery1', 406.1, 'V', data)
+        self.assertSensor('ibattery1', -3.8, 'A', data)
+        self.assertSensor('pbattery1', -1543, 'W', data)
+        self.assertSensor('battery_mode', 3, '', data)
+        self.assertSensor('battery_mode_label', 'Charge', '', data)
+        self.assertSensor('warning_code', 0, '', data)
+        self.assertSensor('safety_country', 9, '', data)
+        self.assertSensor('safety_country_label', 'Australia', '', data)
+        self.assertSensor('work_mode', 1, '', data)
+        self.assertSensor('work_mode_label', 'Normal (On-Grid)', '', data)
+        self.assertSensor('operation_mode', -1, '', data)
+        self.assertSensor('error_codes', 0, '', data)
+        self.assertSensor('errors', '', '', data)
+        self.assertSensor('e_total', 10225.8, 'kWh', data)
+        self.assertSensor('e_day', 23.1, 'kWh', data)
+        self.assertSensor('e_total_exp', 10273.3, 'kWh', data)
+        self.assertSensor('h_total', 3256, 'h', data)
+        self.assertSensor('e_day_exp', 16.6, 'kWh', data)
+        self.assertSensor('e_total_imp', 0.0, 'kWh', data)
+        self.assertSensor('e_day_imp', 0.0, 'kWh', data)
+        self.assertSensor('e_load_total', 4393.9, 'kWh', data)
+        self.assertSensor('e_load_day', 10.7, 'kWh', data)
+        self.assertSensor('e_bat_charge_total', 141.9, 'kWh', data)
+        self.assertSensor('e_bat_charge_day', 9.6, 'kWh', data)
+        self.assertSensor('e_bat_discharge_total', 117.5, 'kWh', data)
+        self.assertSensor('e_bat_discharge_day', 2.6, 'kWh', data)
+        self.assertSensor('diagnose_result', 33556864, '', data)
+        self.assertSensor('diagnose_result_label',
+                          'BMS: Discharge current low, APP: Discharge current too low, Self-use load light, PF value set',
+                          '', data)
+        self.assertSensor('house_consumption', 4967, 'W', data)
+        self.assertSensor('battery_bms', 515, '', data)
+        self.assertSensor('battery_index', 1029, '', data)
+        self.assertSensor('battery_status', 1543, '', data)
+        self.assertSensor('battery_temperature', 0.0, 'C', data)
+        self.assertSensor('battery_charge_limit', 0, 'A', data)
+        self.assertSensor('battery_discharge_limit', 0, 'A', data)
+        self.assertSensor('battery_error_l', 0, '', data)
+        self.assertSensor('battery_soc', 0, '%', data)
+        self.assertSensor('battery_soh', 0, '%', data)
+        self.assertSensor('battery_modules', 0, '', data)
+        self.assertSensor('battery_warning_l', 0, '', data)
+        self.assertSensor('battery_protocol', 0, '', data)
+        self.assertSensor('battery_error_h', 0, '', data)
+        self.assertSensor('battery_error', '', '', data)
+        self.assertSensor('battery_warning_h', 0, '', data)
+        self.assertSensor('battery_warning', '', '', data)
+        self.assertSensor('battery_sw_version', 0, '', data)
+        self.assertSensor('battery_hw_version', 0, '', data)
+        self.assertSensor('battery_max_cell_temp_id', 0, '', data)
+        self.assertSensor('battery_min_cell_temp_id', 0, '', data)
+        self.assertSensor('battery_max_cell_voltage_id', 0, '', data)
+        self.assertSensor('battery_min_cell_voltage_id', 0, '', data)
+        self.assertSensor('battery_max_cell_temp', 0.0, 'C', data)
+        self.assertSensor('battery_min_cell_temp', 0.0, 'C', data)
+        self.assertSensor('battery_max_cell_voltage', 0.0, 'V', data)
+        self.assertSensor('battery_min_cell_voltage', 0.0, 'V', data)
+        self.assertSensor('commode', 515, '', data)
+        self.assertSensor('rssi', 1029, '', data)
+        self.assertSensor('manufacture_code', 1543, '', data)
+        self.assertSensor('meter_test_status', 0, '', data)
+        self.assertSensor('meter_comm_status', 0, '', data)
+        self.assertSensor('active_power1', 0, 'W', data)
+        self.assertSensor('active_power_total', 0, 'W', data)
+        self.assertSensor('reactive_power_total', 0, 'var', data)
+        self.assertSensor('meter_power_factor1', 0.0, '', data)
+        self.assertSensor('meter_power_factor', 0.0, '', data)
+        self.assertSensor('meter_freq', 0.0, 'Hz', data)
+        self.assertSensor('meter_e_total_exp', 0.0, 'kWh', data)
+        self.assertSensor('meter_e_total_imp', 0.0, 'kWh', data)
+        self.assertSensor('meter_active_power1', 0, 'W', data)
+        self.assertSensor('meter_active_power_total', 0, 'W', data)
+        self.assertSensor('meter_reactive_power1', 0, 'var', data)
+        self.assertSensor('meter_reactive_power_total', 0, 'var', data)
+        self.assertSensor('meter_apparent_power1', 0, 'VA', data)
+        self.assertSensor('meter_apparent_power_total', 0, 'VA', data)
+        self.assertSensor('meter_type', 0, '', data)
+        self.assertSensor('meter_sw_version', 0, '', data)
+
+        self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")

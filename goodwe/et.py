@@ -21,16 +21,24 @@ class ET(Inverter):
         Voltage("vpv2", 14, "PV2 Voltage", Kind.PV),
         Current("ipv2", 16, "PV2 Current", Kind.PV),
         Power4("ppv2", 18, "PV2 Power", Kind.PV),
-        # Voltage("vpv3", 22, "PV3 Voltage", Kind.PV), # modbus35111
-        # Current("ipv3", 24, "PV3 Current", Kind.PV),
-        # Power4("ppv3", 26, "PV3 Power", Kind.PV),
-        # Voltage("vpv4", 30, "PV4 Voltage", Kind.PV),
-        # Current("ipv4", 32, "PV4 Current", Kind.PV),
-        # Power4("ppv4", 34, "PV4 Power", Kind.PV),
+        Voltage("vpv3", 22, "PV3 Voltage", Kind.PV),  # modbus35111
+        Current("ipv3", 24, "PV3 Current", Kind.PV),
+        Power4("ppv3", 26, "PV3 Power", Kind.PV),
+        Voltage("vpv4", 30, "PV4 Voltage", Kind.PV),
+        Current("ipv4", 32, "PV4 Current", Kind.PV),
+        Power4("ppv4", 34, "PV4 Power", Kind.PV),
         # ppv1 + ppv2 + ppv3 + ppv4
-        Calculated("ppv", 0, lambda data, _: read_power(data, 10) + read_power(data, 18), "PV Power", "W", Kind.PV),
-        # Byte("pv4_mode", 38, "PV4 Mode", "", Kind.PV),
-        # Byte("pv3_mode", 39, "PV3 Mode", "", Kind.PV),
+        Calculated("ppv", 0,
+                   lambda data, _:
+                   read_power(data, 10) +
+                   read_power(data, 18) +
+                   read_power(data, 26) +
+                   read_power(data, 34),
+                   "PV Power", "W", Kind.PV),
+        Byte("pv4_mode", 38, "PV4 Mode code", "", Kind.PV),
+        Enum("pv4_mode_label", 38, PV_MODES, "PV4 Mode", "", Kind.PV),
+        Byte("pv3_mode", 39, "PV3 Mode code", "", Kind.PV),
+        Enum("pv3_mode_label", 39, PV_MODES, "PV3 Mode", "", Kind.PV),
         Byte("pv2_mode", 40, "PV2 Mode code", "", Kind.PV),
         Enum("pv2_mode_label", 40, PV_MODES, "PV2 Mode", "", Kind.PV),
         Byte("pv1_mode", 41, "PV1 Mode code", "", Kind.PV),
@@ -124,6 +132,8 @@ class ET(Inverter):
                    lambda data, _:
                    read_power(data, 10) +
                    read_power(data, 18) +
+                   read_power(data, 26) +
+                   read_power(data, 34) +
                    round(read_voltage(data, 160) * read_current(data, 162)) -
                    read_power(data, 78),
                    "House Consumption", "W", Kind.AC),
@@ -259,7 +269,9 @@ class ET(Inverter):
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._has_battery: bool = True
-        self._sensors = self.__all_sensors
+        # By default, we set up only PV1 on PV2 sensors, only few inverters support PV3 and PV3
+        # In case they are needed, they are added later in read_device_info
+        self._sensors = tuple(filter(self._pv1_pv2_only, self.__all_sensors))
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_meter = self.__all_sensors_meter
         self._settings = self.__all_settings
@@ -276,8 +288,14 @@ class ET(Inverter):
         return True
 
     @staticmethod
-    def _is_not_3phase_sensor(s: Sensor) -> bool:
+    def _single_phase_only(s: Sensor) -> bool:
+        """Filter to exclude phase2/3 sensors on single phase inverters"""
         return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_)
+
+    @staticmethod
+    def _pv1_pv2_only(s: Sensor) -> bool:
+        """Filter to exclude sensors on < 4 PV inverters"""
+        return not (('pv3' in s.id_) or ('pv4' in s.id_))
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -298,7 +316,13 @@ class ET(Inverter):
 
         if "EHU" in self.serial_number:
             # this is single phase inverter, filter out all L2 and L3 sensors
-            self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
+            self._sensors = tuple(filter(self._single_phase_only, self._sensors))
+            self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
+
+        if "HSB" in self.serial_number:
+            # this is PV3/PV4 re-include all sensors
+            self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
+            self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
         if self._supports_eco_mode_v2():
             # this inverter has eco mode version 2, adding EcoModeV2 to settings

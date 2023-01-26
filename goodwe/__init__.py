@@ -20,7 +20,7 @@ ES_FAMILY = ["ES", "EM", "BP"]
 DT_FAMILY = ["DT", "MS", "NS", "XS"]
 
 # Serial number tags to identify inverter type
-ET_MODEL_TAGS = ["ETU", "EHU", "BTU", "BHU"]
+ET_MODEL_TAGS = ["ETU", "EHU", "BTU", "BHU", "HSB"]
 ES_MODEL_TAGS = ["ESU", "EMU", "BPU", "BPS"]
 DT_MODEL_TAGS = ["DTU", "MSU", "DTN", "DSN", "PSB", "PSC"]
 
@@ -28,7 +28,8 @@ DT_MODEL_TAGS = ["DTU", "MSU", "DTN", "DSN", "PSB", "PSC"]
 _SUPPORTED_PROTOCOLS = [ET, DT, ES]
 
 
-async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: int = 1, retries: int = 3, do_discover: bool = True) -> Inverter:
+async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: int = 1, retries: int = 3,
+                  do_discover: bool = True) -> Inverter:
     """Contact the inverter at the specified host/port and answer appropriate Inverter instance.
 
     The specific inverter family/type will be detected automatically, but it can be passed explicitly.
