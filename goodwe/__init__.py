@@ -75,7 +75,7 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
         inverter_class: Type[Inverter] | None = None
         for model_tag in ET_MODEL_TAGS:
             if model_tag in serial_number:
-                logger.debug("Detected ET/EH/BT/BH inverter %s, S/N:%s.", model_name, serial_number)
+                logger.debug("Detected ET/EH/BT/BH/GEH inverter %s, S/N:%s.", model_name, serial_number)
                 inverter_class = ET
         for model_tag in ES_MODEL_TAGS:
             if model_tag in serial_number:
@@ -83,7 +83,7 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
                 inverter_class = ES
         for model_tag in DT_MODEL_TAGS:
             if model_tag in serial_number:
-                logger.debug("Detected DT/MS/D-NS/XS inverter %s, S/N:%s.", model_name, serial_number)
+                logger.debug("Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.", model_name, serial_number)
                 inverter_class = DT
         if inverter_class:
             i = inverter_class(host, 0, timeout, retries)

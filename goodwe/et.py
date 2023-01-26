@@ -10,7 +10,7 @@ from .sensor import *
 
 
 class ET(Inverter):
-    """Class representing inverter of ET/EH/BT/BH family"""
+    """Class representing inverter of ET/EH/BT/BH or GE's GEH families"""
 
     # Modbus registers from offset 0x891c (35100), count 0x7d (125)
     __all_sensors: Tuple[Sensor, ...] = (

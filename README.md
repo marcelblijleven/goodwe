@@ -16,7 +16,7 @@ protocols.
 version. You should ask manufacturer support to upgrade your ARM firmware (not just inverter firmware) to be able to
 communicate with the inveter via UDP.)
 
-White-label (GoodWe manufactured) inverters may work as well, e.g. General Electric GEP (PSB, PSC) models.
+White-label (GoodWe manufactured) inverters may work as well, e.g. General Electric GEP (PSB, PSC) and GEH models.
 
 ## Usage
 
