@@ -17,30 +17,32 @@ class ES(Inverter):
     __sensors: Tuple[Sensor, ...] = (
         Voltage("vpv1", 0, "PV1 Voltage", Kind.PV),  # modbus 0x500
         Current("ipv1", 2, "PV1 Current", Kind.PV),
-        Calculated("ppv1", 0, lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)), "PV1 Power", "W",
-                   Kind.PV),
+        Calculated("ppv1",
+                   lambda data: round(read_voltage(data, 0) * read_current(data, 2)),
+                   "PV1 Power", "W", Kind.PV),
         Byte("pv1_mode", 4, "PV1 Mode code", "", Kind.PV),
-        Enum("pv1_mode_label", 4, PV_MODES, "PV1 Mode", "", Kind.PV),
+        Enum("pv1_mode_label", 4, PV_MODES, "PV1 Mode", Kind.PV),
         Voltage("vpv2", 5, "PV2 Voltage", Kind.PV),
         Current("ipv2", 7, "PV2 Current", Kind.PV),
-        Calculated("ppv2", 0, lambda data, _: round(read_voltage(data, 5) * read_current(data, 7)), "PV2 Power", "W",
-                   Kind.PV),
+        Calculated("ppv2",
+                   lambda data: round(read_voltage(data, 5) * read_current(data, 7)),
+                   "PV2 Power", "W", Kind.PV),
         Byte("pv2_mode", 9, "PV2 Mode code", "", Kind.PV),
-        Enum("pv2_mode_label", 9, PV_MODES, "PV2 Mode", "", Kind.PV),
-        Calculated("ppv", 0,
-                   lambda data, _: round(read_voltage(data, 0) * read_current(data, 2)) + round(
+        Enum("pv2_mode_label", 9, PV_MODES, "PV2 Mode", Kind.PV),
+        Calculated("ppv",
+                   lambda data: round(read_voltage(data, 0) * read_current(data, 2)) + round(
                        read_voltage(data, 5) * read_current(data, 7)),
                    "PV Power", "W", Kind.PV),
         Voltage("vbattery1", 10, "Battery Voltage", Kind.BAT),  # modbus 0x506
         # Voltage("vbattery2", 12, "Battery Voltage 2", Kind.BAT),
         Integer("battery_status", 14, "Battery Status", "", Kind.BAT),
         Temp("battery_temperature", 16, "Battery Temperature", Kind.BAT),
-        Calculated("ibattery1", 18,
-                   lambda data, _: abs(read_current(data, 18)) * (-1 if read_byte(data, 30) == 3 else 1),
+        Calculated("ibattery1",
+                   lambda data: abs(read_current(data, 18)) * (-1 if read_byte(data, 30) == 3 else 1),
                    "Battery Current", "A", Kind.BAT),
         # round(vbattery1 * ibattery1),
-        Calculated("pbattery1", 0,
-                   lambda data, _: abs(
+        Calculated("pbattery1",
+                   lambda data: abs(
                        round(read_voltage(data, 10) * read_current(data, 18))
                    ) * (-1 if read_byte(data, 30) == 3 else 1),
                    "Battery Power", "W", Kind.BAT),
@@ -52,25 +54,25 @@ class ES(Inverter):
         # Byte("cbattery3", 28, "Battery State of Charge 3", "%", Kind.BAT),
         Byte("battery_soh", 29, "Battery State of Health", "%", Kind.BAT),
         Byte("battery_mode", 30, "Battery Mode code", "", Kind.BAT),
-        Enum("battery_mode_label", 30, BATTERY_MODES_ET, "Battery Mode", "", Kind.BAT),
+        Enum("battery_mode_label", 30, BATTERY_MODES_ET, "Battery Mode", Kind.BAT),
         Integer("battery_warning", 31, "Battery Warning", "", Kind.BAT),
         Byte("meter_status", 33, "Meter Status code", "", Kind.AC),
         Voltage("vgrid", 34, "On-grid Voltage", Kind.AC),
         Current("igrid", 36, "On-grid Current", Kind.AC),
-        Calculated("pgrid", 38,
-                   lambda data, _: abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
+        Calculated("pgrid",
+                   lambda data: abs(read_bytes2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
                    "On-grid Export Power", "W", Kind.AC),
         Frequency("fgrid", 40, "On-grid Frequency", Kind.AC),
         Byte("grid_mode", 42, "Work Mode code", "", Kind.GRID),
-        Enum("grid_mode_label", 42, WORK_MODES_ES, "Work Mode", "", Kind.GRID),
+        Enum("grid_mode_label", 42, WORK_MODES_ES, "Work Mode", Kind.GRID),
         Voltage("vload", 43, "Back-up Voltage", Kind.UPS),  # modbus 0x51b
         Current("iload", 45, "Back-up Current", Kind.UPS),
         Power("pload", 47, "On-grid Power", Kind.AC),
         Frequency("fload", 49, "Back-up Frequency", Kind.UPS),
         Byte("load_mode", 51, "Load Mode code", "", Kind.AC),
-        Enum("load_mode_label", 51, LOAD_MODES, "Load Mode", "", Kind.AC),
+        Enum("load_mode_label", 51, LOAD_MODES, "Load Mode", Kind.AC),
         Byte("work_mode", 52, "Energy Mode code", "", Kind.AC),
-        Enum("work_mode_label", 52, ENERGY_MODES, "Energy Mode", "", Kind.AC),
+        Enum("work_mode_label", 52, ENERGY_MODES, "Energy Mode", Kind.AC),
         Temp("temperature", 53, "Inverter Temperature"),
         Long("error_codes", 55, "Error Codes"),
         Energy4("e_total", 59, "Total PV Generation", Kind.PV),
@@ -82,21 +84,17 @@ class ES(Inverter):
         Byte("effective_work_mode", 77, "Effective Work Mode code"),
         Integer("effective_relay_control", 78, "Effective Relay Control", "", None),
         Byte("grid_in_out", 80, "On-grid Mode code", "", Kind.GRID),
-        Calculated("grid_in_out_label", 0,
-                   lambda data, _: GRID_IN_OUT_MODES.get(read_byte(data, 80)),
-                   "On-grid Mode", "", Kind.GRID),
+        Enum("grid_in_out_label", 80, GRID_IN_OUT_MODES, "On-grid Mode", Kind.GRID),
         Power("pback_up", 81, "Back-up Power", Kind.UPS),
         # pload + pback_up
-        Calculated("plant_power", 0,
-                   lambda data, _: round(read_power2(data, 47) + read_power2(data, 81)),
+        Calculated("plant_power",
+                   lambda data: round(read_bytes2(data, 47) + read_bytes2(data, 81)),
                    "Plant Power", "W", Kind.AC),
         Decimal("meter_power_factor", 83, 1000, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
         Integer("xx85", 85, "Unknown sensor@85"),
         Integer("xx87", 87, "Unknown sensor@87"),
         Long("diagnose_result", 89, "Diag Status Code"),
-        Calculated("diagnose_result_label", 0,
-                   lambda data, _: decode_bitmap(read_bytes4(data, 89), DIAG_STATUS_CODES),
-                   "Diag Status", ""),
+        EnumBitmap4("diagnose_result_label", 89, DIAG_STATUS_CODES, "Diag Status"),
         # Energy4("e_total_exp", 93, "Total Energy (export)", Kind.GRID),
         # Energy4("e_total_imp", 97, "Total Energy (import)", Kind.GRID),
         # Voltage("vpv3", 101, "PV3 Voltage", Kind.PV),  # modbus 0x500
@@ -110,13 +108,13 @@ class ES(Inverter):
         # Energy4("e_bat_discharge_total", 117, "Total Battery Discharge", Kind.BAT),
 
         # ppv1 + ppv2 + pbattery - pgrid
-        Calculated("house_consumption", 0,
-                   lambda data, _:
+        Calculated("house_consumption",
+                   lambda data:
                    round(read_voltage(data, 0) * read_current(data, 2)) +
                    round(read_voltage(data, 5) * read_current(data, 7)) +
                    (abs(round(read_voltage(data, 10) * read_current(data, 18))) *
                     (-1 if read_byte(data, 30) == 3 else 1)) -
-                   (abs(read_power2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
+                   (abs(read_bytes2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
                    "House Consumption", "W", Kind.AC),
     )
 
@@ -132,7 +130,7 @@ class ES(Inverter):
         Integer("charge_i", 26, "Charge Current", "A", ),
         Integer("discharge_i", 28, "Discharge Current", "A", ),
         Integer("discharge_v", 30, "Discharge Voltage", "V"),
-        Calculated("dod", 32, lambda data, _: 100 - read_bytes2(data, 32), "Depth of Discharge", "%"),
+        Calculated("dod", lambda data: 100 - read_bytes2(data, 32), "Depth of Discharge", "%"),
         Integer("battery_activated", 34, "Battery Activated"),
         Integer("bp_off_grid_charge", 36, "BP Off-grid Charge"),
         Integer("bp_pv_discharge", 38, "BP PV Discharge"),

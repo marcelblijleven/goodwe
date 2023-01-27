@@ -319,10 +319,10 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('grid_mode', 1, '', data)
         self.assertSensor('grid_mode_label', 'Connected to grid', '', data)
         self.assertSensor('total_inverter_power', 1561, 'W', data)
-        self.assertSensor('active_power', -163, 'W', data)
+        self.assertSensor('active_power', -164, 'W', data)
         self.assertSensor('grid_in_out', 2, '', data)
         self.assertSensor('grid_in_out_label', 'Importing', '', data)
-        self.assertSensor('reactive_power', 2147483647, 'var', data)
+        self.assertSensor('reactive_power', -1, 'var', data)
         self.assertSensor('apparent_power', -1, 'VA', data)
         self.assertSensor('backup_v1', 0.0, 'V', data)
         self.assertSensor('backup_i1', 0.0, 'A', data)
@@ -369,7 +369,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('diagnose_result_label',
                           'Battery voltage low, Battery SOC low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected, Self-use off, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 1709, 'W', data)
+        self.assertSensor('house_consumption', 1710, 'W', data)
 
 
 class GEH10_1U_10_Test(EtMock):

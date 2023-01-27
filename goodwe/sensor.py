@@ -52,7 +52,7 @@ class Power(Sensor):
         super().__init__(id_, offset, name, 2, "W", kind)
 
     def read_value(self, data: io.BytesIO):
-        return read_power2(data)
+        return read_bytes2(data)
 
 
 class Power4(Sensor):
@@ -62,7 +62,7 @@ class Power4(Sensor):
         super().__init__(id_, offset, name, 4, "W", kind)
 
     def read_value(self, data: io.BytesIO):
-        return read_power(data)
+        return read_bytes4(data)
 
 
 class Energy(Sensor):
@@ -91,6 +91,46 @@ class Energy4(Sensor):
             return None
         else:
             return float(value) / 10
+
+
+class Apparent(Sensor):
+    """Sensor representing apparent power [VA] value encoded in 2 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "VA", kind)
+
+    def read_value(self, data: io.BytesIO):
+        return read_bytes2(data)
+
+
+class Apparent4(Sensor):
+    """Sensor representing apparent power [VA] value encoded in 4 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "VA", kind)
+
+    def read_value(self, data: io.BytesIO):
+        return read_bytes4(data)
+
+
+class Reactive(Sensor):
+    """Sensor representing reactive power [var] value encoded in 2 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "var", kind)
+
+    def read_value(self, data: io.BytesIO):
+        return read_bytes2(data)
+
+
+class Reactive4(Sensor):
+    """Sensor representing reactive power [var] value encoded in 4 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "var", kind)
+
+    def read_value(self, data: io.BytesIO):
+        return read_bytes4(data)
 
 
 class Temp(Sensor):
@@ -183,25 +223,69 @@ class Timestamp(Sensor):
 class Enum(Sensor):
     """Sensor representing label from enumeration encoded in 1 bytes"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, unit: str = "",
-                 kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, 1, unit, kind)
-        self.labels: Dict = labels
+    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 1, "", kind)
+        self._labels: Dict = labels
 
     def read_value(self, data: io.BytesIO):
-        return self.labels.get(read_byte(data))
+        return self._labels.get(read_byte(data))
 
 
 class Enum2(Sensor):
     """Sensor representing label from enumeration encoded in 2 bytes"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, unit: str = "",
-                 kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, 2, unit, kind)
-        self.labels: Dict = labels
+    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 2, "", kind)
+        self._labels: Dict = labels
 
     def read_value(self, data: io.BytesIO):
-        return self.labels.get(read_bytes2(data))
+        return self._labels.get(read_bytes2(data))
+
+
+class EnumBitmap4(Sensor):
+    """Sensor representing label from bitmap encoded in 4 bytes"""
+
+    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 4, "", kind)
+        self._labels: Dict = labels
+
+    def read_value(self, data: io.BytesIO) -> Any:
+        raise NotImplementedError()
+
+    def read(self, data: io.BytesIO):
+        return decode_bitmap(read_bytes4(data, self.offset), self._labels)
+
+
+class EnumBitmap22(Sensor):
+    """Sensor representing label from bitmap encoded in 2+2 bytes"""
+
+    def __init__(self, id_: str, offsetH: int, offsetL: int, labels: Dict, name: str,
+                 kind: Optional[SensorKind] = None):
+        super().__init__(id_, offsetH, name, 2, "", kind)
+        self._labels: Dict = labels
+        self._offsetL: int = offsetL
+
+    def read_value(self, data: io.BytesIO) -> Any:
+        raise NotImplementedError()
+
+    def read(self, data: io.BytesIO):
+        return decode_bitmap(read_bytes2(data, self.offset) << 16 + read_bytes2(data, self._offsetL), self._labels)
+
+
+class EnumCalculated(Sensor):
+    """Sensor representing label from enumeration of calculated value"""
+
+    def __init__(self, id_: str, getter: Callable[[io.BytesIO], Any], labels: Dict, name: str,
+                 kind: Optional[SensorKind] = None):
+        super().__init__(id_, 0, name, 0, "", kind)
+        self._getter: Callable[[io.BytesIO], Any] = getter
+        self._labels: Dict = labels
+
+    def read_value(self, data: io.BytesIO) -> Any:
+        raise NotImplementedError()
+
+    def read(self, data: io.BytesIO):
+        return self._labels.get(self._getter(data))
 
 
 class EcoMode(Sensor):
@@ -254,6 +338,7 @@ class EcoMode(Sensor):
         """Answer bytes representing empty and disabled eco mode group"""
         return bytes.fromhex("3000300000640000")
 
+
 class EcoModeV2(Sensor):
     """Sensor representing Eco Mode Battery Power Group encoded in 6 bytes"""
 
@@ -297,7 +382,8 @@ class EcoModeV2(Sensor):
 
     def encode_charge(self, eco_mode_power: int, max_charge: int = 100) -> bytes:
         """Answer bytes representing all the time enabled charging eco mode group"""
-        return bytes.fromhex("0000173bff7f{:04x}{:04x}0000".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1), max_charge))
+        return bytes.fromhex(
+            "0000173bff7f{:04x}{:04x}0000".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1), max_charge))
 
     def encode_discharge(self, eco_mode_power: int) -> bytes:
         """Answer bytes representing all the time enabled discharging eco mode group"""
@@ -311,50 +397,49 @@ class EcoModeV2(Sensor):
 class Calculated(Sensor):
     """Sensor representing calculated value"""
 
-    def __init__(self, id_: str, offset: int, getter: Callable[[io.BytesIO, int], Any], name: str, unit: str,
+    def __init__(self, id_: str, getter: Callable[[io.BytesIO], Any], name: str, unit: str,
                  kind: Optional[SensorKind] = None):
-        super().__init__(id_, offset, name, 0, unit, kind)
-        self._getter: Callable[[io.BytesIO, int], Any] = getter
+        super().__init__(id_, 0, name, 0, unit, kind)
+        self._getter: Callable[[io.BytesIO], Any] = getter
 
     def read_value(self, data: io.BytesIO) -> Any:
         raise NotImplementedError()
 
     def read(self, data: io.BytesIO):
-        data.seek(self.offset)
-        return self._getter(data, self.offset)
+        return self._getter(data)
 
 
 def read_byte(buffer: io.BytesIO, offset: int = None) -> int:
     """Retrieve single byte (signed int) value from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(1), byteorder="big", signed=True)
 
 
 def read_bytes2(buffer: io.BytesIO, offset: int = None) -> int:
     """Retrieve 2 byte (signed int) value from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(2), byteorder="big", signed=True)
 
 
 def read_bytes4(buffer: io.BytesIO, offset: int = None) -> int:
     """Retrieve 4 byte (signed int) value from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(4), byteorder="big", signed=True)
 
 
 def read_decimal2(buffer: io.BytesIO, scale: int, offset: int = None) -> float:
     """Retrieve 2 byte (signed float) value from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     return float(int.from_bytes(buffer.read(2), byteorder="big", signed=True)) / scale
 
 
 def read_float4(buffer: io.BytesIO, offset: int = None) -> float:
     """Retrieve 4 byte (signed float) value from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     data = buffer.read(4)
     if len(data) == 4:
@@ -365,7 +450,7 @@ def read_float4(buffer: io.BytesIO, offset: int = None) -> float:
 
 def read_voltage(buffer: io.BytesIO, offset: int = None) -> float:
     """Retrieve voltage [V] value (2 bytes) from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     return float(value) / 10
@@ -378,7 +463,7 @@ def encode_voltage(value: Any) -> bytes:
 
 def read_current(buffer: io.BytesIO, offset: int = None) -> float:
     """Retrieve current [A] value (2 bytes) from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     return float(value) / 10
@@ -389,27 +474,9 @@ def encode_current(value: Any) -> bytes:
     return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=True)
 
 
-def read_power(buffer: io.BytesIO, offset: int = None) -> int:
-    """Retrieve power [W] value (4 bytes) from buffer"""
-    if offset:
-        buffer.seek(offset)
-    value = int.from_bytes(buffer.read(4), byteorder="big", signed=True)
-    if value > 32768:
-        value = value - 65535
-    return value
-
-
-def read_power2(buffer: io.BytesIO, offset: int = None) -> int:
-    """Retrieve power [W] value (2 bytes) from buffer"""
-    if offset:
-        buffer.seek(offset)
-    value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
-    return value
-
-
 def read_freq(buffer: io.BytesIO, offset: int = None) -> float:
     """Retrieve frequency [Hz] value (2 bytes) from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     return float(value) / 100
@@ -417,7 +484,7 @@ def read_freq(buffer: io.BytesIO, offset: int = None) -> float:
 
 def read_temp(buffer: io.BytesIO, offset: int = None) -> float:
     """Retrieve temperature [C] value (2 bytes) from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     return float(value) / 10
@@ -425,7 +492,7 @@ def read_temp(buffer: io.BytesIO, offset: int = None) -> float:
 
 def read_datetime(buffer: io.BytesIO, offset: int = None) -> datetime:
     """Retrieve datetime value (6 bytes) from buffer"""
-    if offset:
+    if offset is not None:
         buffer.seek(offset)
     year = 2000 + int.from_bytes(buffer.read(1), byteorder='big')
     month = int.from_bytes(buffer.read(1), byteorder='big')
@@ -455,7 +522,7 @@ def encode_datetime(value: Any) -> bytes:
 
 def read_grid_mode(buffer: io.BytesIO, offset: int = None) -> int:
     """Retrieve 'grid mode' sign value from buffer"""
-    value = read_power(buffer, offset)
+    value = read_bytes2(buffer, offset)
     if value < -90:
         return 2
     elif value >= 90:

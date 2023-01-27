@@ -28,63 +28,80 @@ class ET(Inverter):
         Current("ipv4", 32, "PV4 Current", Kind.PV),
         Power4("ppv4", 34, "PV4 Power", Kind.PV),
         # ppv1 + ppv2 + ppv3 + ppv4
-        Calculated("ppv", 0,
-                   lambda data, _:
-                   read_power(data, 10) +
-                   read_power(data, 18) +
-                   read_power(data, 26) +
-                   read_power(data, 34),
+        Calculated("ppv",
+                   lambda data:
+                   read_bytes4(data, 10) +
+                   read_bytes4(data, 18) +
+                   read_bytes4(data, 26) +
+                   read_bytes4(data, 34),
                    "PV Power", "W", Kind.PV),
         Byte("pv4_mode", 38, "PV4 Mode code", "", Kind.PV),
-        Enum("pv4_mode_label", 38, PV_MODES, "PV4 Mode", "", Kind.PV),
+        Enum("pv4_mode_label", 38, PV_MODES, "PV4 Mode", Kind.PV),
         Byte("pv3_mode", 39, "PV3 Mode code", "", Kind.PV),
-        Enum("pv3_mode_label", 39, PV_MODES, "PV3 Mode", "", Kind.PV),
+        Enum("pv3_mode_label", 39, PV_MODES, "PV3 Mode", Kind.PV),
         Byte("pv2_mode", 40, "PV2 Mode code", "", Kind.PV),
-        Enum("pv2_mode_label", 40, PV_MODES, "PV2 Mode", "", Kind.PV),
+        Enum("pv2_mode_label", 40, PV_MODES, "PV2 Mode", Kind.PV),
         Byte("pv1_mode", 41, "PV1 Mode code", "", Kind.PV),
-        Enum("pv1_mode_label", 41, PV_MODES, "PV1 Mode", "", Kind.PV),
+        Enum("pv1_mode_label", 41, PV_MODES, "PV1 Mode", Kind.PV),
         Voltage("vgrid", 42, "On-grid L1 Voltage", Kind.AC),  # modbus 35121
         Current("igrid", 44, "On-grid L1 Current", Kind.AC),
         Frequency("fgrid", 46, "On-grid L1 Frequency", Kind.AC),
-        Power4("pgrid", 48, "On-grid L1 Power", Kind.AC),
+        # 48 reserved
+        Power("pgrid", 50, "On-grid L1 Power", Kind.AC),
         Voltage("vgrid2", 52, "On-grid L2 Voltage", Kind.AC),
         Current("igrid2", 54, "On-grid L2 Current", Kind.AC),
         Frequency("fgrid2", 56, "On-grid L2 Frequency", Kind.AC),
-        Power4("pgrid2", 58, "On-grid L2 Power", Kind.AC),
+        # 58 reserved
+        Power("pgrid2", 60, "On-grid L2 Power", Kind.AC),
         Voltage("vgrid3", 62, "On-grid L3 Voltage", Kind.AC),
         Current("igrid3", 64, "On-grid L3 Current", Kind.AC),
         Frequency("fgrid3", 66, "On-grid L3 Frequency", Kind.AC),
-        Power4("pgrid3", 68, "On-grid L3 Power", Kind.AC),
+        # 68 reserved
+        Power("pgrid3", 70, "On-grid L3 Power", Kind.AC),
         Integer("grid_mode", 72, "Grid Mode code", "", Kind.PV),
-        Enum2("grid_mode_label", 72, GRID_MODES, "Grid Mode", "", Kind.PV),
-        Power4("total_inverter_power", 74, "Total Power", Kind.AC),
-        Power4("active_power", 78, "Active Power", Kind.GRID),
-        Calculated("grid_in_out", 78, lambda data, _: read_grid_mode(data, 78), "On-grid Mode code", "", Kind.GRID),
-        Calculated("grid_in_out_label", 0, lambda data, _: GRID_IN_OUT_MODES.get(read_grid_mode(data, 78)),
-                   "On-grid Mode",
-                   "", Kind.GRID),
-        Long("reactive_power", 82, "Reactive Power", "var", Kind.GRID),
-        Long("apparent_power", 86, "Apparent Power", "VA", Kind.GRID),
+        Enum2("grid_mode_label", 72, GRID_MODES, "Grid Mode", Kind.PV),
+        # 74 reserved
+        Power("total_inverter_power", 76, "Total Power", Kind.AC),
+        # 78 reserved
+        Power("active_power", 80, "Active Power", Kind.GRID),
+        Calculated("grid_in_out",
+                   lambda data: read_grid_mode(data, 80),
+                   "On-grid Mode code", "", Kind.GRID),
+        EnumCalculated("grid_in_out_label",
+                       lambda data: read_grid_mode(data, 80), GRID_IN_OUT_MODES,
+                       "On-grid Mode", Kind.GRID),
+        # 82 reserved
+        Reactive("reactive_power", 84, "Reactive Power", Kind.GRID),
+        # 86 reserved
+        Apparent("apparent_power", 88, "Apparent Power", Kind.GRID),
         Voltage("backup_v1", 90, "Back-up L1 Voltage", Kind.UPS),  # modbus 35145
         Current("backup_i1", 92, "Back-up L1 Current", Kind.UPS),
         Frequency("backup_f1", 94, "Back-up L1 Frequency", Kind.UPS),
         Integer("load_mode1", 96, "Load Mode L1"),
-        Power4("backup_p1", 98, "Back-up L1 Power", Kind.UPS),
+        # 98 reserved
+        Power("backup_p1", 100, "Back-up L1 Power", Kind.UPS),
         Voltage("backup_v2", 102, "Back-up L2 Voltage", Kind.UPS),
         Current("backup_i2", 104, "Back-up L2 Current", Kind.UPS),
         Frequency("backup_f2", 106, "Back-up L2 Frequency", Kind.UPS),
         Integer("load_mode2", 108, "Load Mode L2"),
-        Power4("backup_p2", 110, "Back-up L2 Power", Kind.UPS),
+        # 110 reserved
+        Power("backup_p2", 112, "Back-up L2 Power", Kind.UPS),
         Voltage("backup_v3", 114, "Back-up L3 Voltage", Kind.UPS),
         Current("backup_i3", 116, "Back-up L3 Current", Kind.UPS),
         Frequency("backup_f3", 118, "Back-up L3 Frequency", Kind.UPS),
         Integer("load_mode3", 120, "Load Mode L3"),
-        Power4("backup_p3", 122, "Back-up L3 Power", Kind.UPS),
-        Power4("load_p1", 126, "Load L1", Kind.AC),
-        Power4("load_p2", 130, "Load L2", Kind.AC),
-        Power4("load_p3", 134, "Load L3", Kind.AC),
-        Power4("backup_ptotal", 138, "Back-up Load", Kind.UPS),
-        Power4("load_ptotal", 142, "Load", Kind.AC),
+        # 122 reserved
+        Power("backup_p3", 124, "Back-up L3 Power", Kind.UPS),
+        # 126 reserved
+        Power("load_p1", 128, "Load L1", Kind.AC),
+        # 130 reserved
+        Power("load_p2", 132, "Load L2", Kind.AC),
+        # 134 reserved
+        Power("load_p3", 136, "Load L3", Kind.AC),
+        # 138 reserved
+        Power("backup_ptotal", 140, "Back-up Load", Kind.UPS),
+        # 142 reserved
+        Power("load_ptotal", 144, "Load", Kind.AC),
         Integer("ups_load", 146, "Ups Load", "%", Kind.UPS),
         Temp("temperature_air", 148, "Inverter Temperature (Air)", Kind.AC),
         Temp("temperature_module", 150, "Inverter Temperature (Module)"),
@@ -95,21 +112,19 @@ class ET(Inverter):
         Voltage("vbattery1", 160, "Battery Voltage", Kind.BAT),  # modbus 35180
         Current("ibattery1", 162, "Battery Current", Kind.BAT),
         # round(vbattery1 * ibattery1),
-        Calculated("pbattery1", 0,
-                   lambda data, _: round(read_voltage(data, 160) * read_current(data, 162)),
+        Calculated("pbattery1",
+                   lambda data: round(read_voltage(data, 160) * read_current(data, 162)),
                    "Battery Power", "W", Kind.BAT),
         Integer("battery_mode", 168, "Battery Mode code", "", Kind.BAT),
-        Enum2("battery_mode_label", 168, BATTERY_MODES_ET, "Battery Mode", "", Kind.BAT),
+        Enum2("battery_mode_label", 168, BATTERY_MODES_ET, "Battery Mode", Kind.BAT),
         Integer("warning_code", 170, "Warning code"),
         Integer("safety_country", 172, "Safety Country code", "", Kind.AC),
-        Enum2("safety_country_label", 172, SAFETY_COUNTRIES_ET, "Safety Country", "", Kind.AC),
+        Enum2("safety_country_label", 172, SAFETY_COUNTRIES_ET, "Safety Country", Kind.AC),
         Integer("work_mode", 174, "Work Mode code"),
         Enum2("work_mode_label", 174, WORK_MODES_ET, "Work Mode"),
         Integer("operation_mode", 176, "Operation Mode code"),
         Long("error_codes", 178, "Error Codes"),
-        Calculated("errors", 0,
-                   lambda data, _: decode_bitmap(read_bytes4(data, 178), ERROR_CODES),
-                   "Errors", ""),
+        EnumBitmap4("errors", 178, ERROR_CODES, "Errors"),
         Energy4("e_total", 182, "Total PV Generation", Kind.PV),
         Energy4("e_day", 186, "Today's PV Generation", Kind.PV),
         Energy4("e_total_exp", 190, "Total Energy (export)", Kind.AC),
@@ -124,18 +139,16 @@ class ET(Inverter):
         Energy4("e_bat_discharge_total", 218, "Total Battery Discharge", Kind.BAT),
         Energy("e_bat_discharge_day", 222, "Today Battery Discharge", Kind.BAT),
         Long("diagnose_result", 240, "Diag Status Code"),
-        Calculated("diagnose_result_label", 0,
-                   lambda data, _: decode_bitmap(read_bytes4(data, 240), DIAG_STATUS_CODES),
-                   "Diag Status", ""),
+        EnumBitmap4("diagnose_result_label", 240, DIAG_STATUS_CODES, "Diag Status"),
         # ppv1 + ppv2 + pbattery - active_power
-        Calculated("house_consumption", 0,
-                   lambda data, _:
-                   read_power(data, 10) +
-                   read_power(data, 18) +
-                   read_power(data, 26) +
-                   read_power(data, 34) +
+        Calculated("house_consumption",
+                   lambda data:
+                   read_bytes4(data, 10) +
+                   read_bytes4(data, 18) +
+                   read_bytes4(data, 26) +
+                   read_bytes4(data, 34) +
                    round(read_voltage(data, 160) * read_current(data, 162)) -
-                   read_power(data, 78),
+                   read_bytes2(data, 80),
                    "House Consumption", "W", Kind.AC),
     )
 
@@ -154,14 +167,9 @@ class ET(Inverter):
         Integer("battery_warning_l", 20, "Battery Warning L", "", Kind.BAT),
         Integer("battery_protocol", 22, "Battery Protocol", "", Kind.BAT),
         Integer("battery_error_h", 24, "Battery Error H", "", Kind.BAT),
-        Calculated("battery_error", 0,
-                   lambda data, _: decode_bitmap(read_bytes2(data, 24) << 16 + read_bytes2(data, 12), BMS_ALARM_CODES),
-                   "Battery Error", "", Kind.BAT),
+        EnumBitmap22("battery_error", 24, 12, BMS_ALARM_CODES, "Battery Error", Kind.BAT),
         Integer("battery_warning_h", 28, "Battery Warning H", "", Kind.BAT),
-        Calculated("battery_warning", 0,
-                   lambda data, _: decode_bitmap(read_bytes2(data, 28) << 16 + read_bytes2(data, 20),
-                                                 BMS_WARNING_CODES),
-                   "Battery Warning", "", Kind.BAT),
+        EnumBitmap22("battery_warning", 28, 20, BMS_WARNING_CODES, "Battery Warning", Kind.BAT),
         Integer("battery_sw_version", 30, "Battery Software Version", "", Kind.BAT),
         Integer("battery_hw_version", 32, "Battery Hardware Version", "", Kind.BAT),
         Integer("battery_max_cell_temp_id", 34, "Battery Max Cell Temperature ID", "", Kind.BAT),
@@ -185,8 +193,8 @@ class ET(Inverter):
         Power("active_power1", 10, "Active Power L1", Kind.GRID),  # modbus 36005
         Power("active_power2", 12, "Active Power L2", Kind.GRID),
         Power("active_power3", 14, "Active Power L3", Kind.GRID),
-        Integer("active_power_total", 16, "Active Power Total", "W", Kind.GRID),
-        Integer("reactive_power_total", 18, "Reactive Power Total", "var", Kind.GRID),
+        Power("active_power_total", 16, "Active Power Total", Kind.GRID),
+        Reactive("reactive_power_total", 18, "Reactive Power Total", Kind.GRID),
         Decimal("meter_power_factor1", 20, 1000, "Meter Power Factor L1", "", Kind.GRID),
         Decimal("meter_power_factor2", 22, 1000, "Meter Power Factor L2", "", Kind.GRID),
         Decimal("meter_power_factor3", 24, 1000, "Meter Power Factor L3", "", Kind.GRID),
@@ -194,18 +202,18 @@ class ET(Inverter):
         Frequency("meter_freq", 28, "Meter Frequency", Kind.GRID),  # modbus 36014
         Float("meter_e_total_exp", 30, 1000, "Meter Total Energy (export)", "kWh", Kind.GRID),
         Float("meter_e_total_imp", 34, 1000, "Meter Total Energy (import)", "kWh", Kind.GRID),
-        Long("meter_active_power1", 38, "Meter Active Power L1", "W", Kind.GRID),
-        Long("meter_active_power2", 42, "Meter Active Power L2", "W", Kind.GRID),
-        Long("meter_active_power3", 46, "Meter Active Power L3", "W", Kind.GRID),
-        Long("meter_active_power_total", 50, "Meter Active Power Total", "W", Kind.GRID),
-        Long("meter_reactive_power1", 54, "Meter Reactive Power L1", "var", Kind.GRID),
-        Long("meter_reactive_power2", 58, "Meter Reactive Power L2", "var", Kind.GRID),
-        Long("meter_reactive_power3", 62, "Meter Reactive Power L2", "var", Kind.GRID),
-        Long("meter_reactive_power_total", 66, "Meter Reactive Power Total", "var", Kind.GRID),
-        Long("meter_apparent_power1", 70, "Meter Apparent Power L1", "VA", Kind.GRID),
-        Long("meter_apparent_power2", 74, "Meter Apparent Power L2", "VA", Kind.GRID),
-        Long("meter_apparent_power3", 78, "Meter Apparent Power L3", "VA", Kind.GRID),
-        Long("meter_apparent_power_total", 82, "Meter Apparent Power Total", "VA", Kind.GRID),
+        Power4("meter_active_power1", 38, "Meter Active Power L1", Kind.GRID),
+        Power4("meter_active_power2", 42, "Meter Active Power L2", Kind.GRID),
+        Power4("meter_active_power3", 46, "Meter Active Power L3", Kind.GRID),
+        Power4("meter_active_power_total", 50, "Meter Active Power Total", Kind.GRID),
+        Reactive4("meter_reactive_power1", 54, "Meter Reactive Power L1", Kind.GRID),
+        Reactive4("meter_reactive_power2", 58, "Meter Reactive Power L2", Kind.GRID),
+        Reactive4("meter_reactive_power3", 62, "Meter Reactive Power L2", Kind.GRID),
+        Reactive4("meter_reactive_power_total", 66, "Meter Reactive Power Total", Kind.GRID),
+        Apparent4("meter_apparent_power1", 70, "Meter Apparent Power L1", Kind.GRID),
+        Apparent4("meter_apparent_power2", 74, "Meter Apparent Power L2", Kind.GRID),
+        Apparent4("meter_apparent_power3", 78, "Meter Apparent Power L3", Kind.GRID),
+        Apparent4("meter_apparent_power_total", 82, "Meter Apparent Power Total", Kind.GRID),
         Integer("meter_type", 86, "Meter Type", "", Kind.GRID),
         Integer("meter_sw_version", 88, "Meter Software Version", "", Kind.GRID),
     )
