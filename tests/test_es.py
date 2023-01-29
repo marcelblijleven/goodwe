@@ -5,6 +5,7 @@ from unittest import TestCase
 
 from goodwe.es import ES
 from goodwe.exceptions import RequestFailedException
+from goodwe.inverter import OperationMode
 from goodwe.protocol import ProtocolCommand
 
 
@@ -382,6 +383,13 @@ class GW5000S_BP_Test(EsMock):
     def test_set_grid_export_limit(self):
         self.loop.run_until_complete(self.set_grid_export_limit(100))
         self.assertEqual('aa55c07f033502006402dc', self.request.hex())
+
+    def test_get_operation_modes(self):
+        self.assertEqual((OperationMode.GENERAL, OperationMode.OFF_GRID, OperationMode.BACKUP, OperationMode.ECO),
+                         self.loop.run_until_complete(self.get_operation_modes(False)))
+        self.assertEqual((OperationMode.GENERAL, OperationMode.OFF_GRID, OperationMode.BACKUP, OperationMode.ECO,
+                          OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE),
+                         self.loop.run_until_complete(self.get_operation_modes(True)))
 
     def test_get_operation_mode(self):
         self.loop.run_until_complete(self.get_operation_mode())

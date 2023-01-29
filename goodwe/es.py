@@ -2,6 +2,7 @@ from typing import Tuple
 
 from .exceptions import InverterError
 from .inverter import Inverter
+from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, Aa55ProtocolCommand
 from .sensor import *
@@ -209,20 +210,30 @@ class ES(Inverter):
                 Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
             )
 
+    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+        result = [e for e in OperationMode]
+        result.remove(OperationMode.PEAK_SHAVING)
+        if not include_emulated:
+            result.remove(OperationMode.ECO_CHARGE)
+            result.remove(OperationMode.ECO_DISCHARGE)
+        return tuple(result)
+
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
-        if operation_mode == 0:
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
+        if operation_mode == OperationMode.GENERAL:
             await self._set_general_mode()
-        elif operation_mode == 1:
+        elif operation_mode == OperationMode.OFF_GRID:
             await self._set_offgrid_mode()
-        elif operation_mode == 2:
+        elif operation_mode == OperationMode.BACKUP:
             await self._set_backup_mode()
-        elif operation_mode == 3:
+        elif operation_mode == OperationMode.ECO:
             await self._set_eco_mode(eco_mode_power)
-        elif operation_mode in (4, 5):
-            if operation_mode == 4:
+        elif operation_mode == OperationMode.PEAK_SHAVING:
+            raise InverterError("Operation not supported.")
+        elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
+            if operation_mode == OperationMode.ECO_CHARGE:
                 await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
             else:
                 await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))

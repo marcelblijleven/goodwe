@@ -4,7 +4,7 @@ import asyncio
 import io
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Any, Callable, Dict, Tuple, Optional
 
 from .exceptions import MaxRetriesException, RequestFailedException
@@ -55,6 +55,29 @@ class Sensor:
     def encode_value(self, value: Any) -> bytes:
         """Encode the (setting mostly) value to (usually) 2 byte raw register value"""
         raise NotImplementedError()
+
+
+class OperationMode(IntEnum):
+    """
+    Enumeration of sensor kinds.
+
+    Possible values are:
+    GENERAL - General mode
+    OFF_GRID - Off grid mode
+    BACKUP - Backup mode
+    ECO - Eco mode
+    PEAK_SHAVING - Peak shaving mode
+    ECO_CHARGE - Eco mode with a single "Charge" group valid all the time (from 00:00-23:69, Mon-Sun)
+    ECO_DISCHARGE - Eco mode with a single "Disharge" group valid all the time (from 00:00-23:69, Mon-Sun)
+    """
+
+    GENERAL = 0
+    OFF_GRID = 1
+    BACKUP = 2
+    ECO = 3
+    PEAK_SHAVING = 4
+    ECO_CHARGE = 5
+    ECO_DISCHARGE = 6
 
 
 class Inverter:
@@ -185,6 +208,12 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+        """
+        Answer list of supported inverter operation modes
+        """
+        return ()
+
     async def get_operation_mode(self) -> int:
         """
         Get the inverter operation mode
@@ -192,10 +221,11 @@ class Inverter:
         1 - Off grid mode
         2 - Backup mode
         3 - Eco mode
+        4 - Peak shaving mode
         """
         raise NotImplementedError()
 
-    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
@@ -206,10 +236,11 @@ class Inverter:
         1 - Off grid mode
         2 - Backup mode
         3 - Eco mode
-        4 - Eco mode Charge
-        5 - Eco mode Discharge
+        4 - Peak shaving mode
+        5 - Eco mode Charge
+        6 - Eco mode Discharge
 
-        The modes 4 and 5 are not real inverter operation modes, but a convenience
+        The modes 5 and 6 are not real inverter operation modes, but a convenience
         shortcuts to enter Eco Mode with a single group valid all the time (from 00:00-23:69, Mon-Sun)
         charging or discharging with optional charging power (%) parameter.
         """

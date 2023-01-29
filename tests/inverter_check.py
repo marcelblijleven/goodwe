@@ -24,6 +24,7 @@ print(f"Identified inverter\n"
       f"- SerialNr: {inverter.serial_number}\n"
       f"- Version: {inverter.software_version}\n"
       f"- Firmware: {inverter.arm_version}"
+      f"- Arm versionFirmware: {inverter.arm_version}"
       )
 
 # -----------------
@@ -60,7 +61,7 @@ print(f"Identified inverter\n"
 # Set inverter operation mode
 # ---------------------------
 # print(asyncio.run(inverter.get_operation_mode()))
-# asyncio.run(inverter.set_operation_mode(2))
+# asyncio.run(inverter.set_operation_mode(goodwe.inverter.OperationMode.BACKUP))
 # print(asyncio.run(inverter.get_operation_mode()))
 
 # --------------------

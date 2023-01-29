@@ -4,6 +4,7 @@ from typing import Tuple
 
 from .exceptions import InverterError
 from .inverter import Inverter
+from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
@@ -197,7 +198,7 @@ class DT(Inverter):
     async def get_operation_mode(self) -> int:
         raise InverterError("Operation not supported.")
 
-    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100) -> None:
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
         raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:

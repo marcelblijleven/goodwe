@@ -6,6 +6,7 @@ from unittest import TestCase
 from goodwe.et import ET
 from goodwe.exceptions import InverterError
 from goodwe.exceptions import RequestFailedException
+from goodwe.inverter import OperationMode
 from goodwe.protocol import ProtocolCommand
 
 
@@ -236,6 +237,13 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.set_grid_export_limit(100))
         self.assertEqual('f706b996006459c7', self.request.hex())
 
+    def test_get_operation_modes(self):
+        self.assertEqual((OperationMode.GENERAL, OperationMode.OFF_GRID, OperationMode.BACKUP, OperationMode.ECO),
+                         self.loop.run_until_complete(self.get_operation_modes(False)))
+        self.assertEqual((OperationMode.GENERAL, OperationMode.OFF_GRID, OperationMode.BACKUP, OperationMode.ECO,
+                          OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE),
+                         self.loop.run_until_complete(self.get_operation_modes(True)))
+
     def test_get_operation_mode(self):
         self.loop.run_until_complete(self.get_operation_mode())
         self.assertEqual('f703b798000136c7', self.request.hex())
@@ -244,17 +252,18 @@ class GW10K_ET_Test(EtMock):
     #        self.loop.run_until_complete(self.set_operation_mode(1))
     #        self.assertEqual('f706b7980001fac7', self.request.hex())
 
-    def test_set_operation_mode_4(self):
-        self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power=40))
+    def test_set_operation_mode_ECO_CHARGE(self):
+        self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40))
         self.assertEqual('f710b99b0004080000173bffd8ff7f1343', self._list_of_requests[-6].hex())
 
         with self.assertRaises(InverterError) as context:
-            self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power=40, max_charge=80))
+            self.loop.run_until_complete(
+                self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40, max_charge=80))
 
         self.assertEqual(str(InverterError("Operation not supported")), str(context.exception))
 
-    def test_set_operation_mode_5(self):
-        self.loop.run_until_complete(self.set_operation_mode(5, eco_mode_power=50))
+    def test_set_operation_mode_DISCHARGE(self):
+        self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_DISCHARGE, eco_mode_power=50))
         self.assertEqual('f710b99b0004080000173b0032ff7f02a3', self._list_of_requests[-6].hex())
 
     def test_get_ongrid_battery_dod(self):
@@ -273,12 +282,13 @@ class GW10K_ET_Test_EcoModeV2(EtMock):
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-ET-SW819_device_info.hex')
         asyncio.get_event_loop().run_until_complete(self.read_device_info())
 
-    def test_set_operation_mode_4(self):
-        self.loop.run_until_complete(self.set_operation_mode(4, eco_mode_power=40, max_charge=80))
+    def test_set_operation_mode_ECO_CHARGE(self):
+        self.loop.run_until_complete(
+            self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40, max_charge=80))
         self.assertEqual('f710b9bb00060c0000173bff7fffd80050000002cc', self._list_of_requests[-6].hex())
 
-    def test_set_operation_mode_5(self):
-        self.loop.run_until_complete(self.set_operation_mode(5, eco_mode_power=50))
+    def test_set_operation_mode_ECO_DISCHARGE(self):
+        self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_DISCHARGE, eco_mode_power=50))
         self.assertEqual('f710b9bb00060c0000173bff7f0032006400004eda', self._list_of_requests[-6].hex())
 
 

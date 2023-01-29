@@ -4,6 +4,7 @@ from typing import Tuple
 
 from .exceptions import InverterError
 from .inverter import Inverter
+from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
@@ -295,6 +296,9 @@ class ET(Inverter):
             return False
         return True
 
+    def _supports_peak_shawing(self) -> bool:
+        return self.arm_sw_version >= 22
+
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
         """Filter to exclude phase2/3 sensors on single phase inverters"""
@@ -383,21 +387,40 @@ class ET(Inverter):
         if export_limit >= 0 or export_limit <= 10000:
             await self.write_setting('grid_export_limit', export_limit)
 
+    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+        result = [e for e in OperationMode]
+        if not self._supports_peak_shawing():
+            result.remove(OperationMode.PEAK_SHAVING)
+        if not include_emulated:
+            result.remove(OperationMode.ECO_CHARGE)
+            result.remove(OperationMode.ECO_DISCHARGE)
+        return tuple(result)
+
     async def get_operation_mode(self) -> int:
         return await self.read_setting('work_mode')
 
-    async def set_operation_mode(self, operation_mode: int, eco_mode_power: int = 100, max_charge: int = 100) -> None:
-        if operation_mode in (0, 1, 2, 3):
-            await self.write_setting('work_mode', operation_mode)
-            if operation_mode == 1:
-                await self._set_offline(True)
-                await self.write_setting('backup_supply', 1)
-                await self.write_setting('cold_start', 4)
-            else:
-                await self._set_offline(False)
-            if operation_mode < 3:
-                await self._clear_battery_mode_param()
-        elif operation_mode in (4, 5):
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
+                                 max_charge: int = 100) -> None:
+        if operation_mode == OperationMode.GENERAL:
+            await self.write_setting('work_mode', 0)
+            await self._set_offline(False)
+            await self._clear_battery_mode_param()
+        elif operation_mode == OperationMode.OFF_GRID:
+            await self.write_setting('work_mode', 1)
+            await self._set_offline(True)
+            await self.write_setting('backup_supply', 1)
+            await self.write_setting('cold_start', 4)
+        elif operation_mode == OperationMode.BACKUP:
+            await self.write_setting('work_mode', 2)
+            await self._set_offline(False)
+            await self._clear_battery_mode_param()
+        elif operation_mode == OperationMode.ECO:
+            await self.write_setting('work_mode', 3)
+            await self._set_offline(False)
+        elif operation_mode == OperationMode.PEAK_SHAVING:
+            await self.write_setting('work_mode', 4)
+            await self._set_offline(False)
+        elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
             if eco_mode_power < 0 or eco_mode_power > 100:
                 raise ValueError()
             if max_charge < 0 or max_charge > 100:
@@ -408,7 +431,7 @@ class ET(Inverter):
                 ecoMode_class = EcoModeV2
                 ecoMode_name = 'eco_modeV2_'
 
-            if operation_mode == 4:
+            if operation_mode == OperationMode.ECO_CHARGE:
                 if ecoMode_class == EcoModeV2:
                     await self.write_setting('eco_modeV2_1',
                                              EcoModeV2("1", 0, "").encode_charge(eco_mode_power, max_charge))
