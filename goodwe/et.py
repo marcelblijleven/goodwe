@@ -250,6 +250,8 @@ class ET(Inverter):
         Integer("grid_export", 47509, "Grid Export Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 47510, "Grid Export Limit", "W", Kind.GRID),
 
+        Integer("battery_protocol_code", 47514, "Battery Protocol Code", "", Kind.BAT),
+
         EcoMode("eco_mode_1", 47515, "Eco Mode Power Group 1"),
         # Byte("eco_mode_1_switch", 47518, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
         EcoMode("eco_mode_2", 47519, "Eco Mode Power Group 2"),
@@ -262,10 +264,13 @@ class ET(Inverter):
 
     # Extra Modbus registers for EcoMode version 2 settings, offsets are modbus register addresses
     __EcoModeV2_settings: Tuple[Sensor, ...] = (
+        Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
+        Integer("fast_charging_power", 47546, "Fast Charging Power", "%", Kind.BAT),
         EcoModeV2("eco_modeV2_1", 47547, "Eco Mode Version 2 Power Group 1"),
         EcoModeV2("eco_modeV2_2", 47553, "Eco Mode Version 2 Power Group 2"),
         EcoModeV2("eco_modeV2_3", 47559, "Eco Mode Version 2 Power Group 3"),
         EcoModeV2("eco_modeV2_4", 47565, "Eco Mode Version 2 Power Group 4"),
+        Integer("fast_charging_soc", 47603, "Fast Charging SoC", "%", Kind.BAT),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -296,7 +301,7 @@ class ET(Inverter):
             return False
         return True
 
-    def _supports_peak_shawing(self) -> bool:
+    def _supports_peak_shaving(self) -> bool:
         return self.arm_sw_version >= 22
 
     @staticmethod
@@ -389,7 +394,7 @@ class ET(Inverter):
 
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
         result = [e for e in OperationMode]
-        if not self._supports_peak_shawing():
+        if not self._supports_peak_shaving():
             result.remove(OperationMode.PEAK_SHAVING)
         if not include_emulated:
             result.remove(OperationMode.ECO_CHARGE)
