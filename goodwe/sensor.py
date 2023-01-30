@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import struct
 from datetime import datetime
@@ -293,31 +295,42 @@ class EcoMode(Sensor):
 
     def __init__(self, id_: str, offset: int, name: str):
         super().__init__(id_, offset, name, 8, "", SensorKind.BAT)
+        self.start_h: int | None = None
+        self.start_m: int | None = None
+        self.end_h: int | None = None
+        self.end_m: int | None = None
+        self.power: int | None = None
+        self.on_off: int | None = None
+        self.day_bits: int | None = None
+        self.days: str | None = None
+
+    def __str__(self):
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% {'On' if self.on_off != 0 else 'Off'}"
 
     def read_value(self, data: io.BytesIO):
-        start_h = read_byte(data)
-        if (start_h < 0 or start_h > 23) and start_h != 48:
+        self.start_h = read_byte(data)
+        if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
             raise ValueError()
-        start_m = read_byte(data)
-        if start_m < 0 or start_m > 59:
+        self.start_m = read_byte(data)
+        if self.start_m < 0 or self.start_m > 59:
             raise ValueError()
-        end_h = read_byte(data)
-        if (end_h < 0 or end_h > 23) and end_h != 48:
+        self.end_h = read_byte(data)
+        if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
             raise ValueError()
-        end_m = read_byte(data)
-        if end_m < 0 or end_m > 59:
+        self.end_m = read_byte(data)
+        if self.end_m < 0 or self.end_m > 59:
             raise ValueError()
-        power = read_bytes2(data)  # negative=charge, positive=discharge
-        if power < -100 or power > 100:
+        self.power = read_bytes2(data)  # negative=charge, positive=discharge
+        if self.power < -100 or self.power > 100:
             raise ValueError()
-        on_off = read_byte(data)
-        if on_off not in (0, -1):
+        self.on_off = read_byte(data)
+        if self.on_off not in (0, -1):
             raise ValueError()
-        day_bits = read_byte(data)
-        days = decode_day_of_week(day_bits)
-        if day_bits < 0:
+        self.day_bits = read_byte(data)
+        self.days = decode_day_of_week(self.day_bits)
+        if self.day_bits < 0:
             raise ValueError()
-        return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}% {'On' if on_off != 0 else 'Off'}"
+        return self
 
     def encode_value(self, value: Any) -> bytes:
         if isinstance(value, bytes) and len(value) == 8:
@@ -338,40 +351,72 @@ class EcoMode(Sensor):
         """Answer bytes representing empty and disabled eco mode group"""
         return bytes.fromhex("3000300000640000")
 
+    def is_eco_charge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.on_off != 0 \
+               and self.day_bits == 127 \
+               and self.power < 0
+
+    def is_eco_discharge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.on_off != 0 \
+               and self.day_bits == 127 \
+               and self.power > 0
+
 
 class EcoModeV2(Sensor):
     """Sensor representing Eco Mode Battery Power Group encoded in 6 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str):
         super().__init__(id_, offset, name, 12, "", SensorKind.BAT)
+        self.start_h: int | None = None
+        self.start_m: int | None = None
+        self.end_h: int | None = None
+        self.end_m: int | None = None
+        self.power: int | None = None
+        self.max_charge: int | None = None
+        self.on_off: int | None = None
+        self.day_bits: int | None = None
+        self.days: str | None = None
+
+    def __str__(self):
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (max charge {self.max_charge}%) {'On' if self.on_off != 0 else 'Off'}"
 
     def read_value(self, data: io.BytesIO):
-        start_h = read_byte(data)
-        if (start_h < 0 or start_h > 23) and start_h != 48:
+        self.start_h = read_byte(data)
+        if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
             raise ValueError()
-        start_m = read_byte(data)
-        if start_m < 0 or start_m > 59:
+        self.start_m = read_byte(data)
+        if self.start_m < 0 or self.start_m > 59:
             raise ValueError()
-        end_h = read_byte(data)
-        if (end_h < 0 or end_h > 23) and end_h != 48:
+        self.end_h = read_byte(data)
+        if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
             raise ValueError()
-        end_m = read_byte(data)
-        if end_m < 0 or end_m > 59:
+        self.end_m = read_byte(data)
+        if self.end_m < 0 or self.end_m > 59:
             raise ValueError()
-        on_off = read_byte(data)
-        if on_off not in (0, -1):
+        self.on_off = read_byte(data)
+        if self.on_off not in (0, -1):
             raise ValueError()
-        day_bits = read_byte(data)
-        days = decode_day_of_week(day_bits)
-        if day_bits < 0:
+        self.day_bits = read_byte(data)
+        self.days = decode_day_of_week(self.day_bits)
+        if self.day_bits < 0:
             raise ValueError()
-        power = read_bytes2(data)  # negative=charge, positive=discharge
-        if power < -100 or power > 100:
+        self.power = read_bytes2(data)  # negative=charge, positive=discharge
+        if self.power < -100 or self.power > 100:
             raise ValueError()
-        max_charge = read_bytes2(data)
-        if max_charge < 0 or max_charge > 100:
+        self.max_charge = read_bytes2(data)
+        if self.max_charge < 0 or self.max_charge > 100:
             raise ValueError()
-        return f"{start_h}:{start_m}-{end_h}:{end_m} {days} {power}% (max charge {max_charge}%) {'On' if on_off != 0 else 'Off'}"
+        return self
 
     def encode_value(self, value: Any) -> bytes:
         if isinstance(value, bytes) and len(value) == 12:
@@ -392,6 +437,26 @@ class EcoModeV2(Sensor):
     def encode_off(self) -> bytes:
         """Answer bytes representing empty and disabled eco mode group"""
         return bytes.fromhex("300030000000006400640000")
+
+    def is_eco_charge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.on_off != 0 \
+               and self.day_bits == 127 \
+               and self.power < 0
+
+    def is_eco_discharge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.on_off != 0 \
+               and self.day_bits == 127 \
+               and self.power > 0
 
 
 class Calculated(Sensor):

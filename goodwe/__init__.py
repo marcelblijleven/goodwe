@@ -9,7 +9,7 @@ from .es import ES
 from .et import ET
 from .exceptions import InverterError, RequestFailedException
 from .goodwe import GoodWeXSProcessor, AbstractDataProcessor, GoodWeInverter
-from .inverter import Inverter, Sensor, SensorKind
+from .inverter import Inverter, OperationMode, Sensor, SensorKind
 from .protocol import ProtocolCommand, UdpInverterProtocol, Aa55ProtocolCommand
 
 logger = logging.getLogger(__name__)

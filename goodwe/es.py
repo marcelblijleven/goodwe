@@ -218,8 +218,8 @@ class ES(Inverter):
             result.remove(OperationMode.ECO_DISCHARGE)
         return tuple(result)
 
-    async def get_operation_mode(self) -> int:
-        return await self.read_setting('work_mode')
+    async def get_operation_mode(self) -> OperationMode:
+        return OperationMode(await self.read_setting('work_mode'))
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
         if operation_mode == OperationMode.GENERAL:

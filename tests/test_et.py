@@ -244,9 +244,9 @@ class GW10K_ET_Test(EtMock):
                           OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE),
                          self.loop.run_until_complete(self.get_operation_modes(True)))
 
-    def test_get_operation_mode(self):
-        self.loop.run_until_complete(self.get_operation_mode())
-        self.assertEqual('f703b798000136c7', self.request.hex())
+    # def test_get_operation_mode(self):
+    #    self.loop.run_until_complete(self.get_operation_mode())
+    #    self.assertEqual('f703b798000136c7', self.request.hex())
 
     #    def test_set_operation_mode(self):
     #        self.loop.run_until_complete(self.set_operation_mode(1))

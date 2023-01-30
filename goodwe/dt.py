@@ -195,7 +195,7 @@ class DT(Inverter):
         if export_limit >= 0 or export_limit <= 100:
             return await self.write_setting('grid_export_limit', export_limit)
 
-    async def get_operation_mode(self) -> int:
+    async def get_operation_mode(self) -> OperationMode:
         raise InverterError("Operation not supported.")
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:

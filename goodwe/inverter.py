@@ -67,8 +67,8 @@ class OperationMode(IntEnum):
     BACKUP - Backup mode
     ECO - Eco mode
     PEAK_SHAVING - Peak shaving mode
-    ECO_CHARGE - Eco mode with a single "Charge" group valid all the time (from 00:00-23:69, Mon-Sun)
-    ECO_DISCHARGE - Eco mode with a single "Disharge" group valid all the time (from 00:00-23:69, Mon-Sun)
+    ECO_CHARGE - Eco mode with a single "Charge" group valid all the time (from 00:00-23:59, Mon-Sun)
+    ECO_DISCHARGE - Eco mode with a single "Discharge" group valid all the time (from 00:00-23:59, Mon-Sun)
     """
 
     GENERAL = 0
@@ -214,14 +214,9 @@ class Inverter:
         """
         return ()
 
-    async def get_operation_mode(self) -> int:
+    async def get_operation_mode(self) -> OperationMode:
         """
         Get the inverter operation mode
-        0 - General mode
-        1 - Off grid mode
-        2 - Backup mode
-        3 - Eco mode
-        4 - Peak shaving mode
         """
         raise NotImplementedError()
 
@@ -232,16 +227,9 @@ class Inverter:
         Use with caution and at your own risk !
 
         Set the inverter operation mode
-        0 - General mode
-        1 - Off grid mode
-        2 - Backup mode
-        3 - Eco mode
-        4 - Peak shaving mode
-        5 - Eco mode Charge
-        6 - Eco mode Discharge
 
-        The modes 5 and 6 are not real inverter operation modes, but a convenience
-        shortcuts to enter Eco Mode with a single group valid all the time (from 00:00-23:69, Mon-Sun)
+        The modes ECO_CHARGE and ECO_DISCHARGE are not real inverter operation modes, but a convenience
+        shortcuts to enter Eco Mode with a single group valid all the time (from 00:00-23:59, Mon-Sun)
         charging or discharging with optional charging power (%) parameter.
         """
         raise NotImplementedError()
