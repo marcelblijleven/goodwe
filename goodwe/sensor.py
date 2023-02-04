@@ -372,13 +372,20 @@ class EcoMode(Sensor):
                and self.power > 0
 
 
-class EcoModeV2(EcoMode):
-    """Sensor representing Eco Mode Battery Power Group encoded in 6 bytes"""
+class EcoModeV2(Sensor):
+    """Sensor representing Eco Mode Battery Power Group encoded in 12 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str):
-        super().__init__(id_, offset, name)
-        self.size_: 12
+        super().__init__(id_, offset, name, 12, "", SensorKind.BAT)
+        self.start_h: int | None = None
+        self.start_m: int | None = None
+        self.end_h: int | None = None
+        self.end_m: int | None = None
+        self.power: int | None = None
         self.max_charge: int | None = None
+        self.on_off: int | None = None
+        self.day_bits: int | None = None
+        self.days: str | None = None
 
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (max charge {self.max_charge}%) {'On' if self.on_off != 0 else 'Off'}"
@@ -426,6 +433,84 @@ class EcoModeV2(EcoMode):
     def encode_discharge(self, eco_mode_power: int) -> bytes:
         """Answer bytes representing all the time enabled discharging eco mode group"""
         return bytes.fromhex("0000173bff7f{:04x}00640000".format(abs(eco_mode_power)))
+
+    def encode_off(self) -> bytes:
+        """Answer bytes representing empty and disabled eco mode group"""
+        return bytes.fromhex("300030000000006400640000")
+
+    def is_eco_charge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.on_off != 0 \
+               and self.day_bits == 127 \
+               and self.power < 0
+
+    def is_eco_discharge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.on_off != 0 \
+               and self.day_bits == 127 \
+               and self.power > 0
+
+
+class PeakShavingMode(Sensor):
+    """Sensor representing Peak Shaving Mode encoded in 12 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str):
+        super().__init__(id_, offset, name, 12, "", SensorKind.BAT)
+        self.start_h: int | None = None
+        self.start_m: int | None = None
+        self.end_h: int | None = None
+        self.end_m: int | None = None
+        self.on_off: int | None = None
+        self.day_bits: int | None = None
+        self.days: str | None = None
+        self.import_power: float | None = None
+        self.soc: int | None = None
+
+    def __str__(self):
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.import_power}kW (soc {self.soc}%) {'On' if self.on_off == -4 else 'Off'}"
+
+    def read_value(self, data: io.BytesIO):
+        self.start_h = read_byte(data)
+        if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
+            raise ValueError()
+        self.start_m = read_byte(data)
+        if self.start_m < 0 or self.start_m > 59:
+            raise ValueError()
+        self.end_h = read_byte(data)
+        if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
+            raise ValueError()
+        self.end_m = read_byte(data)
+        if self.end_m < 0 or self.end_m > 59:
+            raise ValueError()
+        self.on_off = read_byte(data)
+        if self.on_off not in (-4, 3):
+            raise ValueError()
+        self.day_bits = read_byte(data)
+        self.days = decode_day_of_week(self.day_bits)
+        if self.day_bits < 0:
+            raise ValueError()
+        self.import_power = read_decimal2(data, 100)
+        if self.import_power < 0 or self.import_power > 500:
+            raise ValueError()
+        self.soc = read_bytes2(data)
+        if self.soc < 0 or self.soc > 100:
+            raise ValueError()
+        return self
+
+    def encode_value(self, value: Any) -> bytes:
+        if isinstance(value, bytes) and len(value) == 12:
+            # try to read_value to check if values are valid
+            if self.read_value(io.BytesIO(value)):
+                return value
+        raise ValueError
 
     def encode_off(self) -> bytes:
         """Answer bytes representing empty and disabled eco mode group"""

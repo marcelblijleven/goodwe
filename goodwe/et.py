@@ -244,6 +244,7 @@ class ET(Inverter):
         Decimal("power_factor", 45482, 100, "Power Factor"),
 
         Integer("work_mode", 47000, "Work Mode", "", Kind.AC),
+        Integer("dred", 47010, "DRED/Remote Shutdown", "", Kind.AC),
 
         Integer("battery_soc_protection", 47500, "Battery SoC Protection", "", Kind.BAT),
 
@@ -265,12 +266,18 @@ class ET(Inverter):
     # Extra Modbus registers for EcoMode version 2 settings, offsets are modbus register addresses
     __EcoModeV2_settings: Tuple[Sensor, ...] = (
         Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
-        Integer("fast_charging_power", 47546, "Fast Charging Power", "%", Kind.BAT),
+        Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
         EcoModeV2("eco_modeV2_1", 47547, "Eco Mode Version 2 Power Group 1"),
         EcoModeV2("eco_modeV2_2", 47553, "Eco Mode Version 2 Power Group 2"),
         EcoModeV2("eco_modeV2_3", 47559, "Eco Mode Version 2 Power Group 3"),
         EcoModeV2("eco_modeV2_4", 47565, "Eco Mode Version 2 Power Group 4"),
-        Integer("fast_charging_soc", 47603, "Fast Charging SoC", "%", Kind.BAT),
+        EcoModeV2("eco_modeV2_5", 47571, "Eco Mode Version 2 Power Group 5"),
+        EcoModeV2("eco_modeV2_6", 47577, "Eco Mode Version 2 Power Group 6"),
+        EcoModeV2("eco_modeV2_7", 47583, "Eco Mode Version 2 Power Group 7"),
+        PeakShavingMode("peak_shaving_mode", 47589, "Peak Shaving Mode"),
+
+        Integer("dod_holding", 47602, "DoD Holding", "", Kind.BAT),
+        Integer("fast_charging_power", 47603, "Fast Charging Power", "%", Kind.BAT),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):

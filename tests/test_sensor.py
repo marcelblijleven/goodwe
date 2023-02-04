@@ -140,6 +140,14 @@ class TestUtils(TestCase):
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
 
+    def test_peak_shaving_mode(self):
+        testee = PeakShavingMode("", 0, "")
+
+        data = io.BytesIO(bytes.fromhex("010a020a037f00fa00370000"))
+        self.assertEqual("1:10-2:10 Sun,Mon,Tue,Wed,Thu,Fri,Sat 2.5kW (soc 55%) Off", testee.read(data).__str__())
+        self.assertEqual(bytes.fromhex("010a020a037f00fa00370000"),
+                         testee.encode_value(bytes.fromhex("010a020a037f00fa00370000")))
+
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
         self.assertEqual('Utility Loss', decode_bitmap(512, ERROR_CODES))
