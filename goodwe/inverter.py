@@ -97,16 +97,16 @@ class Inverter:
 
         self.model_name: str | None = None
         self.serial_number: str | None = None
-        self.software_version: str | None = None
-        self.modbus_version: int | None = None
         self.rated_power: int | None = None
         self.ac_output_type: int | None = None
-        self.dsp1_sw_version: int | None = None
-        self.dsp2_sw_version: int | None = None
+        self.firmware: str | None = None
+        self.arm_firmware: str | None = None
+        self.modbus_version: int | None = None
+        self.dsp1_version: int | None = None
+        self.dsp2_version: int | None = None
         self.dsp_svn_version: int | None = None
-        self.arm_sw_version: int = 0
+        self.arm_version: int = 0
         self.arm_svn_version: int | None = None
-        self.arm_version: str | None = None
 
     def _ensure_lock(self) -> asyncio.Lock:
         """Validate (or create) asyncio Lock.

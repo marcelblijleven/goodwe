@@ -51,9 +51,25 @@ class GW10K_ET_Test(EtMock):
 
     def __init__(self, methodName='runTest'):
         EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-ET_device_info_fw617.hex')
         self.mock_response(self._READ_RUNNING_DATA, 'GW10K-ET_running_data.hex')
         self.mock_response(self._READ_METER_DATA, 'GW10K-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW10K-ET_battery_info.hex')
+
+    def test_GW10K_ET_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW10K-ET', self.model_name)
+        self.assertEqual('9010KETU000W0000', self.serial_number)
+        self.assertEqual(10000, self.rated_power)
+        self.assertEqual(1, self.modbus_version)
+        self.assertEqual(254, self.ac_output_type)
+        self.assertEqual(6, self.dsp1_version)
+        self.assertEqual(6, self.dsp2_version)
+        self.assertEqual(152, self.dsp_svn_version)
+        self.assertEqual(17, self.arm_version)
+        self.assertEqual(192, self.arm_svn_version)
+        self.assertEqual('04029-06-S11', self.firmware)
+        self.assertEqual('02041-17-S00', self.arm_firmware)
 
     def test_GW10K_ET_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -275,12 +291,26 @@ class GW10K_ET_Test(EtMock):
         self.assertEqual('f706b12c00147ba6', self.request.hex())
 
 
-class GW10K_ET_Test_EcoModeV2(EtMock):
+class GW10K_ET_fw819_Test(EtMock):
 
     def __init__(self, methodName='runTest'):
         EtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-ET-SW819_device_info.hex')
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-ET_device_info_fw819.hex')
         asyncio.get_event_loop().run_until_complete(self.read_device_info())
+
+    def test_GW10K_ET_fw819_device_info(self):
+        self.assertEqual('0GW10K-ET', self.model_name)
+        self.assertEqual('0000000000000000', self.serial_number)
+        self.assertEqual(10000, self.rated_power)
+        self.assertEqual(1, self.modbus_version)
+        self.assertEqual(254, self.ac_output_type)
+        self.assertEqual(8, self.dsp1_version)
+        self.assertEqual(8, self.dsp2_version)
+        self.assertEqual(159, self.dsp_svn_version)
+        self.assertEqual(19, self.arm_version)
+        self.assertEqual(207, self.arm_svn_version)
+        self.assertEqual('04029-08-S11', self.firmware)
+        self.assertEqual('02041-19-S00', self.arm_firmware)
 
     def test_set_operation_mode_ECO_CHARGE(self):
         self.loop.run_until_complete(
@@ -290,6 +320,28 @@ class GW10K_ET_Test_EcoModeV2(EtMock):
     def test_set_operation_mode_ECO_DISCHARGE(self):
         self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_DISCHARGE, eco_mode_power=50))
         self.assertEqual('f710b9bb00060c0000173bff7f0032006400004eda', self._list_of_requests[-6].hex())
+
+
+class GW10K_ET_fw1023_Test(EtMock):
+
+    def __init__(self, methodName='runTest'):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-ET_device_info_fw1023.hex')
+        asyncio.get_event_loop().run_until_complete(self.read_device_info())
+
+    def test_GW10K_ET_fw1023_device_info(self):
+        self.assertEqual('GW10K-ET', self.model_name)
+        self.assertEqual('9010KETU000W0000', self.serial_number)
+        self.assertEqual(10000, self.rated_power)
+        self.assertEqual(2, self.modbus_version)
+        self.assertEqual(254, self.ac_output_type)
+        self.assertEqual(10, self.dsp1_version)
+        self.assertEqual(10, self.dsp2_version)
+        self.assertEqual(167, self.dsp_svn_version)
+        self.assertEqual(23, self.arm_version)
+        self.assertEqual(237, self.arm_svn_version)
+        self.assertEqual('04029-10-S11', self.firmware)
+        self.assertEqual('02041-23-S00', self.arm_firmware)
 
 
 class GW6000_EH_Test(EtMock):
@@ -304,7 +356,15 @@ class GW6000_EH_Test(EtMock):
         self.assertEqual('GW6000-EH', self.model_name)
         self.assertEqual('00000EHU00000000', self.serial_number)
         self.assertEqual(6000, self.rated_power)
-        self.assertEqual('02041-16-S00', self.arm_version)
+        self.assertEqual(0, self.modbus_version)
+        self.assertEqual(254, self.ac_output_type)
+        self.assertEqual(3, self.dsp1_version)
+        self.assertEqual(3, self.dsp2_version)
+        self.assertEqual(325, self.dsp_svn_version)
+        self.assertEqual(16, self.arm_version)
+        self.assertEqual(188, self.arm_svn_version)
+        self.assertEqual('04034-03-S10', self.firmware)
+        self.assertEqual('02041-16-S00', self.arm_firmware)
 
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())

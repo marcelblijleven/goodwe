@@ -291,18 +291,18 @@ class ET(Inverter):
         self._settings = self.__all_settings
 
     def _supports_eco_mode_v2(self) -> bool:
-        if not self.dsp1_sw_version:
+        if not self.dsp1_version:
             return False
-        if self.dsp1_sw_version < 8:
+        if self.dsp1_version < 8:
             return False
-        if self.dsp2_sw_version < 8:
+        if self.dsp2_version < 8:
             return False
-        if self.arm_sw_version < 19:
+        if self.arm_version < 19:
             return False
         return True
 
     def _supports_peak_shaving(self) -> bool:
-        return self.arm_sw_version >= 22
+        return self.arm_version >= 22
 
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
@@ -323,13 +323,13 @@ class ET(Inverter):
         self.ac_output_type = read_unsigned_int(response, 4)  # 0: 1-phase, 1: 3-phase (4 wire), 2: 3-phase (3 wire)
         self.serial_number = response[6:22].decode("ascii")
         self.model_name = response[22:32].decode("ascii").rstrip()
-        self.dsp1_sw_version = read_unsigned_int(response, 32)
-        self.dsp2_sw_version = read_unsigned_int(response, 34)
+        self.dsp1_version = read_unsigned_int(response, 32)
+        self.dsp2_version = read_unsigned_int(response, 34)
         self.dsp_svn_version = read_unsigned_int(response, 36)
-        self.arm_sw_version = read_unsigned_int(response, 38)
+        self.arm_version = read_unsigned_int(response, 38)
         self.arm_svn_version = read_unsigned_int(response, 40)
-        self.software_version = response[42:54].decode("ascii")
-        self.arm_version = response[54:66].decode("ascii")
+        self.firmware = response[42:54].decode("ascii")
+        self.arm_firmware = response[54:66].decode("ascii")
 
         if "EHU" in self.serial_number:
             # this is single phase inverter, filter out all L2 and L3 sensors

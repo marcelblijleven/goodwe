@@ -151,12 +151,12 @@ class ES(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        self.arm_version = response[7:12].decode("ascii").rstrip()
+        self.arm_firmware = response[7:12].decode("ascii").rstrip()
         self.model_name = response[12:22].decode("ascii").rstrip()
         self.serial_number = response[38:54].decode("ascii")
         self.software_version = response[58:70].decode("ascii")
-        if len(self.arm_version) >= 5:
-            self.arm_sw_version = int(self.arm_version[4], base=36)
+        if len(self.arm_firmware) >= 5:
+            self.arm_version = int(self.arm_firmware[4], base=36)
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
@@ -261,7 +261,7 @@ class ES(Inverter):
         return self.__settings
 
     async def _set_general_mode(self) -> None:
-        if self.arm_sw_version >= 7:
+        if self.arm_version >= 7:
             if self._supports_new_eco_mode():
                 await self._clear_battery_mode_param()
             else:
@@ -275,7 +275,7 @@ class ES(Inverter):
         await self._set_work_mode(0)
 
     async def _set_offgrid_mode(self) -> None:
-        if self.arm_sw_version >= 7:
+        if self.arm_version >= 7:
             await self._clear_battery_mode_param()
         else:
             await self._set_limit_power_for_charge(0, 0, 23, 59, 0)
@@ -286,7 +286,7 @@ class ES(Inverter):
         await self._set_work_mode(1)
 
     async def _set_backup_mode(self) -> None:
-        if self.arm_sw_version >= 7:
+        if self.arm_version >= 7:
             if self._supports_new_eco_mode():
                 await self._clear_battery_mode_param()
             else:
@@ -328,11 +328,11 @@ class ES(Inverter):
         await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
 
     def _supports_new_eco_mode(self) -> bool:
-        if self.arm_sw_version < 14:
+        if self.arm_version < 14:
             return False
-        if len(self.arm_version) < 2:
+        if len(self.arm_firmware) < 2:
             return False
-        fw_version = int(self.arm_version[0:2])
+        fw_version = int(self.arm_firmware[0:2])
         if "EMU" in self.serial_number:
             return fw_version >= 11
         if "ESU" in self.serial_number:

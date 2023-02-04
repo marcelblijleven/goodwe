@@ -155,7 +155,7 @@ class GW8K_DT_Test(DtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.assertEqual('GW8K-DT', self.model_name)
         self.assertEqual('00000DTS00000000', self.serial_number)
-        self.assertEqual('1010.1010.08', self.software_version)
+        self.assertEqual('1010.1010.08', self.firmware)
 
     def test_GW8K_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -313,7 +313,7 @@ class GW5000_MS_Test(DtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.assertEqual('GW5000-MS', self.model_name)
         self.assertEqual('00000MSU00000000', self.serial_number)
-        self.assertEqual('12.12.10', self.software_version)
+        self.assertEqual('12.12.10', self.firmware)
 
     def test_GW5000_MS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -381,6 +381,7 @@ class GW5000_MS_Test(DtMock):
         self.assertSensor('xx142', 259, '', data)
         self.assertSensor('xx144', 42, '', data)
 
+
 class GW20KAU_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
@@ -392,7 +393,7 @@ class GW20KAU_DT_Test(DtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.assertEqual('GW20KAU-DT', self.model_name)
         self.assertEqual('0000KDTA00000000', self.serial_number)
-        self.assertEqual('15.15.10', self.software_version)
+        self.assertEqual('15.15.10', self.firmware)
 
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())

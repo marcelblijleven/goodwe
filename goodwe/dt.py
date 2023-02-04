@@ -139,10 +139,10 @@ class DT(Inverter):
         except:
             print("No model name sent from the inverter.")
         self.serial_number = response[6:22].decode("ascii")
-        self.dsp1_sw_version = read_unsigned_int(response, 66)
-        self.dsp2_sw_version = read_unsigned_int(response, 68)
-        self.arm_sw_version = read_unsigned_int(response, 70)
-        self.software_version = "{}.{}.{:02x}".format(self.dsp1_sw_version, self.dsp2_sw_version, self.arm_sw_version)
+        self.dsp1_version = read_unsigned_int(response, 66)
+        self.dsp2_version = read_unsigned_int(response, 68)
+        self.arm_version = read_unsigned_int(response, 70)
+        self.firmware = "{}.{}.{:02x}".format(self.dsp1_version, self.dsp2_version, self.arm_version)
 
         if any(model in self.serial_number for model in ["DSN", "MSU", "PSB", "PSC"]):
             # this is single phase inverter, filter out all L2 and L3 sensors

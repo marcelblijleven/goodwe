@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import io
-import struct
 from datetime import datetime
+from struct import unpack
 from typing import Any, Callable, Optional
 
 from .const import *
@@ -372,20 +372,13 @@ class EcoMode(Sensor):
                and self.power > 0
 
 
-class EcoModeV2(Sensor):
+class EcoModeV2(EcoMode):
     """Sensor representing Eco Mode Battery Power Group encoded in 6 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str):
-        super().__init__(id_, offset, name, 12, "", SensorKind.BAT)
-        self.start_h: int | None = None
-        self.start_m: int | None = None
-        self.end_h: int | None = None
-        self.end_m: int | None = None
-        self.power: int | None = None
+        super().__init__(id_, offset, name)
+        self.size_: 12
         self.max_charge: int | None = None
-        self.on_off: int | None = None
-        self.day_bits: int | None = None
-        self.days: str | None = None
 
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (max charge {self.max_charge}%) {'On' if self.on_off != 0 else 'Off'}"
@@ -438,26 +431,6 @@ class EcoModeV2(Sensor):
         """Answer bytes representing empty and disabled eco mode group"""
         return bytes.fromhex("300030000000006400640000")
 
-    def is_eco_charge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
-        return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power < 0
-
-    def is_eco_discharge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
-        return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power > 0
-
 
 class Calculated(Sensor):
     """Sensor representing calculated value"""
@@ -508,7 +481,7 @@ def read_float4(buffer: io.BytesIO, offset: int = None) -> float:
         buffer.seek(offset)
     data = buffer.read(4)
     if len(data) == 4:
-        return struct.unpack('>f', data)[0]
+        return unpack('>f', data)[0]
     else:
         return float(0)
 

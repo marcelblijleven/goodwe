@@ -22,9 +22,16 @@ inverter = asyncio.run(goodwe.connect(IP_ADDRESS, FAMILY, COMM_ADDR, TIMEOUT, RE
 print(f"Identified inverter\n"
       f"- Model: {inverter.model_name}\n"
       f"- SerialNr: {inverter.serial_number}\n"
-      f"- Version: {inverter.software_version}\n"
-      f"- Firmware: {inverter.arm_version}"
-      f"- Arm versionFirmware: {inverter.arm_version}"
+      f"- Rated power: {inverter.rated_power}\n"
+      f"- A/C output type: {inverter.ac_output_type}\n"
+      f"- Firmware: {inverter.firmware}\n"
+      f"- ARM firmware: {inverter.arm_firmware}\n"
+      f"- Modbus version: {inverter.modbus_version}\n"
+      f"- DSP1 version: {inverter.dsp1_version}\n"
+      f"- DSP2 version: {inverter.dsp2_version}\n"
+      f"- DSP svn version: {inverter.dsp_svn_version}\n"
+      f"- Arm version: {inverter.arm_version}\n"
+      f"- ARM svn version: {inverter.arm_svn_version}\n"
       )
 
 # -----------------
@@ -61,7 +68,7 @@ print(f"Identified inverter\n"
 # Set inverter operation mode
 # ---------------------------
 # print(asyncio.run(inverter.get_operation_mode()))
-# asyncio.run(inverter.set_operation_mode(goodwe.inverter.OperationMode.BACKUP))
+# asyncio.run(inverter.set_operation_mode(goodwe.OperationMode.BACKUP))
 # print(asyncio.run(inverter.get_operation_mode()))
 
 # --------------------

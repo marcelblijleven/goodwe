@@ -55,8 +55,8 @@ class GW5048_EM_Test(EsMock):
         self.loop.run_until_complete(self.read_device_info())
         self.assertEqual('GW5048-EM', self.model_name)
         self.assertEqual('00000EMU00AW0000', self.serial_number)
-        self.assertEqual('1010B', self.arm_version)
-        self.assertEqual(11, self.arm_sw_version)
+        self.assertEqual('1010B', self.arm_firmware)
+        self.assertEqual(11, self.arm_version)
 
         self.assertFalse(self._supports_new_eco_mode())
 
