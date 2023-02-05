@@ -148,6 +148,20 @@ class TestUtils(TestCase):
         self.assertEqual(bytes.fromhex("010a020a037f00fa00370000"),
                          testee.encode_value(bytes.fromhex("010a020a037f00fa00370000")))
 
+    def test_eco_mode_es(self):
+        testee = EcoModeEs("", 0, "")
+
+        data = io.BytesIO(bytes.fromhex("0d1e0e280040"))
+        self.assertEqual("13:30-14:40 64%", testee.read(data).__str__())
+        self.assertEqual(bytes.fromhex("0d1e0e280040"), testee.encode_value(bytes.fromhex("0d1e0e280040")))
+        self.assertFalse(testee.read(data).is_eco_charge_mode())
+        self.assertFalse(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual("13:30-14:14 Sun,Mon,Tue,Wed,Thu,Fri,Sat 64% On", testee.asEcoMode(False).__str__())
+        data = io.BytesIO(bytes.fromhex("0000173b64"))
+        self.assertEqual("0:0-23:59 100%", testee.read(data).__str__())
+        self.assertTrue(testee.read(data).is_eco_charge_mode())
+        self.assertEqual("0:0-23:23 Sun,Mon,Tue,Wed,Thu,Fri,Sat -100% On", testee.asEcoMode(True).__str__())
+
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
         self.assertEqual('Utility Loss', decode_bitmap(512, ERROR_CODES))

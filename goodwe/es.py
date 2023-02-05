@@ -120,12 +120,12 @@ class ES(Inverter):
     )
 
     __settings: Tuple[Sensor, ...] = (
-        Integer("charge_power_limit", 4, "Charge Power Limit Value"),
-        Integer("discharge_power_limit", 10, "Disharge Power Limit Value"),
-        Byte("relay_control", 13, "Relay Control"),
-        Byte("off-grid_charge", 15, "Off-grid Charge"),
-        Byte("shadow_scan", 17, "Shadow Scan"),
-        Integer("backflow_state", 18, "Backflow State"),
+        EcoModeEs("eco_mode_charge", 0, "Eco Mode Charge"),
+        EcoModeEs("eco_mode_discharge", 6, "Eco Mode Discharge"),
+        Integer("backup_supply", 12, "Backup Supply"),
+        Integer("off-grid_charge", 14, "Off-grid Charge"),
+        Integer("shadow_scan", 16, "Shadow Scan"),
+        Integer("grid_export", 18, "Grid Export Enabled"),
         Integer("capacity", 22, "Capacity"),
         Integer("charge_v", 24, "Charge Voltage", "V"),
         Integer("charge_i", 26, "Charge Current", "A", ),
@@ -142,11 +142,8 @@ class ES(Inverter):
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
 
-        # emulated settings
+        # emulated settings for API compatibility with ET inverters
         EcoMode("eco_mode_1", 0, "Eco Mode Power Group 1"),
-        EcoMode("eco_mode_2", 0, "Eco Mode Power Group 2"),
-        EcoMode("eco_mode_3", 0, "Eco Mode Power Group 3"),
-        EcoMode("eco_mode_4", 0, "Eco Mode Power Group 4"),
     )
 
     async def read_device_info(self):
@@ -169,13 +166,14 @@ class ES(Inverter):
             # There does not seem to be time setting/sensor evailable (or is not known)
             return datetime.now()
         elif setting_id == 'eco_mode_1':
-            return None
-        elif setting_id == 'eco_mode_2':
-            return None
-        elif setting_id == 'eco_mode_3':
-            return None
-        elif setting_id == 'eco_mode_4':
-            return None
+            # Emulated ET like setting
+            all_settings = await self.read_settings_data()
+            eco_charge = all_settings.get('eco_mode_charge')
+            eco_discharge = all_settings.get('eco_mode_discharge')
+            if eco_charge.is_eco_charge_mode():
+                return eco_charge.asEcoMode(True)
+            else:
+                return eco_discharge.asEcoMode(False)
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
@@ -185,14 +183,6 @@ class ES(Inverter):
             await self._read_from_socket(
                 Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
             )
-        elif setting_id == 'eco_mode_1':
-            await self._read_from_socket(Aa55ProtocolCommand("02390b070104" + value.hex(), "02b9"))
-        elif setting_id == 'eco_mode_2':
-            await self._read_from_socket(Aa55ProtocolCommand("02390b070504" + value.hex(), "02b9"))
-        elif setting_id == 'eco_mode_3':
-            await self._read_from_socket(Aa55ProtocolCommand("02390b070904" + value.hex(), "02b9"))
-        elif setting_id == 'eco_mode_4':
-            await self._read_from_socket(Aa55ProtocolCommand("02390b070d04" + value.hex(), "02b9"))
         else:
             raise InverterError("Operation not supported")
 
@@ -219,7 +209,18 @@ class ES(Inverter):
         return tuple(result)
 
     async def get_operation_mode(self) -> OperationMode:
-        return OperationMode(await self.read_setting('work_mode'))
+        mode = OperationMode(await self.read_setting('work_mode'))
+        if OperationMode.ECO != mode:
+            return mode
+        all_settings = await self.read_settings_data()
+        eco_charge = all_settings.get('eco_mode_charge')
+        eco_discharge = all_settings.get('eco_mode_discharge')
+        if eco_charge.is_eco_charge_mode():
+            return OperationMode.ECO_CHARGE
+        elif eco_discharge.is_eco_discharge_mode():
+            return OperationMode.ECO_DISCHARGE
+        else:
+            return OperationMode.ECO
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
         if operation_mode == OperationMode.GENERAL:
@@ -232,15 +233,10 @@ class ES(Inverter):
             await self._set_eco_mode(eco_mode_power)
         elif operation_mode == OperationMode.PEAK_SHAVING:
             raise InverterError("Operation not supported.")
-        elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
-            if operation_mode == OperationMode.ECO_CHARGE:
-                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
-            else:
-                await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
-            await self.write_setting('eco_mode_3', EcoMode("3", 0, "").encode_off())
-            await self.write_setting('eco_mode_4', EcoMode("4", 0, "").encode_off())
-            await self._set_eco_mode(eco_mode_power)
+        elif operation_mode == OperationMode.ECO_CHARGE:
+            await self._set_eco_mode(-1 * abs(eco_mode_power))
+        elif operation_mode == OperationMode.ECO_DISCHARGE:
+            await self._set_eco_mode(abs(eco_mode_power))
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting('dod')
@@ -299,8 +295,8 @@ class ES(Inverter):
         await self._set_work_mode(2)
 
     async def _set_eco_mode(self, eco_mode_power: int) -> None:
-        await self._set_limit_power_for_charge(0, 0, 23, 59, eco_mode_power)
-        await self._set_limit_power_for_discharge(0, 0, 23, 59, eco_mode_power)
+        await self._set_limit_power_for_charge(0, 0, 23, 59, abs(eco_mode_power) if eco_mode_power < 0 else 0)
+        await self._set_limit_power_for_discharge(0, 0, 23, 59, eco_mode_power if eco_mode_power > 0 else 0)
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(3)
 

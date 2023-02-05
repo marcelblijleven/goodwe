@@ -291,7 +291,7 @@ class EnumCalculated(Sensor):
 
 
 class EcoMode(Sensor):
-    """Sensor representing Eco Mode Battery Power Group encoded in 6 bytes"""
+    """Sensor representing Eco Mode Battery Power Group encoded in 8 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str):
         super().__init__(id_, offset, name, 8, "", SensorKind.BAT)
@@ -515,6 +515,71 @@ class PeakShavingMode(Sensor):
     def encode_off(self) -> bytes:
         """Answer bytes representing empty and disabled eco mode group"""
         return bytes.fromhex("300030000000006400640000")
+
+
+class EcoModeEs(Sensor):
+    """Sensor representing Eco Mode (ES) encoded in 6 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str):
+        super().__init__(id_, offset, name, 6, "", SensorKind.BAT)
+        self.start_h: int | None = None
+        self.start_m: int | None = None
+        self.end_h: int | None = None
+        self.end_m: int | None = None
+        self.power: int | None = None
+
+    def __str__(self):
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.power}%"
+
+    def read_value(self, data: io.BytesIO):
+        self.start_h = read_byte(data)
+        if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
+            raise ValueError()
+        self.start_m = read_byte(data)
+        if self.start_m < 0 or self.start_m > 59:
+            raise ValueError()
+        self.end_h = read_byte(data)
+        if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
+            raise ValueError()
+        self.end_m = read_byte(data)
+        if self.end_m < 0 or self.end_m > 59:
+            raise ValueError()
+        self.power = read_bytes2(data)
+        if self.power < 0 or self.power > 100:
+            raise ValueError()
+        return self
+
+    def encode_value(self, value: Any) -> bytes:
+        if isinstance(value, bytes) and len(value) == 6:
+            # try to read_value to check if values are valid
+            if self.read_value(io.BytesIO(value)):
+                return value
+        raise ValueError
+
+    def is_eco_charge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.start_h == 0 \
+               and self.start_m == 0 \
+               and self.end_h == 23 \
+               and self.end_m == 59 \
+               and self.power > 0
+
+    def is_eco_discharge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        return self.is_eco_charge_mode()
+
+    def asEcoMode(self, charge: bool) -> EcoMode:
+        """Convert ES eco mode to full EcoMode"""
+        result = EcoMode(self.id_, self.offset, self.name)
+        result.start_h = self.start_h
+        result.start_m = self.start_m
+        result.end_h = self.end_h
+        result.end_m = self.end_h
+        result.power = (-1 * self.power) if charge else self.power
+        result.on_off = -1 if self.power > 0 else 0
+        result.day_bits = 127
+        result.days = decode_day_of_week(127)
+        return result;
 
 
 class Calculated(Sensor):
