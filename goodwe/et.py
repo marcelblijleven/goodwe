@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Tuple
 
 from .exceptions import InverterError
@@ -8,6 +9,8 @@ from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
+
+logger = logging.getLogger(__name__)
 
 
 class ET(Inverter):
@@ -263,21 +266,25 @@ class ET(Inverter):
         # Byte("eco_mode_4_switch", 47530, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
 
-    # Extra Modbus registers for EcoMode version 2 settings, offsets are modbus register addresses
-    __EcoModeV2_settings: Tuple[Sensor, ...] = (
+    # Settings added in ARM firmware 19
+    __settings_arm_fw_19: Tuple[Sensor, ...] = (
         Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
         Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
         EcoModeV2("eco_modeV2_1", 47547, "Eco Mode Version 2 Power Group 1"),
         EcoModeV2("eco_modeV2_2", 47553, "Eco Mode Version 2 Power Group 2"),
         EcoModeV2("eco_modeV2_3", 47559, "Eco Mode Version 2 Power Group 3"),
         EcoModeV2("eco_modeV2_4", 47565, "Eco Mode Version 2 Power Group 4"),
-        EcoModeV2("eco_modeV2_5", 47571, "Eco Mode Version 2 Power Group 5"),
-        EcoModeV2("eco_modeV2_6", 47577, "Eco Mode Version 2 Power Group 6"),
-        EcoModeV2("eco_modeV2_7", 47583, "Eco Mode Version 2 Power Group 7"),
+        Integer("fast_charging_power", 47603, "Fast Charging Power", "%", Kind.BAT),
+    )
+
+    # Settings added in ARM firmware 22
+    __settings_arm_fw_22: Tuple[Sensor, ...] = (
+        # EcoModeV2("eco_modeV2_5", 47571, "Eco Mode Version 2 Power Group 5"),
+        # EcoModeV2("eco_modeV2_6", 47577, "Eco Mode Version 2 Power Group 6"),
+        # EcoModeV2("eco_modeV2_7", 47583, "Eco Mode Version 2 Power Group 7"),
         PeakShavingMode("peak_shaving_mode", 47589, "Peak Shaving Mode"),
 
         Integer("dod_holding", 47602, "DoD Holding", "", Kind.BAT),
-        Integer("fast_charging_power", 47603, "Fast Charging Power", "%", Kind.BAT),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -348,9 +355,10 @@ class ET(Inverter):
             self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
-        if self._supports_eco_mode_v2():
-            # this inverter has eco mode version 2, adding EcoModeV2 to settings
-            self._settings = self.__all_settings + self.__EcoModeV2_settings
+        if self.arm_version >= 19:
+            self._settings = self._settings + self.__settings_arm_fw_19
+        if self.arm_version >= 22:
+            self._settings = self._settings + self.__settings_arm_fw_22
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -388,8 +396,12 @@ class ET(Inverter):
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}
         for setting in self.settings():
-            value = await self.read_setting(setting.id_)
-            data[setting.id_] = value
+            try:
+                value = await self.read_setting(setting.id_)
+                data[setting.id_] = value
+            except ValueError:
+                logger.exception("Error reading setting %s.", setting.id_)
+                data[setting.id_] = None
         return data
 
     async def get_grid_export_limit(self) -> int:

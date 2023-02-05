@@ -310,26 +310,26 @@ class EcoMode(Sensor):
     def read_value(self, data: io.BytesIO):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
         self.start_m = read_byte(data)
         if self.start_m < 0 or self.start_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_m value {self.start_m} out of range.")
         self.end_h = read_byte(data)
         if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_h value {self.end_h} out of range.")
         self.end_m = read_byte(data)
         if self.end_m < 0 or self.end_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
         self.power = read_bytes2(data)  # negative=charge, positive=discharge
         if self.power < -100 or self.power > 100:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: power value {self.power} out of range.")
         self.on_off = read_byte(data)
         if self.on_off not in (0, -1):
-            raise ValueError()
+            raise ValueError(f"{self.id_}: on_off value {self.on_off} out of range.")
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)
         if self.day_bits < 0:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
         return self
 
     def encode_value(self, value: Any) -> bytes:
@@ -393,29 +393,29 @@ class EcoModeV2(Sensor):
     def read_value(self, data: io.BytesIO):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
         self.start_m = read_byte(data)
         if self.start_m < 0 or self.start_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_m value {self.start_m} out of range.")
         self.end_h = read_byte(data)
         if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_h value {self.end_h} out of range.")
         self.end_m = read_byte(data)
         if self.end_m < 0 or self.end_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
         self.on_off = read_byte(data)
         if self.on_off not in (0, -1):
-            raise ValueError()
+            raise ValueError(f"{self.id_}: on_off value {self.on_off} out of range.")
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)
         if self.day_bits < 0:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
         self.power = read_bytes2(data)  # negative=charge, positive=discharge
         if self.power < -100 or self.power > 100:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: power value {self.power} out of range.")
         self.max_charge = read_bytes2(data)
         if self.max_charge < 0 or self.max_charge > 100:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: max_charge value {self.max_charge} out of range.")
         return self
 
     def encode_value(self, value: Any) -> bytes:
@@ -480,29 +480,29 @@ class PeakShavingMode(Sensor):
     def read_value(self, data: io.BytesIO):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
         self.start_m = read_byte(data)
         if self.start_m < 0 or self.start_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_m value {self.start_m} out of range.")
         self.end_h = read_byte(data)
         if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_h value {self.end_h} out of range.")
         self.end_m = read_byte(data)
         if self.end_m < 0 or self.end_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
         self.on_off = read_byte(data)
         if self.on_off not in (-4, 3):
-            raise ValueError()
+            raise ValueError(f"{self.id_}: on_off value {self.on_off} out of range.")
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)
         if self.day_bits < 0:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
         self.import_power = read_decimal2(data, 100)
         if self.import_power < 0 or self.import_power > 500:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: import_power value {self.import_power} out of range.")
         self.soc = read_bytes2(data)
         if self.soc < 0 or self.soc > 100:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: soc value {self.soc} out of range.")
         return self
 
     def encode_value(self, value: Any) -> bytes:
@@ -534,19 +534,19 @@ class EcoModeEs(Sensor):
     def read_value(self, data: io.BytesIO):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
         self.start_m = read_byte(data)
         if self.start_m < 0 or self.start_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: start_m value {self.start_m} out of range.")
         self.end_h = read_byte(data)
         if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_h value {self.end_h} out of range.")
         self.end_m = read_byte(data)
         if self.end_m < 0 or self.end_m > 59:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
         self.power = read_bytes2(data)
         if self.power < 0 or self.power > 100:
-            raise ValueError()
+            raise ValueError(f"{self.id_}: power value {self.power} out of range.")
         return self
 
     def encode_value(self, value: Any) -> bytes:
