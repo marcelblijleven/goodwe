@@ -102,8 +102,8 @@ class Inverter:
         self.firmware: str | None = None
         self.arm_firmware: str | None = None
         self.modbus_version: int | None = None
-        self.dsp1_version: int | None = None
-        self.dsp2_version: int | None = None
+        self.dsp1_version: int = 0
+        self.dsp2_version: int = 0
         self.dsp_svn_version: int | None = None
         self.arm_version: int = 0
         self.arm_svn_version: int | None = None

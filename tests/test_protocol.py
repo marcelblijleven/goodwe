@@ -3,7 +3,7 @@ from unittest import TestCase, mock
 
 from goodwe.exceptions import MaxRetriesException
 from goodwe.protocol import Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand, ModbusReadCommand, \
-    ModbusWriteCommand, ProtocolCommand, UdpInverterProtocol
+    ModbusWriteCommand, ModbusWriteMultiCommand, ProtocolCommand, UdpInverterProtocol
 
 
 class TestUDPClientProtocol(TestCase):
@@ -105,6 +105,10 @@ class TestUDPClientProtocol(TestCase):
     def test_modbus_write_command(self):
         command = ModbusWriteCommand(0xf7, 0xb798, 0x0002)
         self.assertEqual(bytes.fromhex('f706b7980002bac6'), command.request)
+
+    def test_modbus_write_multi_command(self):
+        command = ModbusWriteMultiCommand(0xf7, 0xb798, bytes.fromhex('08070605'))
+        self.assertEqual(bytes.fromhex('f710b79800020408070605851b'), command.request)
 
     def test_aa55_read_command(self):
         command = Aa55ReadCommand(0x0701, 16)

@@ -303,6 +303,7 @@ class EcoMode(Sensor):
         self.on_off: int | None = None
         self.day_bits: int | None = None
         self.days: str | None = None
+        self.max_charge: int = 0  # just to keep same API with V2
 
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% {'On' if self.on_off != 0 else 'Off'}"
@@ -381,11 +382,12 @@ class EcoModeV2(Sensor):
         self.start_m: int | None = None
         self.end_h: int | None = None
         self.end_m: int | None = None
-        self.power: int | None = None
-        self.max_charge: int | None = None
         self.on_off: int | None = None
         self.day_bits: int | None = None
         self.days: str | None = None
+        self.power: int | None = None
+        self.max_charge: int | None = None
+        # 2 bytes padding 0000
 
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (max charge {self.max_charge}%) {'On' if self.on_off != 0 else 'Off'}"
@@ -473,6 +475,7 @@ class PeakShavingMode(Sensor):
         self.days: str | None = None
         self.import_power: float | None = None
         self.soc: int | None = None
+        # 2 bytes padding 0000
 
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.import_power}kW (soc {self.soc}%) {'On' if self.on_off == -4 else 'Off'}"

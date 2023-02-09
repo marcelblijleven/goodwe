@@ -3,6 +3,8 @@ import asyncio
 import logging
 import sys
 
+# Force the local files, not pip installed lib
+sys.path.insert(0, '../../goodwe')
 import goodwe
 
 logging.basicConfig(

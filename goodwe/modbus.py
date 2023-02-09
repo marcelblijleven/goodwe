@@ -80,8 +80,10 @@ def create_modbus_multi_request(comm_addr: int, cmd: int, offset: int, values: b
     data[0] is inverter address
     data[1] is modbus command
     data[2:3] is command offset parameter
-    data[4:5] is command value parameter
-    data[6:7] is crc-16 checksum
+    data[4:5] is number of registers
+    data[6] is number of bytes
+    data[7-n] is data payload
+    data[n+1:n+2] is crc-16 checksum
     """
     data: bytearray = bytearray(7)
     data[0] = comm_addr

@@ -48,8 +48,18 @@ class GW5048D_ES_Test(EsMock):
 
     def __init__(self, methodName='runTest'):
         EsMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW5048D-ES_device_info.hex')
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048D-ES_running_data.hex')
-        self.mock_response(self._READ_DEVICE_SETTINGS_DATA, 'dummy_ES_settings_data.hex')
+        self.mock_response(self._READ_DEVICE_SETTINGS_DATA, 'GW5048D-ES_settings_data.hex')
+
+    def test_GW5048D_ES_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW5048D-ES', self.model_name)
+        self.assertEqual('95048ESU227W0000', self.serial_number)
+        self.assertEqual('2323G', self.firmware)
+        self.assertEqual(23, self.dsp1_version)
+        self.assertEqual(23, self.dsp2_version)
+        self.assertEqual(16, self.arm_version)
 
     def test_GW5048D_ES_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))
@@ -137,9 +147,21 @@ class GW5048D_ES_Test(EsMock):
         data = self.loop.run_until_complete(self.read_setting('eco_mode_charge'))
         self.assertEqual('0:0-0:0 0%', data.__str__())
         data = self.loop.run_until_complete(self.read_setting('eco_mode_discharge'))
-        self.assertEqual('13:30-14:40 64%', data.__str__())
-        # data = self.loop.run_until_complete(self.read_setting('eco_mode_1'))
-        # self.assertEqual('13:30-14:14 Sun,Mon,Tue,Wed,Thu,Fri,Sat 64% On', data.__str__())
+        self.assertEqual('0:0-0:0 0%', data.__str__())
+        data = self.loop.run_until_complete(self.read_setting('capacity'))
+        self.assertEqual(74, data)
+        data = self.loop.run_until_complete(self.read_setting('charge_v'))
+        self.assertEqual(532, data)
+        data = self.loop.run_until_complete(self.read_setting('charge_i'))
+        self.assertEqual(98, data)
+        data = self.loop.run_until_complete(self.read_setting('discharge_i'))
+        self.assertEqual(46, data)
+        data = self.loop.run_until_complete(self.read_setting('discharge_v'))
+        self.assertEqual(445, data)
+        data = self.loop.run_until_complete(self.read_setting('dod'))
+        self.assertEqual(0, data)
+        data = self.loop.run_until_complete(self.read_setting('grid_up_limit'))
+        self.assertEqual(10000, data)
 
 
 class GW5048_EM_Test(EsMock):
@@ -153,7 +175,9 @@ class GW5048_EM_Test(EsMock):
         self.loop.run_until_complete(self.read_device_info())
         self.assertEqual('GW5048-EM', self.model_name)
         self.assertEqual('00000EMU00AW0000', self.serial_number)
-        self.assertEqual('1010B', self.arm_firmware)
+        self.assertEqual('1010B', self.firmware)
+        self.assertEqual(10, self.dsp1_version)
+        self.assertEqual(10, self.dsp2_version)
         self.assertEqual(11, self.arm_version)
 
         self.assertFalse(self._supports_new_eco_mode())

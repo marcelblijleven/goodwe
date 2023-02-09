@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Tuple
 
 from .exceptions import InverterError
@@ -8,6 +9,8 @@ from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand
 from .sensor import *
+
+logger = logging.getLogger(__name__)
 
 
 class ES(Inverter):
@@ -156,12 +159,19 @@ class ES(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        self.arm_firmware = response[7:12].decode("ascii").rstrip()
+        self.firmware = response[7:12].decode("ascii").rstrip()
         self.model_name = response[12:22].decode("ascii").rstrip()
         self.serial_number = response[38:54].decode("ascii")
         self.software_version = response[58:70].decode("ascii")
-        if len(self.arm_firmware) >= 5:
-            self.arm_version = int(self.arm_firmware[4], base=36)
+        try:
+            if len(self.firmware) >= 2:
+                self.dsp1_version = int(self.firmware[0:2])
+            if len(self.firmware) >= 4:
+                self.dsp2_version = int(self.firmware[2:4])
+            if len(self.firmware) >= 5:
+                self.arm_version = int(self.firmware[4], base=36)
+        except ValueError:
+            logger.exception("Error decoding firmware version %s.", self.firmware)
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
@@ -178,7 +188,7 @@ class ES(Inverter):
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
             count = (setting.size_ + (setting.size_ % 2)) // 2
-            raw_data = await self._read_from_socket(Aa55ReadCommand(self.comm_addr, setting.offset, count))
+            raw_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
             with io.BytesIO(raw_data[7:-2]) as buffer:
                 return setting.read_value(buffer)
         else:
@@ -342,15 +352,12 @@ class ES(Inverter):
     def _supports_new_eco_mode(self) -> bool:
         if self.arm_version < 14:
             return False
-        if len(self.arm_firmware) < 2:
-            return False
-        fw_version = int(self.arm_firmware[0:2])
         if "EMU" in self.serial_number:
-            return fw_version >= 11
+            return self.dsp1_version >= 11
         if "ESU" in self.serial_number:
-            return fw_version >= 22
+            return self.dsp1_version >= 22
         if "BPS" in self.serial_number:
-            return fw_version >= 10
+            return self.dsp1_version >= 10
         return False
 
     async def _set_relay_control(self, mode: int) -> None:
