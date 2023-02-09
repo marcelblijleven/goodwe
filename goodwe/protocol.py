@@ -180,6 +180,34 @@ class Aa55ProtocolCommand(ProtocolCommand):
         return True
 
 
+class Aa55ReadCommand(Aa55ProtocolCommand):
+    """
+    Inverter modbus READ command for retrieving <count> modbus registers starting at register # <offset>
+    """
+
+    def __init__(self, offset: int, count: int):
+        super().__init__("011A03" + "{:04x}".format(offset) + "{:02x}".format(count), "019A")
+
+
+class Aa55WriteCommand(Aa55ProtocolCommand):
+    """
+    Inverter aa55 WRITE command setting single register # <register> value <value>
+    """
+
+    def __init__(self, register: int, value: int):
+        super().__init__("023905" + "{:04x}".format(register) + "01" + "{:04x}".format(value), "02B9")
+
+
+class Aa55WriteMultiCommand(Aa55ProtocolCommand):
+    """
+    Inverter aa55 WRITE command setting multiple register # <register> value <value>
+    """
+
+    def __init__(self, offset: int, values: bytes):
+        super().__init__("02390B" + "{:04x}".format(offset) + "{:02x}".format(len(values)) + values.hex(),
+                         "02B9")
+
+
 class ModbusProtocolCommand(ProtocolCommand):
     """
     Inverter communication protocol seen on newer generation of inverters, based on Modbus

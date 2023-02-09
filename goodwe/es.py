@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 from typing import Tuple
 
 from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, Aa55ProtocolCommand
+from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand
 from .sensor import *
 
 
@@ -142,8 +144,14 @@ class ES(Inverter):
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
 
-        # emulated settings for API compatibility with ET inverters
-        EcoMode("eco_mode_1", 0, "Eco Mode Power Group 1"),
+        EcoMode("eco_mode_1", 1793, "Eco Mode Power Group 1"),  # 0x701
+        # Byte("eco_mode_1_switch", 1796, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
+        EcoMode("eco_mode_2", 1797, "Eco Mode Power Group 2"),
+        # Byte("eco_mode_2_switch", 1800, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
+        EcoMode("eco_mode_3", 1801, "Eco Mode Power Group 3"),
+        # Byte("eco_mode_3_switch", 1804, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
+        EcoMode("eco_mode_4", 1805, "Eco Mode Power Group 4"),
+        # Byte("eco_mode_4_switch", 1808, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
 
     async def read_device_info(self):
@@ -165,15 +173,14 @@ class ES(Inverter):
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
             # There does not seem to be time setting/sensor evailable (or is not known)
             return datetime.now()
-        elif setting_id == 'eco_mode_1':
-            # Emulated ET like setting
-            all_settings = await self.read_settings_data()
-            eco_charge = all_settings.get('eco_mode_charge')
-            eco_discharge = all_settings.get('eco_mode_discharge')
-            if eco_charge.is_eco_charge_mode():
-                return eco_charge.asEcoMode(True)
-            else:
-                return eco_discharge.asEcoMode(False)
+        elif setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4'):
+            setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+            if not setting:
+                raise ValueError(f'Unknown setting "{setting_id}"')
+            count = (setting.size_ + (setting.size_ % 2)) // 2
+            raw_data = await self._read_from_socket(Aa55ReadCommand(self.comm_addr, setting.offset, count))
+            with io.BytesIO(raw_data[7:-2]) as buffer:
+                return setting.read_value(buffer)
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
@@ -184,7 +191,15 @@ class ES(Inverter):
                 Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
             )
         else:
-            raise InverterError("Operation not supported")
+            setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+            if not setting:
+                raise ValueError(f'Unknown setting "{setting_id}"')
+            raw_value = setting.encode_value(value)
+            if len(raw_value) <= 2:
+                value = int.from_bytes(raw_value, byteorder="big", signed=True)
+                await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
+            else:
+                await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
@@ -212,12 +227,10 @@ class ES(Inverter):
         mode = OperationMode(await self.read_setting('work_mode'))
         if OperationMode.ECO != mode:
             return mode
-        all_settings = await self.read_settings_data()
-        eco_charge = all_settings.get('eco_mode_charge')
-        eco_discharge = all_settings.get('eco_mode_discharge')
-        if eco_charge.is_eco_charge_mode():
+        ecomode = await self.read_setting('eco_mode_1')
+        if ecomode.is_eco_charge_mode():
             return OperationMode.ECO_CHARGE
-        elif eco_discharge.is_eco_discharge_mode():
+        elif ecomode.is_eco_discharge_mode():
             return OperationMode.ECO_DISCHARGE
         else:
             return OperationMode.ECO
@@ -243,9 +256,7 @@ class ES(Inverter):
 
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         if 0 <= dod <= 89:
-            await self._read_from_socket(
-                Aa55ProtocolCommand("023905056001" + "{:04x}".format(100 - dod), "02b9")
-            )
+            await self._read_from_socket(Aa55WriteCommand(0x560, 100 - dod))
 
     async def _reset_inverter(self) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("031d00", "039d"))
@@ -295,13 +306,18 @@ class ES(Inverter):
         await self._set_work_mode(2)
 
     async def _set_eco_mode(self, eco_mode_power: int) -> None:
-        await self._set_limit_power_for_charge(0, 0, 23, 59, abs(eco_mode_power) if eco_mode_power < 0 else 0)
-        await self._set_limit_power_for_discharge(0, 0, 23, 59, eco_mode_power if eco_mode_power > 0 else 0)
+        if eco_mode_power < 0:
+            await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
+        else:
+            await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
+        await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
+        await self.write_setting('eco_mode_3', EcoMode("2", 0, "").encode_off())
+        await self.write_setting('eco_mode_4', EcoMode("2", 0, "").encode_off())
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(3)
 
     async def _clear_battery_mode_param(self) -> None:
-        await self._read_from_socket(Aa55ProtocolCommand("0239050700010001", "02B9"))
+        await self._read_from_socket(Aa55WriteCommand(0x0700, 1))
 
     async def _set_limit_power_for_charge(self, startH: int, startM: int, stopH: int, stopM: int, limit: int) -> None:
         if limit < 0 or limit > 100:

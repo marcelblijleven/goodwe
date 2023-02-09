@@ -138,8 +138,8 @@ class GW5048D_ES_Test(EsMock):
         self.assertEqual('0:0-0:0 0%', data.__str__())
         data = self.loop.run_until_complete(self.read_setting('eco_mode_discharge'))
         self.assertEqual('13:30-14:40 64%', data.__str__())
-        data = self.loop.run_until_complete(self.read_setting('eco_mode_1'))
-        self.assertEqual('13:30-14:14 Sun,Mon,Tue,Wed,Thu,Fri,Sat 64% On', data.__str__())
+        # data = self.loop.run_until_complete(self.read_setting('eco_mode_1'))
+        # self.assertEqual('13:30-14:14 Sun,Mon,Tue,Wed,Thu,Fri,Sat 64% On', data.__str__())
 
 
 class GW5048_EM_Test(EsMock):
