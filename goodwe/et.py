@@ -7,6 +7,7 @@ from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
+from .model import is4PVstringET, isSinglePhaseET
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -233,6 +234,7 @@ class ET(Inverter):
         Integer("shadow_scan", 45251, "Shadow Scan", "", Kind.PV),
         Integer("backup_supply", 45252, "Backup Supply", "", Kind.UPS),
         Integer("unbalanced_output", 45264, "Unbalanced Output", "", Kind.AC),
+        Integer("pen_relay", 45288, "PE-N Relay", "", Kind.AC),
 
         Integer("battery_capacity", 45350, "Battery Capacity", "Ah", Kind.BAT),
         Integer("battery_modules", 45351, "Battery Modules", "", Kind.BAT),
@@ -274,6 +276,11 @@ class ET(Inverter):
         EcoModeV2("eco_modeV2_2", 47553, "Eco Mode Version 2 Power Group 2"),
         EcoModeV2("eco_modeV2_3", 47559, "Eco Mode Version 2 Power Group 3"),
         EcoModeV2("eco_modeV2_4", 47565, "Eco Mode Version 2 Power Group 4"),
+
+        Integer("load_control_mode", 47595, "Load Control Mode", "", Kind.AC),
+        Integer("load_control_switch", 47596, "Load Control Switch", "", Kind.AC),
+        Integer("load_control_soc", 47596, "Load Control SoC", "", Kind.AC),
+
         Integer("fast_charging_power", 47603, "Fast Charging Power", "%", Kind.BAT),
     )
 
@@ -345,12 +352,12 @@ class ET(Inverter):
         self.firmware = response[42:54].decode("ascii")
         self.arm_firmware = response[54:66].decode("ascii")
 
-        if "EHU" in self.serial_number:
+        if isSinglePhaseET(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._single_phase_only, self._sensors))
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
-        if "HSB" in self.serial_number:
+        if is4PVstringET(self):
             # this is PV3/PV4 re-include all sensors
             self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))

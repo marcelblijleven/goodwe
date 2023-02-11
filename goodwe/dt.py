@@ -6,6 +6,7 @@ from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
+from .model import is3PVstringDT, isSinglePhaseDT
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -144,11 +145,11 @@ class DT(Inverter):
         self.arm_version = read_unsigned_int(response, 70)
         self.firmware = "{}.{}.{:02x}".format(self.dsp1_version, self.dsp2_version, self.arm_version)
 
-        if any(model in self.serial_number for model in ["DSN", "MSU", "PSB", "PSC"]):
+        if isSinglePhaseDT(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
 
-        if any(model in self.serial_number for model in ["MSU", "PSC"]):
+        if is3PVstringDT(self):
             # this is 3 PV strings inverter, keep all sensors
             pass
         else:
