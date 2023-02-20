@@ -2,7 +2,7 @@ from typing import Dict
 
 GOODWE_UDP_PORT = 8899
 
-BATTERY_MODES_ET: Dict[int, str] = {
+BATTERY_MODES: Dict[int, str] = {
     0: "No battery",
     1: "Standby",
     2: "Discharge",
@@ -69,12 +69,12 @@ WORK_MODES_ES: Dict[int, str] = {
     3: "Inverter Severly Abnormal, 20 seconds to restart",
 }
 
-SAFETY_COUNTRIES_ET: Dict[int, str] = {
+SAFETY_COUNTRIES: Dict[int, str] = {
     0: "Italy",
     1: "Czechia",
     2: "Germany",
     3: "Spain",
-    4: "Greece",
+    4: "Greece Mainland",
     5: "Denmark",
     6: "Belgium",
     7: "Romania",
@@ -82,6 +82,7 @@ SAFETY_COUNTRIES_ET: Dict[int, str] = {
     9: "Australia",
     10: "France",
     11: "China",
+    12: "60Hz Grid Default",
     13: "Poland",
     14: "South Africa",
     15: "AustraliaL",
@@ -90,8 +91,8 @@ SAFETY_COUNTRIES_ET: Dict[int, str] = {
     18: "Thailand PEA",
     19: "Mauritius",
     20: "Holland",
-    21: "Northern Ireland",
-    22: "China Higher",
+    21: "G99",
+    22: "China Special",
     23: "French 50Hz",
     24: "French 60Hz",
     25: "Australia Ergon",
@@ -108,7 +109,7 @@ SAFETY_COUNTRIES_ET: Dict[int, str] = {
     36: "Taiwan",
     37: "Bulgaria",
     38: "Barbados",
-    39: "China Highest",
+    39: "China Special High",
     40: "G99",
     41: "Sweden",
     42: "Chile",

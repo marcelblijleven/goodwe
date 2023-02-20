@@ -60,7 +60,7 @@ class ES(Inverter):
         # Byte("cbattery3", 28, "Battery State of Charge 3", "%", Kind.BAT),
         Byte("battery_soh", 29, "Battery State of Health", "%", Kind.BAT),
         Byte("battery_mode", 30, "Battery Mode code", "", Kind.BAT),
-        Enum("battery_mode_label", 30, BATTERY_MODES_ET, "Battery Mode", Kind.BAT),
+        Enum("battery_mode_label", 30, BATTERY_MODES, "Battery Mode", Kind.BAT),
         Integer("battery_warning", 31, "Battery Warning", "", Kind.BAT),
         Byte("meter_status", 33, "Meter Status code", "", Kind.AC),
         Voltage("vgrid", 34, "On-grid Voltage", Kind.AC),

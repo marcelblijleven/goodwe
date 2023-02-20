@@ -79,7 +79,7 @@ class DT(Inverter):
         Energy4("e_total", 90, "Total PV Generation", Kind.PV),
         Long("h_total", 94, "Hours Total", "h", Kind.PV),
         Integer("safety_country", 98, "Safety Country code", "", Kind.AC),
-        Enum2("safety_country_label", 98, SAFETY_COUNTRIES_ET, "Safety Country", Kind.AC),
+        Enum2("safety_country_label", 98, SAFETY_COUNTRIES, "Safety Country", Kind.AC),
         Integer("xx100", 100, "Unknown sensor@100"),
         Integer("xx102", 102, "Unknown sensor@102"),
         Integer("xx104", 104, "Unknown sensor@104"),
