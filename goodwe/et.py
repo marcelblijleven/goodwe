@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple
+from typing import Tuple, cast
 
-from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
@@ -258,13 +257,13 @@ class ET(Inverter):
 
         Integer("battery_protocol_code", 47514, "Battery Protocol Code", "", Kind.BAT),
 
-        EcoMode("eco_mode_1", 47515, "Eco Mode Power Group 1"),
+        EcoModeV1("eco_mode_1", 47515, "Eco Mode Power Group 1"),
         # Byte("eco_mode_1_switch", 47518, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_2", 47519, "Eco Mode Power Group 2"),
+        EcoModeV1("eco_mode_2", 47519, "Eco Mode Power Group 2"),
         # Byte("eco_mode_2_switch", 47522, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_3", 47523, "Eco Mode Power Group 3"),
+        EcoModeV1("eco_mode_3", 47523, "Eco Mode Power Group 3"),
         # Byte("eco_mode_3_switch", 47526, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_4", 47527, "Eco Mode Power Group 4"),
+        EcoModeV1("eco_mode_4", 47527, "Eco Mode Power Group 4"),
         # Byte("eco_mode_4_switch", 47530, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
 
@@ -272,10 +271,10 @@ class ET(Inverter):
     __settings_arm_fw_19: Tuple[Sensor, ...] = (
         Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
         Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
-        EcoModeV2("eco_modeV2_1", 47547, "Eco Mode Version 2 Power Group 1"),
-        EcoModeV2("eco_modeV2_2", 47553, "Eco Mode Version 2 Power Group 2"),
-        EcoModeV2("eco_modeV2_3", 47559, "Eco Mode Version 2 Power Group 3"),
-        EcoModeV2("eco_modeV2_4", 47565, "Eco Mode Version 2 Power Group 4"),
+        EcoModeV2("eco_mode_1", 47547, "Eco Mode Power Group 1"),
+        EcoModeV2("eco_mode_2", 47553, "Eco Mode Power Group 2"),
+        EcoModeV2("eco_mode_3", 47559, "Eco Mode Power Group 3"),
+        EcoModeV2("eco_mode_4", 47565, "Eco Mode Power Group 4"),
 
         Integer("load_control_mode", 47595, "Load Control Mode", "", Kind.AC),
         Integer("load_control_switch", 47596, "Load Control Switch", "", Kind.AC),
@@ -309,7 +308,7 @@ class ET(Inverter):
         self._sensors = tuple(filter(self._pv1_pv2_only, self.__all_sensors))
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_meter = self.__all_sensors_meter
-        self._settings = self.__all_settings
+        self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
         if not self.dsp1_version:
@@ -363,9 +362,9 @@ class ET(Inverter):
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
         if self.arm_version >= 19:
-            self._settings = self._settings + self.__settings_arm_fw_19
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
         if self.arm_version >= 22:
-            self._settings = self._settings + self.__settings_arm_fw_22
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -381,7 +380,7 @@ class ET(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
-        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
@@ -390,7 +389,7 @@ class ET(Inverter):
             return setting.read_value(buffer)
 
     async def write_setting(self, setting_id: str, value: Any):
-        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)
@@ -431,10 +430,7 @@ class ET(Inverter):
         mode = OperationMode(await self.read_setting('work_mode'))
         if OperationMode.ECO != mode:
             return mode
-        if self._supports_eco_mode_v2():
-            ecomode = await self.read_setting('eco_modeV2_1')
-        else:
-            ecomode = await self.read_setting('eco_mode_1')
+        ecomode = await self.read_setting('eco_mode_1')
         if ecomode.is_eco_charge_mode():
             return OperationMode.ECO_CHARGE
         elif ecomode.is_eco_discharge_mode():
@@ -443,7 +439,7 @@ class ET(Inverter):
             return OperationMode.ECO
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
-                                 max_charge: int = 100) -> None:
+                                 eco_mode_soc: int = 100) -> None:
         if operation_mode == OperationMode.GENERAL:
             await self.write_setting('work_mode', 0)
             await self._set_offline(False)
@@ -466,27 +462,16 @@ class ET(Inverter):
         elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
             if eco_mode_power < 0 or eco_mode_power > 100:
                 raise ValueError()
-            if max_charge < 0 or max_charge > 100:
+            if eco_mode_soc < 0 or eco_mode_soc > 100:
                 raise ValueError()
-            ecoMode_class = EcoMode
-            ecoMode_name = 'eco_mode_'
-            if self._supports_eco_mode_v2():
-                ecoMode_class = EcoModeV2
-                ecoMode_name = 'eco_modeV2_'
-
+            eco_mode: EcoMode = self._convert_eco_mode(EcoModeV2("", 0, ""))
             if operation_mode == OperationMode.ECO_CHARGE:
-                if ecoMode_class == EcoModeV2:
-                    await self.write_setting('eco_modeV2_1',
-                                             EcoModeV2("1", 0, "").encode_charge(eco_mode_power, max_charge))
-                else:
-                    if max_charge != 100:
-                        raise InverterError("Operation not supported")
-                    await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
+                await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
             else:
-                await self.write_setting(ecoMode_name + '1', ecoMode_class("1", 0, "").encode_discharge(eco_mode_power))
-            await self.write_setting(ecoMode_name + '2', ecoMode_class("2", 0, "").encode_off())
-            await self.write_setting(ecoMode_name + '3', ecoMode_class("3", 0, "").encode_off())
-            await self.write_setting(ecoMode_name + '4', ecoMode_class("4", 0, "").encode_off())
+                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
+            await self.write_setting('eco_mode_2', eco_mode.encode_off())
+            await self.write_setting('eco_mode_3', eco_mode.encode_off())
+            await self.write_setting('eco_mode_4', eco_mode.encode_off())
             await self.write_setting('work_mode', 3)
             await self._set_offline(False)
 
@@ -504,7 +489,7 @@ class ET(Inverter):
             return self._sensors + self._sensors_meter
 
     def settings(self) -> Tuple[Sensor, ...]:
-        return self._settings
+        return tuple(self._settings.values())
 
     async def _clear_battery_mode_param(self) -> None:
         await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0xb9ad, 1))
@@ -512,3 +497,11 @@ class ET(Inverter):
     async def _set_offline(self, mode: bool) -> None:
         value = bytes.fromhex('00070000') if mode else bytes.fromhex('00010000')
         await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, 0xb997, value))
+
+    def _convert_eco_mode(self, sensor: Sensor) -> Sensor | EcoMode:
+        if EcoModeV1 == type(sensor) and self._supports_eco_mode_v2():
+            return cast(EcoModeV1, sensor).as_eco_mode_v2()
+        elif EcoModeV2 == type(sensor) and not self._supports_eco_mode_v2():
+            return cast(EcoModeV2, sensor).as_eco_mode_v1()
+        else:
+            return sensor

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple
+from typing import Tuple, cast
 
 from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand
+from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand, \
+    ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
 logger = logging.getLogger(__name__)
@@ -124,9 +125,7 @@ class ES(Inverter):
                    "House Consumption", "W", Kind.AC),
     )
 
-    __settings: Tuple[Sensor, ...] = (
-        EcoModeEs("eco_mode_charge", 0, "Eco Mode Charge"),
-        EcoModeEs("eco_mode_discharge", 6, "Eco Mode Discharge"),
+    __all_settings: Tuple[Sensor, ...] = (
         Integer("backup_supply", 12, "Backup Supply"),
         Integer("off-grid_charge", 14, "Off-grid Charge"),
         Integer("shadow_scan", 16, "Shadow Scan"),
@@ -147,15 +146,41 @@ class ES(Inverter):
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
 
-        EcoMode("eco_mode_1", 1793, "Eco Mode Power Group 1"),  # 0x701
+        EcoModeV1("eco_mode_1", 1793, "Eco Mode Power Group 1"),  # 0x701
         # Byte("eco_mode_1_switch", 1796, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_2", 1797, "Eco Mode Power Group 2"),
+        EcoModeV1("eco_mode_2", 1797, "Eco Mode Power Group 2"),
         # Byte("eco_mode_2_switch", 1800, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_3", 1801, "Eco Mode Power Group 3"),
+        EcoModeV1("eco_mode_3", 1801, "Eco Mode Power Group 3"),
         # Byte("eco_mode_3_switch", 1804, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
-        EcoMode("eco_mode_4", 1805, "Eco Mode Power Group 4"),
+        EcoModeV1("eco_mode_4", 1805, "Eco Mode Power Group 4"),
         # Byte("eco_mode_4_switch", 1808, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
     )
+
+    # Settings added in ARM firmware 14
+    __settings_arm_fw_14: Tuple[Sensor, ...] = (
+        EcoModeV2("eco_mode_1", 47547, "Eco Mode Power Group 1"),
+        EcoModeV2("eco_mode_2", 47553, "Eco Mode Power Group 2"),
+        EcoModeV2("eco_mode_3", 47559, "Eco Mode Power Group 3"),
+        EcoModeV2("eco_mode_4", 47565, "Eco Mode Power Group 4"),
+    )
+
+    def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
+        super().__init__(host, comm_addr, timeout, retries)
+        if not self.comm_addr:
+            # Set the default inverter address
+            self.comm_addr = 0xf7
+        self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
+
+    def _supports_eco_mode_v2(self) -> bool:
+        if self.arm_version < 14:
+            return False
+        if "EMU" in self.serial_number:
+            return self.dsp1_version >= 11
+        if "ESU" in self.serial_number:
+            return self.dsp1_version >= 22
+        if "BPS" in self.serial_number:
+            return self.dsp1_version >= 10
+        return False
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -173,6 +198,9 @@ class ES(Inverter):
         except ValueError:
             logger.exception("Error decoding firmware version %s.", self.firmware)
 
+        if self._supports_eco_mode_v2():
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
+
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
         data = self._map_response(raw_data[7:-2], self.__sensors, include_unknown_sensors)
@@ -181,16 +209,21 @@ class ES(Inverter):
     async def read_setting(self, setting_id: str) -> Any:
         if setting_id == 'time':
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
-            # There does not seem to be time setting/sensor evailable (or is not known)
+            # There does not seem to be time setting/sensor available (or is not known)
             return datetime.now()
         elif setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4'):
-            setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+            setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
             count = (setting.size_ + (setting.size_ % 2)) // 2
-            raw_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
-            with io.BytesIO(raw_data[7:-2]) as buffer:
-                return setting.read_value(buffer)
+            if self._is_modbus_setting(setting):
+                raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+                with io.BytesIO(raw_data[5:-2]) as buffer:
+                    return setting.read_value(buffer)
+            else:
+                raw_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
+                with io.BytesIO(raw_data[7:-2]) as buffer:
+                    return setting.read_value(buffer)
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
@@ -201,19 +234,25 @@ class ES(Inverter):
                 Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
             )
         else:
-            setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+            setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
             raw_value = setting.encode_value(value)
             if len(raw_value) <= 2:
                 value = int.from_bytes(raw_value, byteorder="big", signed=True)
-                await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
+                if self._is_modbus_setting(setting):
+                    await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+                else:
+                    await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
             else:
-                await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
+                if self._is_modbus_setting(setting):
+                    await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
+                else:
+                    await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
-        data = self._map_response(raw_data[7:-2], self.__settings)
+        data = self._map_response(raw_data[7:-2], self.settings())
         return data
 
     async def get_grid_export_limit(self) -> int:
@@ -245,7 +284,8 @@ class ES(Inverter):
         else:
             return OperationMode.ECO
 
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
+                                 eco_mode_soc: int = 100) -> None:
         if operation_mode == OperationMode.GENERAL:
             await self._set_general_mode()
         elif operation_mode == OperationMode.OFF_GRID:
@@ -253,13 +293,23 @@ class ES(Inverter):
         elif operation_mode == OperationMode.BACKUP:
             await self._set_backup_mode()
         elif operation_mode == OperationMode.ECO:
-            await self._set_eco_mode(eco_mode_power)
+            await self._set_eco_mode()
         elif operation_mode == OperationMode.PEAK_SHAVING:
             raise InverterError("Operation not supported.")
-        elif operation_mode == OperationMode.ECO_CHARGE:
-            await self._set_eco_mode(-1 * abs(eco_mode_power))
-        elif operation_mode == OperationMode.ECO_DISCHARGE:
-            await self._set_eco_mode(abs(eco_mode_power))
+        elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
+            if eco_mode_power < 0 or eco_mode_power > 100:
+                raise ValueError()
+            if eco_mode_soc < 0 or eco_mode_soc > 100:
+                raise ValueError()
+            eco_mode: EcoMode = self._convert_eco_mode(EcoModeV2("", 0, ""))
+            if operation_mode == OperationMode.ECO_CHARGE:
+                await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
+            else:
+                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
+            await self.write_setting('eco_mode_2', eco_mode.encode_off())
+            await self.write_setting('eco_mode_3', eco_mode.encode_off())
+            await self.write_setting('eco_mode_4', eco_mode.encode_off())
+            await self._set_eco_mode()
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting('dod')
@@ -275,11 +325,11 @@ class ES(Inverter):
         return self.__sensors
 
     def settings(self) -> Tuple[Sensor, ...]:
-        return self.__settings
+        return tuple(self._settings.values())
 
     async def _set_general_mode(self) -> None:
         if self.arm_version >= 7:
-            if self._supports_new_eco_mode():
+            if self._supports_eco_mode_v2():
                 await self._clear_battery_mode_param()
             else:
                 await self._set_limit_power_for_charge(0, 0, 0, 0, 0)
@@ -304,7 +354,7 @@ class ES(Inverter):
 
     async def _set_backup_mode(self) -> None:
         if self.arm_version >= 7:
-            if self._supports_new_eco_mode():
+            if self._supports_eco_mode_v2():
                 await self._clear_battery_mode_param()
             else:
                 await self._clear_battery_mode_param()
@@ -315,14 +365,7 @@ class ES(Inverter):
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(2)
 
-    async def _set_eco_mode(self, eco_mode_power: int) -> None:
-        if eco_mode_power < 0:
-            await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_charge(eco_mode_power))
-        else:
-            await self.write_setting('eco_mode_1', EcoMode("1", 0, "").encode_discharge(eco_mode_power))
-        await self.write_setting('eco_mode_2', EcoMode("2", 0, "").encode_off())
-        await self.write_setting('eco_mode_3', EcoMode("2", 0, "").encode_off())
-        await self.write_setting('eco_mode_4', EcoMode("2", 0, "").encode_off())
+    async def _set_eco_mode(self) -> None:
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(3)
 
@@ -349,17 +392,6 @@ class ES(Inverter):
     async def _set_offgrid_work_mode(self, mode: int) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
 
-    def _supports_new_eco_mode(self) -> bool:
-        if self.arm_version < 14:
-            return False
-        if "EMU" in self.serial_number:
-            return self.dsp1_version >= 11
-        if "ESU" in self.serial_number:
-            return self.dsp1_version >= 22
-        if "BPS" in self.serial_number:
-            return self.dsp1_version >= 10
-        return False
-
     async def _set_relay_control(self, mode: int) -> None:
         param = 0
         if mode == 2:
@@ -382,3 +414,14 @@ class ES(Inverter):
 
     async def _set_work_mode(self, mode: int) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("035901" + "{:02x}".format(mode), "03D9"))
+
+    def _convert_eco_mode(self, sensor: Sensor) -> Sensor | EcoMode:
+        if EcoModeV1 == type(sensor) and self._supports_eco_mode_v2():
+            return cast(EcoModeV1, sensor).as_eco_mode_v2()
+        elif EcoModeV2 == type(sensor) and not self._supports_eco_mode_v2():
+            return cast(EcoModeV2, sensor).as_eco_mode_v1()
+        else:
+            return sensor
+
+    def _is_modbus_setting(self, sensor: Sensor) -> bool:
+        return EcoModeV2 == type(sensor)

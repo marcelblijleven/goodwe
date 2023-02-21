@@ -4,7 +4,6 @@ from datetime import datetime
 from unittest import TestCase
 
 from goodwe.et import ET
-from goodwe.exceptions import InverterError
 from goodwe.exceptions import RequestFailedException
 from goodwe.inverter import OperationMode
 from goodwe.protocol import ProtocolCommand
@@ -228,6 +227,12 @@ class GW10K_ET_Test(EtMock):
 
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
 
+    def test_GW10K_ET_setting(self):
+        self.assertEqual(28, len(self.settings()))
+        settings = {s.id_: s for s in self.settings()}
+        self.assertEqual('Timestamp', type(settings.get("time")).__name__)
+        self.assertEqual('EcoModeV1', type(settings.get("eco_mode_1")).__name__)
+
     def test_GW10K_ET_read_setting(self):
         self.loop.run_until_complete(self.read_setting('work_mode'))
         self.assertEqual('f703b798000136c7', self.request.hex())
@@ -271,12 +276,9 @@ class GW10K_ET_Test(EtMock):
     def test_set_operation_mode_ECO_CHARGE(self):
         self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40))
         self.assertEqual('f710b99b0004080000173bffd8ff7f1343', self._list_of_requests[-6].hex())
-
-        with self.assertRaises(InverterError) as context:
-            self.loop.run_until_complete(
-                self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40, max_charge=80))
-
-        self.assertEqual(str(InverterError("Operation not supported")), str(context.exception))
+        self.loop.run_until_complete(
+            self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40, eco_mode_soc=80))
+        self.assertEqual('f710b99b0004080000173bffd8ff7f1343', self._list_of_requests[-6].hex())
 
     def test_set_operation_mode_DISCHARGE(self):
         self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_DISCHARGE, eco_mode_power=50))
@@ -312,10 +314,19 @@ class GW10K_ET_fw819_Test(EtMock):
         self.assertEqual('04029-08-S11', self.firmware)
         self.assertEqual('02041-19-S00', self.arm_firmware)
 
+    def test_GW10K_ET_settings_fw819(self):
+        self.assertEqual(34, len(self.settings()))
+        settings = {s.id_: s for s in self.settings()}
+        self.assertEqual('EcoModeV2', type(settings.get("eco_mode_1")).__name__)
+        self.assertEqual(None, settings.get("peak_shaving_mode"))
+
     def test_set_operation_mode_ECO_CHARGE(self):
         self.loop.run_until_complete(
-            self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40, max_charge=80))
+            self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40, eco_mode_soc=80))
         self.assertEqual('f710b9bb00060c0000173bff7fffd80050000002cc', self._list_of_requests[-6].hex())
+        self.loop.run_until_complete(
+            self.set_operation_mode(OperationMode.ECO_CHARGE, eco_mode_power=40))
+        self.assertEqual('f710b9bb00060c0000173bff7fffd8006400004302', self._list_of_requests[-6].hex())
 
     def test_set_operation_mode_ECO_DISCHARGE(self):
         self.loop.run_until_complete(self.set_operation_mode(OperationMode.ECO_DISCHARGE, eco_mode_power=50))
@@ -342,6 +353,11 @@ class GW10K_ET_fw1023_Test(EtMock):
         self.assertEqual(237, self.arm_svn_version)
         self.assertEqual('04029-10-S11', self.firmware)
         self.assertEqual('02041-23-S00', self.arm_firmware)
+
+    def test_GW10K_ET_setting_fw1023(self):
+        self.assertEqual(36, len(self.settings()))
+        settings = {s.id_: s for s in self.settings()}
+        self.assertEqual('PeakShavingMode', type(settings.get("peak_shaving_mode")).__name__)
 
 
 class GW6000_EH_Test(EtMock):

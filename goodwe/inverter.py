@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Any, Callable, Dict, Tuple, Optional
@@ -80,7 +81,7 @@ class OperationMode(IntEnum):
     ECO_DISCHARGE = 6
 
 
-class Inverter:
+class Inverter(ABC):
     """
     Common superclass for various inverter models implementations.
     Represents the inverter state and its basic behavior
@@ -139,6 +140,7 @@ class Inverter:
                 self._consecutive_failures_count += 1
                 raise RequestFailedException(ex.message, self._consecutive_failures_count)
 
+    @abstractmethod
     async def read_device_info(self):
         """
         Request the device information from the inverter.
@@ -146,6 +148,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
         """
         Request the runtime data from the inverter.
@@ -157,6 +160,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def read_setting(self, setting_id: str) -> Any:
         """
         Read the value of specific inverter setting/configuration parameter.
@@ -164,6 +168,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def write_setting(self, setting_id: str, value: Any):
         """
         Set the value of specific inverter settings/configuration parameter.
@@ -175,6 +180,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def read_settings_data(self) -> Dict[str, Any]:
         """
         Request the settings data from the inverter.
@@ -192,12 +198,14 @@ class Inverter:
         """
         return await self._read_from_socket(ProtocolCommand(command, validator))
 
+    @abstractmethod
     async def get_grid_export_limit(self) -> int:
         """
         Get the current grid export limit in W
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def set_grid_export_limit(self, export_limit: int) -> None:
         """
         BEWARE !!!
@@ -208,19 +216,23 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
         """
         Answer list of supported inverter operation modes
         """
         return ()
 
+    @abstractmethod
     async def get_operation_mode(self) -> OperationMode:
         """
         Get the inverter operation mode
         """
         raise NotImplementedError()
 
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
+    @abstractmethod
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
+                                 eco_mode_soc: int = 100) -> None:
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
@@ -230,10 +242,11 @@ class Inverter:
 
         The modes ECO_CHARGE and ECO_DISCHARGE are not real inverter operation modes, but a convenience
         shortcuts to enter Eco Mode with a single group valid all the time (from 00:00-23:59, Mon-Sun)
-        charging or discharging with optional charging power (%) parameter.
+        charging or discharging with optional charging power and SoC (%) parameters.
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def get_ongrid_battery_dod(self) -> int:
         """
         Get the On-Grid Battery DoD
@@ -241,6 +254,7 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         """
         BEWARE !!!
@@ -252,12 +266,14 @@ class Inverter:
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def sensors(self) -> Tuple[Sensor, ...]:
         """
         Return tuple of sensor definitions
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def settings(self) -> Tuple[Sensor, ...]:
         """
         Return tuple of settings definitions

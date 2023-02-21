@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from abc import ABC, abstractmethod
 from datetime import datetime
 from struct import unpack
 from typing import Any, Callable, Optional
@@ -290,7 +291,31 @@ class EnumCalculated(Sensor):
         return self._labels.get(self._getter(data))
 
 
-class EcoMode(Sensor):
+class EcoMode(ABC):
+    """Sensor representing Eco Mode Battery Power Group API"""
+
+    @abstractmethod
+    def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
+        """Answer bytes representing all the time enabled charging eco mode group"""
+
+    @abstractmethod
+    def encode_discharge(self, eco_mode_power: int) -> bytes:
+        """Answer bytes representing all the time enabled discharging eco mode group"""
+
+    @abstractmethod
+    def encode_off(self) -> bytes:
+        """Answer bytes representing empty and disabled eco mode group"""
+
+    @abstractmethod
+    def is_eco_charge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+
+    @abstractmethod
+    def is_eco_discharge_mode(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+
+
+class EcoModeV1(Sensor, EcoMode):
     """Sensor representing Eco Mode Battery Power Group encoded in 8 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str):
@@ -303,7 +328,7 @@ class EcoMode(Sensor):
         self.on_off: int | None = None
         self.day_bits: int | None = None
         self.days: str | None = None
-        self.max_charge: int = 0  # just to keep same API with V2
+        self.soc: int = 100  # just to keep same API with V2
 
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% {'On' if self.on_off != 0 else 'Off'}"
@@ -340,7 +365,7 @@ class EcoMode(Sensor):
                 return value
         raise ValueError
 
-    def encode_charge(self, eco_mode_power: int) -> bytes:
+    def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
         """Answer bytes representing all the time enabled charging eco mode group"""
         return bytes.fromhex("0000173b{:04x}ff7f".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1)))
 
@@ -372,8 +397,22 @@ class EcoMode(Sensor):
                and self.day_bits == 127 \
                and self.power > 0
 
+    def as_eco_mode_v2(self) -> EcoModeV2:
+        """Convert V1 to V2 EcoMode"""
+        result = EcoModeV2(self.id_, self.offset, self.name)
+        result.start_h = self.start_h
+        result.start_m = self.start_m
+        result.end_h = self.end_h
+        result.end_m = self.end_m
+        result.power = self.power
+        result.on_off = self.on_off
+        result.day_bits = self.day_bits
+        result.days = decode_day_of_week(self.day_bits)
+        result.soc = 100
+        return result
 
-class EcoModeV2(Sensor):
+
+class EcoModeV2(Sensor, EcoMode):
     """Sensor representing Eco Mode Battery Power Group encoded in 12 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str):
@@ -386,11 +425,11 @@ class EcoModeV2(Sensor):
         self.day_bits: int | None = None
         self.days: str | None = None
         self.power: int | None = None
-        self.max_charge: int | None = None
+        self.soc: int | None = None
         # 2 bytes padding 0000
 
     def __str__(self):
-        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (max charge {self.max_charge}%) {'On' if self.on_off != 0 else 'Off'}"
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (SoC {self.soc}%) {'On' if self.on_off != 0 else 'Off'}"
 
     def read_value(self, data: io.BytesIO):
         self.start_h = read_byte(data)
@@ -415,9 +454,9 @@ class EcoModeV2(Sensor):
         self.power = read_bytes2(data)  # negative=charge, positive=discharge
         if self.power < -100 or self.power > 100:
             raise ValueError(f"{self.id_}: power value {self.power} out of range.")
-        self.max_charge = read_bytes2(data)
-        if self.max_charge < 0 or self.max_charge > 100:
-            raise ValueError(f"{self.id_}: max_charge value {self.max_charge} out of range.")
+        self.soc = read_bytes2(data)
+        if self.soc < 0 or self.soc > 100:
+            raise ValueError(f"{self.id_}: SoC value {self.soc} out of range.")
         return self
 
     def encode_value(self, value: Any) -> bytes:
@@ -427,10 +466,10 @@ class EcoModeV2(Sensor):
                 return value
         raise ValueError
 
-    def encode_charge(self, eco_mode_power: int, max_charge: int = 100) -> bytes:
+    def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
         """Answer bytes representing all the time enabled charging eco mode group"""
         return bytes.fromhex(
-            "0000173bff7f{:04x}{:04x}0000".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1), max_charge))
+            "0000173bff7f{:04x}{:04x}0000".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1), eco_mode_soc))
 
     def encode_discharge(self, eco_mode_power: int) -> bytes:
         """Answer bytes representing all the time enabled discharging eco mode group"""
@@ -460,6 +499,19 @@ class EcoModeV2(Sensor):
                and self.day_bits == 127 \
                and self.power > 0
 
+    def as_eco_mode_v1(self) -> EcoModeV1:
+        """Convert V2 to V1 EcoMode"""
+        result = EcoModeV1(self.id_, self.offset, self.name)
+        result.start_h = self.start_h
+        result.start_m = self.start_m
+        result.end_h = self.end_h
+        result.end_m = self.end_m
+        result.power = self.power
+        result.on_off = self.on_off
+        result.day_bits = self.day_bits
+        result.days = self.days
+        return result
+
 
 class PeakShavingMode(Sensor):
     """Sensor representing Peak Shaving Mode encoded in 12 bytes"""
@@ -478,7 +530,7 @@ class PeakShavingMode(Sensor):
         # 2 bytes padding 0000
 
     def __str__(self):
-        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.import_power}kW (soc {self.soc}%) {'On' if self.on_off == -4 else 'Off'}"
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.import_power}kW (SoC {self.soc}%) {'On' if self.on_off == -4 else 'Off'}"
 
     def read_value(self, data: io.BytesIO):
         self.start_h = read_byte(data)
@@ -518,71 +570,6 @@ class PeakShavingMode(Sensor):
     def encode_off(self) -> bytes:
         """Answer bytes representing empty and disabled eco mode group"""
         return bytes.fromhex("300030000000006400640000")
-
-
-class EcoModeEs(Sensor):
-    """Sensor representing Eco Mode (ES) encoded in 6 bytes"""
-
-    def __init__(self, id_: str, offset: int, name: str):
-        super().__init__(id_, offset, name, 6, "", SensorKind.BAT)
-        self.start_h: int | None = None
-        self.start_m: int | None = None
-        self.end_h: int | None = None
-        self.end_m: int | None = None
-        self.power: int | None = None
-
-    def __str__(self):
-        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.power}%"
-
-    def read_value(self, data: io.BytesIO):
-        self.start_h = read_byte(data)
-        if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
-            raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
-        self.start_m = read_byte(data)
-        if self.start_m < 0 or self.start_m > 59:
-            raise ValueError(f"{self.id_}: start_m value {self.start_m} out of range.")
-        self.end_h = read_byte(data)
-        if (self.end_h < 0 or self.end_h > 23) and self.end_h != 48:
-            raise ValueError(f"{self.id_}: end_h value {self.end_h} out of range.")
-        self.end_m = read_byte(data)
-        if self.end_m < 0 or self.end_m > 59:
-            raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
-        self.power = read_bytes2(data)
-        if self.power < 0 or self.power > 100:
-            raise ValueError(f"{self.id_}: power value {self.power} out of range.")
-        return self
-
-    def encode_value(self, value: Any) -> bytes:
-        if isinstance(value, bytes) and len(value) == 6:
-            # try to read_value to check if values are valid
-            if self.read_value(io.BytesIO(value)):
-                return value
-        raise ValueError
-
-    def is_eco_charge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
-        return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.power > 0
-
-    def is_eco_discharge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
-        return self.is_eco_charge_mode()
-
-    def asEcoMode(self, charge: bool) -> EcoMode:
-        """Convert ES eco mode to full EcoMode"""
-        result = EcoMode(self.id_, self.offset, self.name)
-        result.start_h = self.start_h
-        result.start_m = self.start_m
-        result.end_h = self.end_h
-        result.end_m = self.end_h
-        result.power = (-1 * self.power) if charge else self.power
-        result.on_off = -1 if self.power > 0 else 0
-        result.day_bits = 127
-        result.days = decode_day_of_week(127)
-        return result;
 
 
 class Calculated(Sensor):

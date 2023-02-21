@@ -196,10 +196,14 @@ class DT(Inverter):
         if export_limit >= 0 or export_limit <= 100:
             return await self.write_setting('grid_export_limit', export_limit)
 
+    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+        return ()
+
     async def get_operation_mode(self) -> OperationMode:
         raise InverterError("Operation not supported.")
 
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100) -> None:
+    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
+                                 eco_mode_soc: int = 100) -> None:
         raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:

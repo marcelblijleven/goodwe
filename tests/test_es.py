@@ -143,11 +143,12 @@ class GW5048D_ES_Test(EsMock):
                           OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE),
                          self.loop.run_until_complete(self.get_operation_modes(True)))
 
+    def test_settings(self):
+        self.assertEqual(23, len(self.settings()))
+        settings = {s.id_: s for s in self.settings()}
+        self.assertEqual('EcoModeV1', type(settings.get("eco_mode_1")).__name__)
+
     def test_read_setting(self):
-        data = self.loop.run_until_complete(self.read_setting('eco_mode_charge'))
-        self.assertEqual('0:0-0:0 0%', data.__str__())
-        data = self.loop.run_until_complete(self.read_setting('eco_mode_discharge'))
-        self.assertEqual('0:0-0:0 0%', data.__str__())
         data = self.loop.run_until_complete(self.read_setting('capacity'))
         self.assertEqual(74, data)
         data = self.loop.run_until_complete(self.read_setting('charge_v'))
@@ -180,7 +181,7 @@ class GW5048_EM_Test(EsMock):
         self.assertEqual(10, self.dsp2_version)
         self.assertEqual(11, self.arm_version)
 
-        self.assertFalse(self._supports_new_eco_mode())
+        self.assertFalse(self._supports_eco_mode_v2())
 
     def test_GW5048_EM_runtime_data(self):
         data = self.loop.run_until_complete(self.read_runtime_data(True))

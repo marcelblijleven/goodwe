@@ -91,8 +91,8 @@ class TestUtils(TestCase):
         self.assertEqual("160104121e19", testee.encode_value(datetime(2022, 1, 4, 18, 30, 25)).hex())
         self.assertEqual("160104121e19", testee.encode_value("2022-01-04T18:30:25").hex())
 
-    def test_eco_mode(self):
-        testee = EcoMode("", 0, "")
+    def test_eco_mode_v1(self):
+        testee = EcoModeV1("", 0, "")
 
         data = io.BytesIO(bytes.fromhex("0d1e0e28ffc4ff1a"))
         self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% On", testee.read(data).__str__())
@@ -106,10 +106,14 @@ class TestUtils(TestCase):
         self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% On", testee.read(data).__str__())
         self.assertTrue(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% (SoC 100%) On",
+                         testee.as_eco_mode_v2().__str__())
         data = io.BytesIO(testee.encode_discharge(60))
         self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% On", testee.read(data).__str__())
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertTrue(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% (SoC 100%) On",
+                         testee.as_eco_mode_v2().__str__())
         data = io.BytesIO(testee.encode_off())
         self.assertEqual("48:0-48:0  100% Off", testee.read(data).__str__())
         self.assertFalse(testee.read(data).is_eco_charge_mode())
@@ -119,7 +123,7 @@ class TestUtils(TestCase):
         testee = EcoModeV2("", 0, "")
 
         data = io.BytesIO(bytes.fromhex("0d1e0e28ff1affc4005a0000"))
-        self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% (max charge 90%) On", testee.read(data).__str__())
+        self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% (SoC 90%) On", testee.read(data).__str__())
         self.assertEqual(bytes.fromhex("0d1e0e28ff1affc4005a0000"),
                          testee.encode_value(bytes.fromhex("0d1e0e28ff1affc4005a0000")))
         self.assertRaises(ValueError, lambda: testee.encode_value(bytes.fromhex("0d1e0e28ffffffc4005a0000")))
@@ -128,15 +132,17 @@ class TestUtils(TestCase):
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
 
         data = io.BytesIO(testee.encode_charge(-40, 80))
-        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% (max charge 80%) On", testee.read(data).__str__())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% (SoC 80%) On", testee.read(data).__str__())
         self.assertTrue(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% On", testee.as_eco_mode_v1().__str__())
         data = io.BytesIO(testee.encode_discharge(60))
-        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% (max charge 100%) On", testee.read(data).__str__())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% (SoC 100%) On", testee.read(data).__str__())
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertTrue(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% On", testee.as_eco_mode_v1().__str__())
         data = io.BytesIO(testee.encode_off())
-        self.assertEqual("48:0-48:0  100% (max charge 100%) Off", testee.read(data).__str__())
+        self.assertEqual("48:0-48:0  100% (SoC 100%) Off", testee.read(data).__str__())
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
 
@@ -144,23 +150,9 @@ class TestUtils(TestCase):
         testee = PeakShavingMode("", 0, "")
 
         data = io.BytesIO(bytes.fromhex("010a020a037f00fa00370000"))
-        self.assertEqual("1:10-2:10 Sun,Mon,Tue,Wed,Thu,Fri,Sat 2.5kW (soc 55%) Off", testee.read(data).__str__())
+        self.assertEqual("1:10-2:10 Sun,Mon,Tue,Wed,Thu,Fri,Sat 2.5kW (SoC 55%) Off", testee.read(data).__str__())
         self.assertEqual(bytes.fromhex("010a020a037f00fa00370000"),
                          testee.encode_value(bytes.fromhex("010a020a037f00fa00370000")))
-
-    def test_eco_mode_es(self):
-        testee = EcoModeEs("", 0, "")
-
-        data = io.BytesIO(bytes.fromhex("0d1e0e280040"))
-        self.assertEqual("13:30-14:40 64%", testee.read(data).__str__())
-        self.assertEqual(bytes.fromhex("0d1e0e280040"), testee.encode_value(bytes.fromhex("0d1e0e280040")))
-        self.assertFalse(testee.read(data).is_eco_charge_mode())
-        self.assertFalse(testee.read(data).is_eco_discharge_mode())
-        self.assertEqual("13:30-14:14 Sun,Mon,Tue,Wed,Thu,Fri,Sat 64% On", testee.asEcoMode(False).__str__())
-        data = io.BytesIO(bytes.fromhex("0000173b64"))
-        self.assertEqual("0:0-23:59 100%", testee.read(data).__str__())
-        self.assertTrue(testee.read(data).is_eco_charge_mode())
-        self.assertEqual("0:0-23:23 Sun,Mon,Tue,Wed,Thu,Fri,Sat -100% On", testee.asEcoMode(True).__str__())
 
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
