@@ -311,15 +311,7 @@ class ET(Inverter):
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
-        if not self.dsp1_version:
-            return False
-        if self.dsp1_version < 8:
-            return False
-        if self.dsp2_version < 8:
-            return False
-        if self.arm_version < 19:
-            return False
-        return False
+        return self.arm_version >= 19
 
     def _supports_peak_shaving(self) -> bool:
         return self.arm_version >= 22
