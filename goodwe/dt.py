@@ -6,7 +6,7 @@ from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is3PVstringDT, isSinglePhaseDT
+from .model import is_3_mptt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -125,11 +125,13 @@ class DT(Inverter):
         self._settings = self.__all_settings
 
     @staticmethod
-    def _is_not_3phase_sensor(s: Sensor) -> bool:
+    def _single_phase_only(s: Sensor) -> bool:
+        """Filter to exclude phase2/3 sensors on single phase inverters"""
         return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_ and not s.id_.startswith('xx'))
 
     @staticmethod
-    def _is_not_pv3_sensor(s: Sensor) -> bool:
+    def _pv1_pv2_only(s: Sensor) -> bool:
+        """Filter to exclude sensors on < 3 PV inverters"""
         return not s.id_.endswith('pv3')
 
     async def read_device_info(self):
@@ -145,16 +147,16 @@ class DT(Inverter):
         self.arm_version = read_unsigned_int(response, 70)
         self.firmware = "{}.{}.{:02x}".format(self.dsp1_version, self.dsp2_version, self.arm_version)
 
-        if isSinglePhaseDT(self):
+        if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
-            self._sensors = tuple(filter(self._is_not_3phase_sensor, self.__all_sensors))
+            self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
 
-        if is3PVstringDT(self):
+        if is_3_mptt(self):
             # this is 3 PV strings inverter, keep all sensors
             pass
         else:
             # this is only 2 PV strings inverter
-            self._sensors = tuple(filter(self._is_not_pv3_sensor, self._sensors))
+            self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
         pass
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:

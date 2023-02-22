@@ -5,18 +5,16 @@ ET_MODEL_TAGS = ["ETU", "EHU", "BTU", "BHU", "HSB"]
 ES_MODEL_TAGS = ["ESU", "EMU", "BPU", "BPS"]
 DT_MODEL_TAGS = ["DTU", "MSU", "MST", "DTN", "DSN", "PSB", "PSC"]
 
-
-def isSinglePhaseDT(inverter: Inverter) -> bool:
-    return any(model in inverter.serial_number for model in ["DSN", "MSU", "MST", "PSB", "PSC"])
+SINGLE_PHASE_MODELS = ["DSN", "MSU", "MST", "PSB", "PSC", "EHU", "EHR", "HSB"]
 
 
-def is3PVstringDT(inverter: Inverter) -> bool:
+def is_single_phase(inverter: Inverter) -> bool:
+    return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
+
+
+def is_3_mptt(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in ["MSU", "MST", "PSC"])
 
 
-def isSinglePhaseET(inverter: Inverter) -> bool:
-    return any(model in inverter.serial_number for model in ["EHU", "EHR"])
-
-
-def is4PVstringET(inverter: Inverter) -> bool:
+def is_4_mptt(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in ["HSB"])

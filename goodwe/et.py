@@ -6,7 +6,7 @@ from typing import Tuple, cast
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is4PVstringET, isSinglePhaseET
+from .model import is_4_mptt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -303,7 +303,7 @@ class ET(Inverter):
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._has_battery: bool = True
-        # By default, we set up only PV1 on PV2 sensors, only few inverters support PV3 and PV3
+        # By default, we set up only PV1 on PV2 sensors, only few inverters support PV3 and PV4
         # In case they are needed, they are added later in read_device_info
         self._sensors = tuple(filter(self._pv1_pv2_only, self.__all_sensors))
         self._sensors_battery = self.__all_sensors_battery
@@ -319,7 +319,7 @@ class ET(Inverter):
             return False
         if self.arm_version < 19:
             return False
-        return True
+        return False
 
     def _supports_peak_shaving(self) -> bool:
         return self.arm_version >= 22
@@ -351,14 +351,14 @@ class ET(Inverter):
         self.firmware = response[42:54].decode("ascii")
         self.arm_firmware = response[54:66].decode("ascii")
 
-        if isSinglePhaseET(self):
+        if is_4_mptt(self):
+            # this is PV3/PV4 re-include all sensors
+            self._sensors = tuple(self.__all_sensors)
+            self._sensors_meter = tuple(self._sensors_meter)
+
+        if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._single_phase_only, self._sensors))
-            self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
-
-        if is4PVstringET(self):
-            # this is PV3/PV4 re-include all sensors
-            self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
         if self.arm_version >= 19:
