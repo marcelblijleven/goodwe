@@ -20,6 +20,9 @@ ET_FAMILY = ["ET", "EH", "BT", "BH"]
 ES_FAMILY = ["ES", "EM", "BP"]
 DT_FAMILY = ["DT", "MS", "NS", "XS"]
 
+# Initial discovery command
+DISCOVERY_COMMAND = Aa55ProtocolCommand("010200", "0182")
+
 # supported inverter protocols
 _SUPPORTED_PROTOCOLS = [ET, DT, ES]
 
@@ -64,7 +67,7 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
     # Try the common AA55C07F0102000241 command first and detect inverter type from serial_number
     try:
         logger.debug("Probing inverter at %s.", host)
-        response = await Aa55ProtocolCommand("010200", "0182").execute(host, timeout, retries)
+        response = await DISCOVERY_COMMAND.execute(host, timeout, retries)
         model_name = response[12:22].decode("ascii").rstrip()
         serial_number = response[38:54].decode("ascii")
 
@@ -95,6 +98,7 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
         try:
             logger.debug("Probing %s inverter at %s.", inv.__name__, host)
             await i.read_device_info()
+            await i.read_runtime_data()
             logger.debug("Detected %s family inverter %s, S/N:%s.", inv.__name__, i.model_name, i.serial_number)
             return i
         except InverterError as ex:

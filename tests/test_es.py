@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from unittest import TestCase
 
+from goodwe import DISCOVERY_COMMAND
 from goodwe.es import ES
 from goodwe.exceptions import RequestFailedException
 from goodwe.inverter import OperationMode
@@ -451,3 +452,95 @@ class GW5000S_BP_Test(EsMock):
     def test_write_setting(self):
         self.loop.run_until_complete(self.write_setting('time', datetime(2022, 1, 4, 18, 30, 25)))
         self.assertEqual('aa55c07f030206160104121e1902ad', self.request.hex())
+
+
+class GW5048_ESA_Test(EsMock):
+
+    def __init__(self, methodName='runTest'):
+        EsMock.__init__(self, methodName)
+        self.mock_response(DISCOVERY_COMMAND, 'GW5048-ESA_discovery.hex')
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW5048-ESA_device_info.hex')
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-ESA_running_data.hex')
+
+    def test_GW5048_ESA_discovery(self):
+        response = self.loop.run_until_complete(self._read_from_socket(DISCOVERY_COMMAND))
+        self.assertEqual(86, len(response))
+        self.assertEqual('GW5048-ESA', response[12:22].decode("ascii").rstrip())
+        self.assertEqual('95048ESA223W0000', response[38:54].decode("ascii"))
+
+    def test_GW5048_ESA_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW5048-ESA', self.model_name)
+        self.assertEqual('95048ESA223W0000', self.serial_number)
+        self.assertEqual('1717A', self.firmware)
+        self.assertEqual(17, self.dsp1_version)
+        self.assertEqual(17, self.dsp2_version)
+        self.assertEqual(10, self.arm_version)
+
+    def test_GW5048_ESA_runtime_data(self):
+        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        self.assertEqual(59, len(data))
+
+        self.assertSensor('vpv1', 111.9, 'V', data)
+        self.assertSensor('ipv1', 0.0, 'A', data)
+        self.assertSensor('ppv1', 0, 'W', data)
+        self.assertSensor('pv1_mode', 0, '', data)
+        self.assertSensor('pv1_mode_label', 'PV panels not connected', '', data)
+        self.assertSensor('vpv2', 79.9, 'V', data)
+        self.assertSensor('ipv2', 0.1, 'A', data)
+        self.assertSensor('ppv2', 8, 'W', data)
+        self.assertSensor('pv2_mode', 0, '', data)
+        self.assertSensor('pv2_mode_label', 'PV panels not connected', '', data)
+        self.assertSensor('ppv', 8, 'W', data)
+        self.assertSensor('vbattery1', 53.6, 'V', data)
+        self.assertSensor('battery_status', 80, '', data)
+        self.assertSensor('battery_temperature', 25.0, 'C', data)
+        self.assertSensor('ibattery1', 0.2, 'A', data)
+        self.assertSensor('pbattery1', 11, 'W', data)
+        self.assertSensor('battery_charge_limit', 0, 'A', data)
+        self.assertSensor('battery_discharge_limit', 100, 'A', data)
+        self.assertSensor('battery_error', 0, '', data)
+        self.assertSensor('battery_soc', 100, '%', data)
+        self.assertSensor('battery_soh', 100, '%', data)
+        self.assertSensor('battery_mode', 2, '', data)
+        self.assertSensor('battery_mode_label', 'Discharge', '', data)
+        self.assertSensor('battery_warning', 0, '', data)
+        self.assertSensor('meter_status', 1, '', data)
+        self.assertSensor('vgrid', 231.2, 'V', data)
+        self.assertSensor('igrid', 0.6, 'A', data)
+        self.assertSensor('pgrid', 807, 'W', data)
+        self.assertSensor('fgrid', 50.0, 'Hz', data)
+        self.assertSensor('grid_mode', 1, '', data)
+        self.assertSensor('grid_mode_label', 'Inverter On', '', data)
+        self.assertSensor('vload', 231.2, 'V', data)
+        self.assertSensor('iload', 0.3, 'A', data)
+        self.assertSensor('pload', 916, 'W', data)
+        self.assertSensor('fload', 50.0, 'Hz', data)
+        self.assertSensor('load_mode', 1, '', data)
+        self.assertSensor('load_mode_label', 'The inverter is connected to a load', '', data)
+        self.assertSensor('work_mode', 2, '', data)
+        self.assertSensor('work_mode_label', 'Normal (On-Grid)', '', data)
+        self.assertSensor('temperature', 25.1, 'C', data)
+        self.assertSensor('error_codes', 0, '', data)
+        self.assertSensor('e_total', 0.2, 'kWh', data)
+        self.assertSensor('h_total', 3, 'h', data)
+        self.assertSensor('e_day', 0.2, 'kWh', data)
+        self.assertSensor('e_load_day', 15.0, 'kWh', data)
+        self.assertSensor('e_load_total', 15.0, 'kWh', data)
+        self.assertSensor('total_power', -109, 'W', data)
+        self.assertSensor('effective_work_mode', 1, '', data)
+        self.assertSensor('effective_relay_control', 32, '', data)
+        self.assertSensor('grid_in_out', 1, '', data)
+        self.assertSensor('grid_in_out_label', 'Exporting', '', data)
+        self.assertSensor('pback_up', 0, 'W', data)
+        self.assertSensor('plant_power', 916, 'W', data)
+        self.assertSensor('meter_power_factor', 0.001, '', data)
+        self.assertSensor('xx85', 0, '', data)
+        self.assertSensor('xx87', 915, '', data)
+        self.assertSensor('diagnose_result', 16780352, '', data)
+        self.assertSensor('diagnose_result_label',
+                          'Discharge Driver On, Meter connection reversed, Self-use load light, Export power limit set',
+                          '', data)
+        self.assertSensor('house_consumption', -788, 'W', data)
+
+        self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
