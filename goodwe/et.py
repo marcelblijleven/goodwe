@@ -257,24 +257,28 @@ class ET(Inverter):
 
         Integer("battery_protocol_code", 47514, "Battery Protocol Code", "", Kind.BAT),
 
-        EcoModeV1("eco_mode_1", 47515, "Eco Mode Power Group 1"),
-        # Byte("eco_mode_1_switch", 47518, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
-        EcoModeV1("eco_mode_2", 47519, "Eco Mode Power Group 2"),
-        # Byte("eco_mode_2_switch", 47522, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
-        EcoModeV1("eco_mode_3", 47523, "Eco Mode Power Group 3"),
-        # Byte("eco_mode_3_switch", 47526, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
-        EcoModeV1("eco_mode_4", 47527, "Eco Mode Power Group 4"),
-        # Byte("eco_mode_4_switch", 47530, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
+        EcoModeV1("eco_mode_1", 47515, "Eco Mode Group 1"),
+        ByteH("eco_mode_1_switch", 47518, "Eco Mode Group 1 Switch"),
+        EcoModeV1("eco_mode_2", 47519, "Eco Mode Group 2"),
+        ByteH("eco_mode_2_switch", 47522, "Eco Mode Group 2 Switch"),
+        EcoModeV1("eco_mode_3", 47523, "Eco Mode Group 3"),
+        ByteH("eco_mode_3_switch", 47526, "Eco Mode Group 3 Switch"),
+        EcoModeV1("eco_mode_4", 47527, "Eco Mode Group 4"),
+        ByteH("eco_mode_4_switch", 47530, "Eco Mode Group 4 Switch"),
     )
 
     # Settings added in ARM firmware 19
     __settings_arm_fw_19: Tuple[Sensor, ...] = (
         Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
         Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
-        EcoModeV2("eco_mode_1", 47547, "Eco Mode Power Group 1"),
-        EcoModeV2("eco_mode_2", 47553, "Eco Mode Power Group 2"),
-        EcoModeV2("eco_mode_3", 47559, "Eco Mode Power Group 3"),
-        EcoModeV2("eco_mode_4", 47565, "Eco Mode Power Group 4"),
+        EcoModeV2("eco_mode_1", 47547, "Eco Mode Group 1"),
+        ByteH("eco_mode_1_switch", 47549, "Eco Mode Group 1 Switch"),
+        EcoModeV2("eco_mode_2", 47553, "Eco Mode Group 2"),
+        ByteH("eco_mode_2_switch", 47555, "Eco Mode Group 2 Switch"),
+        EcoModeV2("eco_mode_3", 47559, "Eco Mode Group 3"),
+        ByteH("eco_mode_3_switch", 47561, "Eco Mode Group 3 Switch"),
+        EcoModeV2("eco_mode_4", 47565, "Eco Mode Group 4"),
+        ByteH("eco_mode_4_switch", 47567, "Eco Mode Group 4 Switch"),
 
         Integer("load_control_mode", 47595, "Load Control Mode", "", Kind.AC),
         Integer("load_control_switch", 47596, "Load Control Switch", "", Kind.AC),
@@ -384,7 +388,12 @@ class ET(Inverter):
         setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
-        raw_value = setting.encode_value(value)
+        if setting.size_ == 1:
+            # modbus can address/store only 16 bit values, read the other 8 bytes
+            register_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+            raw_value = setting.encode_value(value, register_data[5:7])
+        else:
+            raw_value = setting.encode_value(value)
         if len(raw_value) <= 2:
             value = int.from_bytes(raw_value, byteorder="big", signed=True)
             await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
@@ -461,9 +470,9 @@ class ET(Inverter):
                 await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
             else:
                 await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2', eco_mode.encode_off())
-            await self.write_setting('eco_mode_3', eco_mode.encode_off())
-            await self.write_setting('eco_mode_4', eco_mode.encode_off())
+            await self.write_setting('eco_mode_2_switch', 0)
+            await self.write_setting('eco_mode_3_switch', 0)
+            await self.write_setting('eco_mode_4_switch', 0)
             await self.write_setting('work_mode', 3)
             await self._set_offline(False)
 

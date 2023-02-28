@@ -22,6 +22,8 @@ class TestModbus(TestCase):
 
         request = create_modbus_request(0xf7, 0x6, 0x88b8, 0x00FF)
         self.assertEqual('f70688b800ff7699', request.hex())
+        request = create_modbus_request(0xf7, 0x6, 0x88b8, -1)
+        self.assertEqual('f70688b8ffff3769', request.hex())
 
     def test_create_modbus_multi_request(self):
         request = create_modbus_multi_request(0xf7, 0x10, 0x88b8, b'\x01\x02\x03\x04\x05\x06')
@@ -42,6 +44,7 @@ class TestModbus(TestCase):
 
     def test_validate_modbus_write_response(self):
         self.assert_response_ok('aa55f706b12c00147ba6', 0x06, 0xb12c, 0x14)
+        self.assert_response_ok('aa55f706b12cffff7a19', 0x06, 0xb12c, -1)
         # some garbage after response end
         self.assert_response_ok('aa55f706b12c00147ba6ffffff', 0x06, 0xb12c, 0x14)
         # length too short

@@ -156,7 +156,31 @@ class Byte(Sensor):
         return read_byte(data)
 
     def encode_value(self, value: Any) -> bytes:
-        return int.to_bytes(int(value), length=1, byteorder="big", signed=True)
+        raise NotImplementedError()
+
+
+class ByteH(Byte):
+    """Sensor representing signed int value encoded in 1 byte (high 8 bits of 16bit register)"""
+
+    def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, unit, kind)
+
+    def encode_value(self, value: Any, register_value: bytes) -> bytes:
+        word = bytearray(register_value)
+        word[0] = int.to_bytes(int(value), length=1, byteorder="big", signed=True)[0]
+        return bytes(word)
+
+
+class ByteL(Byte):
+    """Sensor representing signed int value encoded in 1 byte (low 8 bits of 16bit register)"""
+
+    def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, unit, kind)
+
+    def encode_value(self, value: Any, register_value: bytes) -> bytes:
+        word = bytearray(register_value)
+        word[1] = int.to_bytes(int(value), length=1, byteorder="big", signed=True)[0]
+        return bytes(word)
 
 
 class Integer(Sensor):

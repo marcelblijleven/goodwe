@@ -125,11 +125,11 @@ def validate_modbus_response(data: bytes, cmd: int, offset: int, value: int) -> 
             logger.debug("Response has unexpected length: %d, expected %d.", len(data), 10)
             return False
         expected_length = 10
-        response_offset = int.from_bytes(data[4:6], byteorder='big')
+        response_offset = int.from_bytes(data[4:6], byteorder='big', signed=False)
         if response_offset != offset:
             logger.debug("Response has wrong offset: %X, expected %X.", response_offset, offset)
             return False
-        response_value = int.from_bytes(data[6:8], byteorder='big')
+        response_value = int.from_bytes(data[6:8], byteorder='big', signed=True)
         if response_value != value:
             logger.debug("Response has wrong value: %X, expected %X.", response_value, value)
             return False

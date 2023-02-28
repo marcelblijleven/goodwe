@@ -10,11 +10,25 @@ class TestUtils(TestCase):
 
         data = io.BytesIO(bytes.fromhex("0c"))
         self.assertEqual(12, testee.read(data))
-        self.assertEqual("0c", testee.encode_value(12).hex())
 
         data = io.BytesIO(bytes.fromhex("f0"))
         self.assertEqual(-16, testee.read(data))
-        self.assertEqual("f0", testee.encode_value(-16).hex())
+
+    def test_byteH(self):
+        testee = ByteH("", 0, "", "", None)
+
+        self.assertEqual("2039", testee.encode_value(32, bytes.fromhex("3039")).hex())
+        self.assertEqual("ff39", testee.encode_value(-1, bytes.fromhex("3039")).hex())
+        self.assertEqual("7f39", testee.encode_value(127, bytes.fromhex("3039")).hex())
+        self.assertEqual("20ff", testee.encode_value(32, bytes.fromhex("ffff")).hex())
+
+    def test_byteL(self):
+        testee = ByteL("", 0, "", "", None)
+
+        self.assertEqual("3020", testee.encode_value(32, bytes.fromhex("3039")).hex())
+        self.assertEqual("30ff", testee.encode_value(-1, bytes.fromhex("3039")).hex())
+        self.assertEqual("307f", testee.encode_value(127, bytes.fromhex("3039")).hex())
+        self.assertEqual("ff20", testee.encode_value(32, bytes.fromhex("ffff")).hex())
 
     def test_integer(self):
         testee = Integer("", 0, "", "", None)

@@ -146,22 +146,26 @@ class ES(Inverter):
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
 
-        EcoModeV1("eco_mode_1", 1793, "Eco Mode Power Group 1"),  # 0x701
-        # Byte("eco_mode_1_switch", 1796, "Eco Mode Power Group 1 Switch", "", Kind.BAT),
-        EcoModeV1("eco_mode_2", 1797, "Eco Mode Power Group 2"),
-        # Byte("eco_mode_2_switch", 1800, "Eco Mode Power Group 2 Switch", "", Kind.BAT),
-        EcoModeV1("eco_mode_3", 1801, "Eco Mode Power Group 3"),
-        # Byte("eco_mode_3_switch", 1804, "Eco Mode Power Group 3 Switch", "", Kind.BAT),
-        EcoModeV1("eco_mode_4", 1805, "Eco Mode Power Group 4"),
-        # Byte("eco_mode_4_switch", 1808, "Eco Mode Power Group 4 Switch", "", Kind.BAT),
+        EcoModeV1("eco_mode_1", 1793, "Eco Mode Group 1"),  # 0x701
+        ByteH("eco_mode_1_switch", 1796, "Eco Mode Group 1 Switch", "", Kind.BAT),
+        EcoModeV1("eco_mode_2", 1797, "Eco Mode Group 2"),
+        ByteH("eco_mode_2_switch", 1800, "Eco Mode Group 2 Switch", "", Kind.BAT),
+        EcoModeV1("eco_mode_3", 1801, "Eco Mode Group 3"),
+        ByteH("eco_mode_3_switch", 1804, "Eco Mode Group 3 Switch", "", Kind.BAT),
+        EcoModeV1("eco_mode_4", 1805, "Eco Mode Group 4"),
+        ByteH("eco_mode_4_switch", 1808, "Eco Mode Group 4 Switch", "", Kind.BAT),
     )
 
     # Settings added in ARM firmware 14
     __settings_arm_fw_14: Tuple[Sensor, ...] = (
-        EcoModeV2("eco_mode_1", 47547, "Eco Mode Power Group 1"),
-        EcoModeV2("eco_mode_2", 47553, "Eco Mode Power Group 2"),
-        EcoModeV2("eco_mode_3", 47559, "Eco Mode Power Group 3"),
-        EcoModeV2("eco_mode_4", 47565, "Eco Mode Power Group 4"),
+        EcoModeV2("eco_mode_1", 47547, "Eco Mode Group 1"),
+        ByteH("eco_mode_1_switch", 47549, "Eco Mode Group 1 Switch"),
+        EcoModeV2("eco_mode_2", 47553, "Eco Mode Group 2"),
+        ByteH("eco_mode_2_switch", 47555, "Eco Mode Group 2 Switch"),
+        EcoModeV2("eco_mode_3", 47559, "Eco Mode Group 3"),
+        ByteH("eco_mode_3_switch", 47561, "Eco Mode Group 3 Switch"),
+        EcoModeV2("eco_mode_4", 47565, "Eco Mode Group 4"),
+        ByteH("eco_mode_4_switch", 47567, "Eco Mode Group 4 Switch"),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -237,7 +241,16 @@ class ES(Inverter):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
-            raw_value = setting.encode_value(value)
+            if setting.size_ == 1:
+                # modbus can address/store only 16 bit values, read the other 8 bytes
+                if self._is_modbus_setting(setting):
+                    register_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+                    raw_value = setting.encode_value(value, register_data[5:7])
+                else:
+                    register_data = await self._read_from_socket(Aa55ReadCommand(self.comm_addr, setting.offset, 1))
+                    raw_value = setting.encode_value(value, register_data[7:9])
+            else:
+                raw_value = setting.encode_value(value)
             if len(raw_value) <= 2:
                 value = int.from_bytes(raw_value, byteorder="big", signed=True)
                 if self._is_modbus_setting(setting):
@@ -306,9 +319,9 @@ class ES(Inverter):
                 await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
             else:
                 await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2', eco_mode.encode_off())
-            await self.write_setting('eco_mode_3', eco_mode.encode_off())
-            await self.write_setting('eco_mode_4', eco_mode.encode_off())
+            await self.write_setting('eco_mode_2_switch', 0)
+            await self.write_setting('eco_mode_3_switch', 0)
+            await self.write_setting('eco_mode_4_switch', 0)
             await self._set_eco_mode()
 
     async def get_ongrid_battery_dod(self) -> int:
@@ -424,4 +437,4 @@ class ES(Inverter):
             return sensor
 
     def _is_modbus_setting(self, sensor: Sensor) -> bool:
-        return EcoModeV2 == type(sensor)
+        return EcoModeV2 == type(sensor) or sensor.offset > 30000

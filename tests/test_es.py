@@ -145,7 +145,7 @@ class GW5048D_ES_Test(EsMock):
                          self.loop.run_until_complete(self.get_operation_modes(True)))
 
     def test_settings(self):
-        self.assertEqual(23, len(self.settings()))
+        self.assertEqual(27, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual('EcoModeV1', type(settings.get("eco_mode_1")).__name__)
 
