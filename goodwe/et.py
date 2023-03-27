@@ -415,7 +415,7 @@ class ET(Inverter):
         return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
-        if export_limit >= 0 or export_limit <= 10000:
+        if 0 <= export_limit <= 10000:
             await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:

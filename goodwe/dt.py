@@ -111,6 +111,16 @@ class DT(Inverter):
 
         Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
         Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
+        Integer("grid_export_limit", 40328, "Grid Export Limit", "%", Kind.GRID),
+    )
+
+    # Settings for single phase inverters
+    __settings_single_phase: Tuple[Sensor, ...] = (
+        Long("grid_export_limit", 40328, "Grid Export Limit", "W", Kind.GRID),
+    )
+
+    # Settings for three phase inverters
+    __settings_three_phase: Tuple[Sensor, ...] = (
         Integer("grid_export_limit", 40336, "Grid Export Limit", "%", Kind.GRID),
     )
 
@@ -122,7 +132,7 @@ class DT(Inverter):
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x7531, 0x0028)
         self._READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x7594, 0x0049)
         self._sensors = self.__all_sensors
-        self._settings = self.__all_settings
+        self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
@@ -150,6 +160,9 @@ class DT(Inverter):
         if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
+            self._settings.update({s.id_: s for s in self.__settings_single_phase})
+        else:
+            self._settings.update({s.id_: s for s in self.__settings_three_phase})
 
         if is_3_mptt(self):
             # this is 3 PV strings inverter, keep all sensors
@@ -165,7 +178,7 @@ class DT(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
-        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
@@ -174,7 +187,7 @@ class DT(Inverter):
             return setting.read_value(buffer)
 
     async def write_setting(self, setting_id: str, value: Any):
-        setting: Sensor | None = {s.id_: s for s in self.settings()}.get(setting_id)
+        setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         raw_value = setting.encode_value(value)
@@ -195,7 +208,8 @@ class DT(Inverter):
         return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
-        if export_limit >= 0 or export_limit <= 100:
+        setting = self._settings.get('grid_export_limit')
+        if (setting.unit == "%" and 0 <= export_limit <= 100) or (setting.unit != "%" and 0 <= export_limit <= 10000):
             return await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:

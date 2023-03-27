@@ -4,9 +4,10 @@ from .inverter import Inverter
 ET_MODEL_TAGS = ["ETU", "ETL", "ETR", "ETC", "EHU", "EHR", "EHB", "BTU", "BTN", "BTC", "BHU", "AES", "ABP", "HHI",
                  "HSB", "HUA", "CUA"]
 ES_MODEL_TAGS = ["ESU", "EMU", "ESA", "BPS", "BPU", "EMJ", "IJL"]
-DT_MODEL_TAGS = ["DTU", "MSU", "MST", "DTN", "DSN", "PSB", "PSC"]
+DT_MODEL_TAGS = ["DTU", "DTS", "MSU", "MST", "DSN", "DTN", "DST", "NSU", "SSN", "SST", "SSX", "SSY", "PSB", "PSC"]
 
-SINGLE_PHASE_MODELS = ["DSN", "MSU", "MST", "PSB", "PSC", "EHU", "EHR", "HSB"]
+SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",
+                       "MSU", "MST", "PSB", "PSC", "EHU", "EHR", "HSB"]
 
 
 def is_single_phase(inverter: Inverter) -> bool:

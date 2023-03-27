@@ -135,14 +135,6 @@ class GW6000_DT_Test(DtMock):
         self.loop.run_until_complete(self.write_setting('shadow_scan', 1))
         self.assertEqual('7f069d8600018c51', self.request.hex())
 
-    def test_get_grid_export_limit(self):
-        self.loop.run_until_complete(self.get_grid_export_limit())
-        self.assertEqual('7f039d900001a195', self.request.hex())
-
-    def test_set_grid_export_limit(self):
-        self.loop.run_until_complete(self.set_grid_export_limit(100))
-        self.assertEqual('7f069d900064adbe', self.request.hex())
-
 
 class GW8K_DT_Test(DtMock):
 
@@ -230,6 +222,16 @@ class GW8K_DT_Test(DtMock):
         self.assertSensor('xx142', -1, '', data)
         self.assertSensor('xx144', 84, '', data)
 
+    def test_get_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.get_grid_export_limit())
+        self.assertEqual('7f039d900001a195', self.request.hex())
+
+    def test_set_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.set_grid_export_limit(100))
+        self.assertEqual('7f069d900064adbe', self.request.hex())
+
 
 class GW5000D_NS_Test(DtMock):
 
@@ -300,6 +302,16 @@ class GW5000D_NS_Test(DtMock):
         self.assertSensor('xx140', -1, '', data)
         self.assertSensor('xx142', 404, '', data)
         self.assertSensor('xx144', 84, '', data)
+
+    def test_get_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.get_grid_export_limit())
+        self.assertEqual('7f039d8800026193', self.request.hex())
+
+    def test_set_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.set_grid_export_limit(5000))
+        self.assertEqual('7f109d88000204000013889d80', self.request.hex())
 
 
 class GW5000_MS_Test(DtMock):
