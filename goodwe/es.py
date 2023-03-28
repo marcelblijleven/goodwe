@@ -128,8 +128,8 @@ class ES(Inverter):
     __all_settings: Tuple[Sensor, ...] = (
         Integer("backup_supply", 12, "Backup Supply"),
         Integer("off-grid_charge", 14, "Off-grid Charge"),
-        Integer("shadow_scan", 16, "Shadow Scan"),
-        Integer("grid_export", 18, "Grid Export Enabled"),
+        Integer("shadow_scan", 16, "Shadow Scan", "", Kind.PV),
+        Integer("grid_export", 18, "Grid Export Enabled", "", Kind.GRID),
         Integer("capacity", 22, "Capacity"),
         Integer("charge_v", 24, "Charge Voltage", "V"),
         Integer("charge_i", 26, "Charge Current", "A", ),
@@ -141,8 +141,8 @@ class ES(Inverter):
         Integer("bp_pv_discharge", 38, "BP PV Discharge"),
         Integer("bp_bms_protocol", 40, "BP BMS Protocol"),
         Integer("power_factor", 42, "Power Factor"),
-        Integer("grid_up_limit", 52, "Grid Up Limit"),
-        Integer("soc_protect", 56, "SoC Protect"),
+        Integer("grid_export_limit", 52, "Grid Export Limit", "W", Kind.GRID),
+        Integer("battery_soc_protection", 56, "Battery SoC Protection", "", Kind.BAT),
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
 

@@ -162,7 +162,7 @@ class GW5048D_ES_Test(EsMock):
         self.assertEqual(445, data)
         data = self.loop.run_until_complete(self.read_setting('dod'))
         self.assertEqual(0, data)
-        data = self.loop.run_until_complete(self.read_setting('grid_up_limit'))
+        data = self.loop.run_until_complete(self.read_setting('grid_export_limit'))
         self.assertEqual(10000, data)
 
 
