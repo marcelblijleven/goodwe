@@ -293,3 +293,13 @@ class Inverter(ABC):
                         logger.exception("Error reading sensor %s.", sensor.id_)
                         result[sensor.id_] = None
             return result
+
+    @staticmethod
+    def _decode(data: bytes) -> str:
+        """Decode the bytes to ascii string"""
+        try:
+            if any(x < 32 for x in data):
+                return data.hex()
+            return data.decode("ascii")
+        except ValueError:
+            return data.hex()

@@ -188,10 +188,10 @@ class ES(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        self.firmware = response[7:12].decode("ascii").rstrip()
-        self.model_name = response[12:22].decode("ascii").rstrip()
+        self.firmware = self._decode(response[7:12]).rstrip()
+        self.model_name = self._decode(response[12:22]).rstrip()
         self.serial_number = response[38:54].decode("ascii")
-        self.software_version = response[58:70].decode("ascii")
+        self.software_version = self._decode(response[58:70])
         try:
             if len(self.firmware) >= 2:
                 self.dsp1_version = int(self.firmware[0:2])

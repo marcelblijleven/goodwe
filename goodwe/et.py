@@ -344,8 +344,8 @@ class ET(Inverter):
         self.dsp_svn_version = read_unsigned_int(response, 36)
         self.arm_version = read_unsigned_int(response, 38)
         self.arm_svn_version = read_unsigned_int(response, 40)
-        self.firmware = response[42:54].decode("ascii")
-        self.arm_firmware = response[54:66].decode("ascii")
+        self.firmware = self._decode(response[42:54])
+        self.arm_firmware = self._decode(response[54:66])
 
         if is_4_mptt(self):
             # this is PV3/PV4 re-include all sensors

@@ -544,3 +544,20 @@ class GW5048_ESA_Test(EsMock):
         self.assertSensor('house_consumption', -788, 'W', data)
 
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
+
+
+class GW6000_ES_20_Test(EsMock):
+    """This is Gen 2 ES inverter, actually a modbus (ET) talking inverter, not ES"""
+
+    def __init__(self, methodName='runTest'):
+        EsMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW6000-ES-20_device_info.hex')
+
+    def test_GW6000_ES_20_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('00000000000000000000', self.model_name)
+        self.assertEqual('56000ESN00AW0000', self.serial_number)
+        self.assertEqual('0002000205', self.firmware)
+        self.assertEqual(0, self.dsp1_version)
+        self.assertEqual(2, self.dsp2_version)
+        self.assertEqual(0, self.arm_version)
