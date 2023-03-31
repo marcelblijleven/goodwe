@@ -232,4 +232,4 @@ class DT(Inverter):
         return self._sensors
 
     def settings(self) -> Tuple[Sensor, ...]:
-        return self._settings
+        return tuple(self._settings.values())
