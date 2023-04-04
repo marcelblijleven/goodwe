@@ -269,7 +269,7 @@ class ES(Inverter):
         return data
 
     async def get_grid_export_limit(self) -> int:
-        return await self.read_setting('grid_up_limit')
+        return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
         if 0 <= export_limit <= 10000:
