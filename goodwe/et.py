@@ -34,10 +34,10 @@ class ET(Inverter):
         # ppv1 + ppv2 + ppv3 + ppv4
         Calculated("ppv",
                    lambda data:
-                   read_bytes4(data, 10) +
-                   read_bytes4(data, 18) +
-                   read_bytes4(data, 26) +
-                   read_bytes4(data, 34),
+                   max(0, read_bytes4(data, 10)) +
+                   max(0, read_bytes4(data, 18)) +
+                   max(0, read_bytes4(data, 26)) +
+                   max(0, read_bytes4(data, 34)),
                    "PV Power", "W", Kind.PV),
         Byte("pv4_mode", 38, "PV4 Mode code", "", Kind.PV),
         Enum("pv4_mode_label", 38, PV_MODES, "PV4 Mode", Kind.PV),
