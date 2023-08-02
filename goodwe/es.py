@@ -383,7 +383,7 @@ class ES(Inverter):
                 await self._set_limit_power_for_discharge(TimeLimit())
                 await self._clear_battery_mode_param()
         await self._set_offgrid_work_mode(0)
-        await self._set_work_mode(0)
+        await self._set_work_mode(OperationMode.GENERAL)
 
     async def _set_offgrid_mode(self) -> None:
         if self.arm_version >= 7:
@@ -391,7 +391,7 @@ class ES(Inverter):
         await self._set_offgrid_work_mode(1)
         await self._set_relay_control(3)
         await self._set_store_energy_mode(0)
-        await self._set_work_mode(1)
+        await self._set_work_mode(OperationMode.OFF_GRID)
 
     async def _set_backup_mode(self) -> None:
         if self.arm_version >= 7:
@@ -401,7 +401,7 @@ class ES(Inverter):
                 await self._clear_battery_mode_param()
                 await self._set_limit_power_for_charge(TimeLimit.fulltime(10))
         await self._set_offgrid_work_mode(0)
-        await self._set_work_mode(2)
+        await self._set_work_mode(OperationMode.BACKUP)
 
     async def _set_eco_mode(self) -> None:
         await self._set_offgrid_work_mode(0)
