@@ -50,8 +50,7 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
                 self.response_future.set_result(data)
             else:
                 logger.debug("Received invalid response: %s", data.hex())
-                self._retries += 1
-                self._send_request()
+                # Ignore invalid response, wait until our time is up for the correct response.
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
             self.response_future.set_exception(ex)
@@ -66,7 +65,7 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
         logger.debug("Sending: %s%s", self.command,
                      f' - retry #{self._retries}/{self._max_retries}' if self._retries > 0 else '')
         self._transport.sendto(self.command.request)
-        asyncio.get_event_loop().call_later(self._retry_timeout, self._retry_mechanism)
+        asyncio.get_event_loop().call_later(self._retry_timeout * (self._retries + 1), self._retry_mechanism)
 
     def _retry_mechanism(self) -> None:
         """Retry mechanism to prevent hanging transport"""

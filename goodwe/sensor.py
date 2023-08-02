@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from struct import unpack
 from typing import Any, Callable, Optional
+from dataclasses import dataclass
 
 from .const import *
 from .inverter import Sensor, SensorKind
@@ -339,6 +340,62 @@ class EcoMode(ABC):
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
 
 
+@dataclass
+class TimeLimit():
+    """Encode a start and end time, and power percentage"""
+    start_h: int = 0
+    start_m: int = 0
+    end_h: int = 0
+    end_m: int = 0
+    power: int = 0
+
+    @classmethod
+    def none(cls):
+        return cls()
+
+    @classmethod
+    def fulltime(cls, power=100):
+        return cls(0, 0, 23, 59, power)
+
+    def is_fulltime(self) -> bool:
+        """Answer if it represents the emulated 24/7 fulltime charge/discharge mode"""
+        return self.start_h == 0 and self.start_m == 0 and self.end_h == 23 and self.end_m == 59 and self.power != 0
+
+    def encode_value(self) -> bytes:
+        if not 0 <= self.power <= 100:
+            raise ValueError("Power not in range 0-100")
+        return bytes([self.start_h, self.start_m, self.end_h, self.end_m, self.power])
+
+
+class EcoModeV0(Sensor, TimeLimit):
+    """Sensor representing charge or discharge time and rate"""
+
+    def __init__(self, id_: str, offset: int, name: str):
+        super().__init__(id_, offset, name, 6, "", SensorKind.BAT)
+
+    def read_value(self, data: io.BytesIO):
+        self.start_h = read_byte(data)
+        if self.start_h < 0 or self.start_h > 23:
+            raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
+        self.start_m = read_byte(data)
+        if self.start_m < 0 or self.start_m > 59:
+            raise ValueError(f"{self.id_}: start_m value {self.start_m} out of range.")
+        self.end_h = read_byte(data)
+        if self.end_h < 0 or self.end_h > 23:
+            raise ValueError(f"{self.id_}: end_h value {self.end_h} out of range.")
+        self.end_m = read_byte(data)
+        if self.end_m < 0 or self.end_m > 59:
+            raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
+        read_byte(data)
+        self.power = read_byte(data)
+        if self.power < -100 or self.power > 100:
+            raise ValueError(f"{self.id_}: power value {self.power} out of range.")
+        return self
+
+    def __str__(self):
+        return f"{self.start_h:02d}:{self.start_m:02d}-{self.end_h:02d}:{self.end_m:02d} {self.power}%"
+
+
 class EcoModeV1(Sensor, EcoMode):
     """Sensor representing Eco Mode Battery Power Group encoded in 8 bytes"""
 
@@ -404,22 +461,22 @@ class EcoModeV1(Sensor, EcoMode):
     def is_eco_charge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power < 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off != 0 \
+            and self.day_bits == 127 \
+            and self.power < 0
 
     def is_eco_discharge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power > 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off != 0 \
+            and self.day_bits == 127 \
+            and self.power > 0
 
     def as_eco_mode_v2(self) -> EcoModeV2:
         """Convert V1 to V2 EcoMode"""
@@ -506,22 +563,22 @@ class EcoModeV2(Sensor, EcoMode):
     def is_eco_charge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power < 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off != 0 \
+            and self.day_bits == 127 \
+            and self.power < 0
 
     def is_eco_discharge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power > 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off != 0 \
+            and self.day_bits == 127 \
+            and self.power > 0
 
     def as_eco_mode_v1(self) -> EcoModeV1:
         """Convert V2 to V1 EcoMode"""

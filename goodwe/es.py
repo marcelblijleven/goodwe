@@ -131,10 +131,10 @@ class ES(Inverter):
         Integer("shadow_scan", 16, "Shadow Scan", "", Kind.PV),
         Integer("grid_export", 18, "Grid Export Enabled", "", Kind.GRID),
         Integer("capacity", 22, "Capacity"),
-        Integer("charge_v", 24, "Charge Voltage", "V"),
+        Decimal("charge_v", 24, 10, "Charge Voltage", "V"),
         Integer("charge_i", 26, "Charge Current", "A", ),
         Integer("discharge_i", 28, "Discharge Current", "A", ),
-        Integer("discharge_v", 30, "Discharge Voltage", "V"),
+        Decimal("discharge_v", 30, 10, "Discharge Voltage", "V"),
         Calculated("dod", lambda data: 100 - read_bytes2(data, 32), "Depth of Discharge", "%"),
         Integer("battery_activated", 34, "Battery Activated"),
         Integer("bp_off_grid_charge", 36, "BP Off-grid Charge"),
@@ -145,7 +145,16 @@ class ES(Inverter):
         Integer("battery_soc_protection", 56, "Battery SoC Protection", "", Kind.BAT),
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
+    )
 
+    # Settings available in ARM firmware 3
+    __settings_arm_fw_3: Tuple[Sensor, ...] = (
+        EcoModeV0("eco_charge", 0, "Eco Mode Charge"),
+        EcoModeV0("eco_discharge", 6, "Eco Mode Discharge"),
+    )
+
+    # Settings added after ARM firmware 3
+    __settings_arm_fw_4: Tuple[Sensor, ...] = (
         EcoModeV1("eco_mode_1", 1793, "Eco Mode Group 1"),  # 0x701
         ByteH("eco_mode_1_switch", 1796, "Eco Mode Group 1 Switch", "", Kind.BAT),
         EcoModeV1("eco_mode_2", 1797, "Eco Mode Group 2"),
@@ -175,6 +184,9 @@ class ES(Inverter):
             self.comm_addr = 0xf7
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
+    def _supports_eco_mode_v1(self):
+        return self.arm_version > 3
+
     def _supports_eco_mode_v2(self) -> bool:
         if self.arm_version < 14:
             return False
@@ -202,6 +214,10 @@ class ES(Inverter):
         except ValueError:
             logger.exception("Error decoding firmware version %s.", self.firmware)
 
+        if self._supports_eco_mode_v1():
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_4})
+        else:
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_3})
         if self._supports_eco_mode_v2():
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
 
@@ -247,7 +263,7 @@ class ES(Inverter):
                     register_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
                     raw_value = setting.encode_value(value, register_data[5:7])
                 else:
-                    register_data = await self._read_from_socket(Aa55ReadCommand(self.comm_addr, setting.offset, 1))
+                    register_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
                     raw_value = setting.encode_value(value, register_data[7:9])
             else:
                 raw_value = setting.encode_value(value)
@@ -265,6 +281,10 @@ class ES(Inverter):
 
     async def read_settings_data(self) -> Dict[str, Any]:
         raw_data = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
+        # print("Received: ", end="")
+        # for byte in raw_data:
+        #    print("%02X " % byte, end="")
+        # print("")
         data = self._map_response(raw_data[7:-2], self.settings())
         return data
 
@@ -286,16 +306,21 @@ class ES(Inverter):
         return tuple(result)
 
     async def get_operation_mode(self) -> OperationMode:
-        mode = OperationMode(await self.read_setting('work_mode'))
+        settings = await self.read_settings_data()
+        mode = OperationMode(settings.get('work_mode'))
         if OperationMode.ECO != mode:
             return mode
-        ecomode = await self.read_setting('eco_mode_1')
-        if ecomode.is_eco_charge_mode():
+        if 'eco_mode_1' in self.settings():
+            ecomode = await self.read_setting('eco_mode_1')
+            if ecomode.is_eco_charge_mode():
+                return OperationMode.ECO_CHARGE
+            elif ecomode.is_eco_discharge_mode():
+                return OperationMode.ECO_DISCHARGE
+        elif 'eco_charge' in settings and settings.get('eco_charge').is_fulltime():
             return OperationMode.ECO_CHARGE
-        elif ecomode.is_eco_discharge_mode():
+        elif 'eco_discharge' in settings and settings.get('eco_discharge').is_fulltime():
             return OperationMode.ECO_DISCHARGE
-        else:
-            return OperationMode.ECO
+        return mode
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
                                  eco_mode_soc: int = 100) -> None:
@@ -314,15 +339,24 @@ class ES(Inverter):
                 raise ValueError()
             if eco_mode_soc < 0 or eco_mode_soc > 100:
                 raise ValueError()
-            eco_mode: EcoMode = self._convert_eco_mode(EcoModeV2("", 0, ""))
-            if operation_mode == OperationMode.ECO_CHARGE:
-                await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
-            else:
-                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2_switch', 0)
-            await self.write_setting('eco_mode_3_switch', 0)
-            await self.write_setting('eco_mode_4_switch', 0)
-            await self._set_eco_mode()
+            if self._settings.get('eco_mode_1') is not None:
+                eco_mode: EcoMode = self._convert_eco_mode(EcoModeV2("", 0, ""))
+                if operation_mode == OperationMode.ECO_CHARGE:
+                    await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
+                else:
+                    await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
+                await self.write_setting('eco_mode_2_switch', 0)
+                await self.write_setting('eco_mode_3_switch', 0)
+                await self.write_setting('eco_mode_4_switch', 0)
+                await self._set_eco_mode()
+            elif self._settings.get('eco_charge') is not None:
+                if operation_mode == OperationMode.ECO_CHARGE:
+                    await self._set_limit_power_for_discharge(TimeLimit.none())
+                    await self._set_limit_power_for_charge(TimeLimit.fulltime(eco_mode_power))
+                else:
+                    await self._set_limit_power_for_charge(TimeLimit.none())
+                    await self._set_limit_power_for_discharge(TimeLimit.fulltime(eco_mode_power))
+                await self._set_eco_mode()
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting('dod')
@@ -345,21 +379,15 @@ class ES(Inverter):
             if self._supports_eco_mode_v2():
                 await self._clear_battery_mode_param()
             else:
-                await self._set_limit_power_for_charge(0, 0, 0, 0, 0)
-                await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
+                await self._set_limit_power_for_charge(TimeLimit())
+                await self._set_limit_power_for_discharge(TimeLimit())
                 await self._clear_battery_mode_param()
-        else:
-            await self._set_limit_power_for_charge(0, 0, 0, 0, 0)
-            await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(0)
 
     async def _set_offgrid_mode(self) -> None:
         if self.arm_version >= 7:
             await self._clear_battery_mode_param()
-        else:
-            await self._set_limit_power_for_charge(0, 0, 23, 59, 0)
-            await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
         await self._set_offgrid_work_mode(1)
         await self._set_relay_control(3)
         await self._set_store_energy_mode(0)
@@ -371,36 +399,28 @@ class ES(Inverter):
                 await self._clear_battery_mode_param()
             else:
                 await self._clear_battery_mode_param()
-                await self._set_limit_power_for_charge(0, 0, 23, 59, 10)
-        else:
-            await self._set_limit_power_for_charge(0, 0, 23, 59, 10)
-            await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
+                await self._set_limit_power_for_charge(TimeLimit.fulltime(10))
         await self._set_offgrid_work_mode(0)
         await self._set_work_mode(2)
 
     async def _set_eco_mode(self) -> None:
         await self._set_offgrid_work_mode(0)
-        await self._set_work_mode(3)
+        await self._set_work_mode(OperationMode.ECO)
 
     async def _clear_battery_mode_param(self) -> None:
         await self._read_from_socket(Aa55WriteCommand(0x0700, 1))
 
-    async def _set_limit_power_for_charge(self, startH: int, startM: int, stopH: int, stopM: int, limit: int) -> None:
-        if limit < 0 or limit > 100:
-            raise ValueError()
-        await self._read_from_socket(Aa55ProtocolCommand("032c05"
-                                                         + "{:02x}".format(startH) + "{:02x}".format(startM)
-                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM)
-                                                         + "{:02x}".format(limit), "03AC"))
+    async def _set_limit_power(self, command: int, limit: TimeLimit) -> None:
+        data = limit.encode_value()
+        data_len = len(data)
+        await self._read_from_socket(
+            Aa55ProtocolCommand(f"03{command:02x}{data_len:02x}{data.hex()}", f"03{command + 0x80:02X}"))
 
-    async def _set_limit_power_for_discharge(self, startH: int, startM: int, stopH: int, stopM: int,
-                                             limit: int) -> None:
-        if limit < 0 or limit > 100:
-            raise ValueError()
-        await self._read_from_socket(Aa55ProtocolCommand("032d05"
-                                                         + "{:02x}".format(startH) + "{:02x}".format(startM)
-                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM)
-                                                         + "{:02x}".format(limit), "03AD"))
+    async def _set_limit_power_for_charge(self, limit: TimeLimit) -> None:
+        await self._set_limit_power(0x2c, limit)
+
+    async def _set_limit_power_for_discharge(self, limit: TimeLimit) -> None:
+        await self._set_limit_power(0x2d, limit)
 
     async def _set_offgrid_work_mode(self, mode: int) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
