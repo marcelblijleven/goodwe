@@ -145,21 +145,23 @@ class GW5048D_ES_Test(EsMock):
                          self.loop.run_until_complete(self.get_operation_modes(True)))
 
     def test_settings(self):
+        self.assertEqual(19, len(self.settings()))                  # length of initial list
+        self.loop.run_until_complete(self.read_device_info())       # establish firmware version
         self.assertEqual(27, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
-        self.assertEqual('EcoModeV1', type(settings.get("eco_mode_1")).__name__)
+        self.assertEqual('EcoModeV2', type(settings.get("eco_mode_1")).__name__)
 
     def test_read_setting(self):
         data = self.loop.run_until_complete(self.read_setting('capacity'))
         self.assertEqual(74, data)
         data = self.loop.run_until_complete(self.read_setting('charge_v'))
-        self.assertEqual(532, data)
+        self.assertEqual(53.2, data)
         data = self.loop.run_until_complete(self.read_setting('charge_i'))
         self.assertEqual(98, data)
         data = self.loop.run_until_complete(self.read_setting('discharge_i'))
         self.assertEqual(46, data)
         data = self.loop.run_until_complete(self.read_setting('discharge_v'))
-        self.assertEqual(445, data)
+        self.assertEqual(44.5, data)
         data = self.loop.run_until_complete(self.read_setting('dod'))
         self.assertEqual(0, data)
         data = self.loop.run_until_complete(self.read_setting('grid_export_limit'))
