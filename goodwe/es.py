@@ -129,7 +129,7 @@ class ES(Inverter):
         Integer("backup_supply", 12, "Backup Supply"),
         Integer("off-grid_charge", 14, "Off-grid Charge"),
         Integer("shadow_scan", 16, "Shadow Scan", "", Kind.PV),
-        Integer("grid_export", 18, "Grid Export Enabled", "", Kind.GRID),
+        Integer("grid_export", 18, "Export Limit Enabled", "", Kind.GRID),
         Integer("capacity", 22, "Capacity"),
         Decimal("charge_v", 24, 10, "Charge Voltage", "V"),
         Integer("charge_i", 26, "Charge Current", "A", ),
@@ -292,10 +292,17 @@ class ES(Inverter):
         return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
-        if 0 <= export_limit <= 10000:
-            await self._read_from_socket(
-                Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
-            )
+        enabled = export_limit >= 0
+        await self._read_from_socket(
+            Aa55ProtocolCommand("035301" + "{:02x}".format(int(enabled)), "03d3")
+        )
+        if enabled:
+            if 0 <= export_limit <= 10000:
+                await self._read_from_socket(
+                    Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
+                )
+            else:
+                raise ValueError()
 
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
         result = [e for e in OperationMode]
