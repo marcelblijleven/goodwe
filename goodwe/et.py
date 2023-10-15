@@ -6,7 +6,7 @@ from typing import Tuple, cast
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_4_mptt, is_single_phase
+from .model import is_3_mptt, is_4_mptt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -307,9 +307,7 @@ class ET(Inverter):
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._has_battery: bool = True
-        # By default, we set up only PV1 on PV2 sensors, only few inverters support PV3 and PV4
-        # In case they are needed, they are added later in read_device_info
-        self._sensors = tuple(filter(self._pv1_pv2_only, self.__all_sensors))
+        self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_meter = self.__all_sensors_meter
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
@@ -324,11 +322,6 @@ class ET(Inverter):
     def _single_phase_only(s: Sensor) -> bool:
         """Filter to exclude phase2/3 sensors on single phase inverters"""
         return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_)
-
-    @staticmethod
-    def _pv1_pv2_only(s: Sensor) -> bool:
-        """Filter to exclude sensors on < 4 PV inverters"""
-        return not (('pv3' in s.id_) or ('pv4' in s.id_))
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -347,10 +340,12 @@ class ET(Inverter):
         self.firmware = self._decode(response[42:54])
         self.arm_firmware = self._decode(response[54:66])
 
-        if is_4_mptt(self):
-            # this is PV3/PV4 re-include all sensors
-            self._sensors = tuple(self.__all_sensors)
-            self._sensors_meter = tuple(self._sensors_meter)
+        if not is_4_mptt(self):
+            # This inverter does not have 4th MPPTs
+            self._sensors = tuple(filter(lambda s: not ('pv4' in s.id_), self._sensors))
+            if not is_3_mptt(self):
+                # This inverter neither has 3rd MPPTs
+                self._sensors = tuple(filter(lambda s: not ('pv3' in s.id_), self._sensors))
 
         if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors

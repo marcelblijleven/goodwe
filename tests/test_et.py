@@ -71,6 +71,10 @@ class GW10K_ET_Test(EtMock):
         self.assertEqual('02041-17-S00', self.arm_firmware)
 
     def test_GW10K_ET_runtime_data(self):
+        # Reset sensors
+        self.loop.run_until_complete(self.read_device_info())
+        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+
         data = self.loop.run_until_complete(self.read_runtime_data(True))
         self.assertEqual(145, len(data))
 
@@ -470,7 +474,7 @@ class GEH10_1U_10_Test(EtMock):
         self.assertEqual('00000HSB00000000', self.serial_number)
 
     def test_GEH10_1U_10_runtime_data(self):
-        # Reset sensor
+        # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 

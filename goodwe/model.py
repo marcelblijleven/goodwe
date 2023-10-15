@@ -13,14 +13,19 @@ SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
                        "EHU", "EHR", "HSB",  # ET
                        "ESN", "EMN", "ERN", "EBN", "HLB", "HMB", "HBB", "SPN"]  # ES Gen 2
 
+MPPT3_MODELS = ["MSU", "MST", "PSC",
+                "25KET", "29KET", "30KET"]
+
+MPPT4_MODELS = ["HSB"]
+
 
 def is_single_phase(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
 
 
 def is_3_mptt(inverter: Inverter) -> bool:
-    return any(model in inverter.serial_number for model in ["MSU", "MST", "PSC"])
+    return any(model in inverter.serial_number for model in MPPT3_MODELS)
 
 
 def is_4_mptt(inverter: Inverter) -> bool:
-    return any(model in inverter.serial_number for model in ["HSB"])
+    return any(model in inverter.serial_number for model in MPPT4_MODELS)
