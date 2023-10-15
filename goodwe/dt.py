@@ -209,7 +209,7 @@ class DT(Inverter):
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
         setting = self._settings.get('grid_export_limit')
-        if (setting.unit == "%" and 0 <= export_limit <= 100) or (setting.unit != "%" and 0 <= export_limit <= 10000):
+        if export_limit >= 0:
             return await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:

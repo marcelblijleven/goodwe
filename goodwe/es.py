@@ -272,7 +272,7 @@ class ES(Inverter):
         return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
-        if 0 <= export_limit <= 10000:
+        if export_limit >= 0:
             await self._read_from_socket(
                 Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
             )
