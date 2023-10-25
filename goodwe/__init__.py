@@ -50,6 +50,8 @@ async def connect(host: str, family: str = None, comm_addr: int = 0, timeout: in
         inv = DT(host, comm_addr, timeout, retries)
     elif do_discover:
         return await discover(host, timeout, retries)
+    else:
+        raise InverterError("Specify either an inverter family or set do_discover True")
 
     logger.debug("Connecting to %s family inverter at %s.", family, host)
     await inv.read_device_info()

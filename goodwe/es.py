@@ -129,12 +129,12 @@ class ES(Inverter):
         Integer("backup_supply", 12, "Backup Supply"),
         Integer("off-grid_charge", 14, "Off-grid Charge"),
         Integer("shadow_scan", 16, "Shadow Scan", "", Kind.PV),
-        Integer("grid_export", 18, "Grid Export Enabled", "", Kind.GRID),
+        Integer("grid_export", 18, "Export Limit Enabled", "", Kind.GRID),
         Integer("capacity", 22, "Capacity"),
-        Integer("charge_v", 24, "Charge Voltage", "V"),
+        Decimal("charge_v", 24, 10, "Charge Voltage", "V"),
         Integer("charge_i", 26, "Charge Current", "A", ),
         Integer("discharge_i", 28, "Discharge Current", "A", ),
-        Integer("discharge_v", 30, "Discharge Voltage", "V"),
+        Decimal("discharge_v", 30, 10, "Discharge Voltage", "V"),
         Calculated("dod", lambda data: 100 - read_bytes2(data, 32), "Depth of Discharge", "%"),
         Integer("battery_activated", 34, "Battery Activated"),
         Integer("bp_off_grid_charge", 36, "BP Off-grid Charge"),
@@ -247,7 +247,7 @@ class ES(Inverter):
                     register_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
                     raw_value = setting.encode_value(value, register_data[5:7])
                 else:
-                    register_data = await self._read_from_socket(Aa55ReadCommand(self.comm_addr, setting.offset, 1))
+                    register_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
                     raw_value = setting.encode_value(value, register_data[7:9])
             else:
                 raw_value = setting.encode_value(value)
@@ -352,7 +352,7 @@ class ES(Inverter):
             await self._set_limit_power_for_charge(0, 0, 0, 0, 0)
             await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
         await self._set_offgrid_work_mode(0)
-        await self._set_work_mode(0)
+        await self._set_work_mode(OperationMode.GENERAL)
 
     async def _set_offgrid_mode(self) -> None:
         if self.arm_version >= 7:
@@ -363,7 +363,7 @@ class ES(Inverter):
         await self._set_offgrid_work_mode(1)
         await self._set_relay_control(3)
         await self._set_store_energy_mode(0)
-        await self._set_work_mode(1)
+        await self._set_work_mode(OperationMode.OFF_GRID)
 
     async def _set_backup_mode(self) -> None:
         if self.arm_version >= 7:
@@ -376,11 +376,11 @@ class ES(Inverter):
             await self._set_limit_power_for_charge(0, 0, 23, 59, 10)
             await self._set_limit_power_for_discharge(0, 0, 0, 0, 0)
         await self._set_offgrid_work_mode(0)
-        await self._set_work_mode(2)
+        await self._set_work_mode(OperationMode.BACKUP)
 
     async def _set_eco_mode(self) -> None:
         await self._set_offgrid_work_mode(0)
-        await self._set_work_mode(3)
+        await self._set_work_mode(OperationMode.ECO)
 
     async def _clear_battery_mode_param(self) -> None:
         await self._read_from_socket(Aa55WriteCommand(0x0700, 1))
