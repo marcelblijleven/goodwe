@@ -14,7 +14,7 @@ SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
                        "ESN", "EMN", "ERN", "EBN", "HLB", "HMB", "HBB", "SPN"]  # ES Gen 2
 
 MPPT3_MODELS = ["MSU", "MST", "PSC",
-                "25KET", "29KET", "30KET"]
+                "25KET", "29KET", "29K9ET", "30KET"]
 
 MPPT4_MODELS = ["HSB"]
 
