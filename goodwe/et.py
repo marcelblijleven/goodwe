@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 from typing import Tuple, cast
 
+from .exceptions import RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_3_mptt, is_4_mptt, is_single_phase
+from .model import is_2_battery, is_3_mptt, is_4_mptt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -172,18 +173,52 @@ class ET(Inverter):
         Integer("battery_protocol", 22, "Battery Protocol", "", Kind.BAT),  # 37011
         Integer("battery_error_h", 24, "Battery Error H", "", Kind.BAT),  # 37012
         EnumBitmap22("battery_error", 24, 12, BMS_ALARM_CODES, "Battery Error", Kind.BAT),
-        Integer("battery_warning_h", 28, "Battery Warning H", "", Kind.BAT),
-        EnumBitmap22("battery_warning", 28, 20, BMS_WARNING_CODES, "Battery Warning", Kind.BAT),
-        Integer("battery_sw_version", 30, "Battery Software Version", "", Kind.BAT),
-        Integer("battery_hw_version", 32, "Battery Hardware Version", "", Kind.BAT),
-        Integer("battery_max_cell_temp_id", 34, "Battery Max Cell Temperature ID", "", Kind.BAT),  # 37016
-        Integer("battery_min_cell_temp_id", 36, "Battery Min Cell Temperature ID", "", Kind.BAT),  # 37017
-        Integer("battery_max_cell_voltage_id", 38, "Battery Max Cell Voltage ID", "", Kind.BAT),  # 37018
-        Integer("battery_min_cell_voltage_id", 40, "Battery Min Cell Voltage ID", "", Kind.BAT),  # 37019
-        Temp("battery_max_cell_temp", 42, "Battery Max Cell Temperature", Kind.BAT),  # 37020
-        Temp("battery_min_cell_temp", 44, "Battery Min Cell Temperature", Kind.BAT),  # 37021
-        Voltage("battery_max_cell_voltage", 46, "Battery Max Cell Voltage", Kind.BAT),  # 37022
-        Voltage("battery_min_cell_voltage", 48, "Battery Min Cell Voltage", Kind.BAT),  # 37023
+        Integer("battery_warning_h", 26, "Battery Warning H", "", Kind.BAT),  # 37013
+        EnumBitmap22("battery_warning", 26, 20, BMS_WARNING_CODES, "Battery Warning", Kind.BAT),
+        Integer("battery_sw_version", 28, "Battery Software Version", "", Kind.BAT),  # 37014
+        Integer("battery_hw_version", 30, "Battery Hardware Version", "", Kind.BAT),  # 37015
+        Integer("battery_max_cell_temp_id", 32, "Battery Max Cell Temperature ID", "", Kind.BAT),  # 37016
+        Integer("battery_min_cell_temp_id", 34, "Battery Min Cell Temperature ID", "", Kind.BAT),  # 37017
+        Integer("battery_max_cell_voltage_id", 36, "Battery Max Cell Voltage ID", "", Kind.BAT),  # 37018
+        Integer("battery_min_cell_voltage_id", 38, "Battery Min Cell Voltage ID", "", Kind.BAT),  # 37019
+        Temp("battery_max_cell_temp", 40, "Battery Max Cell Temperature", Kind.BAT),  # 37020
+        Temp("battery_min_cell_temp", 42, "Battery Min Cell Temperature", Kind.BAT),  # 37021
+        Voltage("battery_max_cell_voltage", 44, "Battery Max Cell Voltage", Kind.BAT),  # 37022
+        Voltage("battery_min_cell_voltage", 46, "Battery Min Cell Voltage", Kind.BAT),  # 37023
+        # Energy4("battery_total_charge", 112, "Total Battery 1 Charge", Kind.BAT),  #37056
+        # Energy4("battery_total_discharge", 116, "Total Battery 1 Discharge", Kind.BAT),  # 37058
+        # String8("battery_sn", 120, "Battery S/N", Kind.BAT),  # 37060-67
+    )
+
+    # Modbus registers from offset 0x9858 (39000)
+    __all_sensors_battery2: Tuple[Sensor, ...] = (
+        Integer("battery2_status", 0, "Battery 2 Status", "", Kind.BAT),  # 39000
+        Temp("battery2_temperature", 2, "Battery 2 Temperature", Kind.BAT),  # 39001
+        Integer("battery2_charge_limit", 4, "Battery 2 Charge Limit", "A", Kind.BAT),  # 39002
+        Integer("battery2_discharge_limit", 6, "Battery 2 Discharge Limit", "A", Kind.BAT),  # 39003
+        Integer("battery2_error_l", 8, "Battery 2 rror L", "", Kind.BAT),  # 39004
+        Integer("battery2_soc", 10, "Battery 2 State of Charge", "%", Kind.BAT),  # 39005
+        Integer("battery2_soh", 12, "Battery 2 State of Health", "%", Kind.BAT),  # 39006
+        Integer("battery2_modules", 14, "Battery 2 Modules", "", Kind.BAT),  # 39007
+        Integer("battery2_warning_l", 16, "Battery 2 Warning L", "", Kind.BAT),  # 39008
+        Integer("battery2_protocol", 18, "Battery 2 Protocol", "", Kind.BAT),  # 39009
+        Integer("battery2_error_h", 20, "Battery 2 Error H", "", Kind.BAT),  # 39010
+        EnumBitmap22("battery2_error", 20, 8, BMS_ALARM_CODES, "Battery 2 Error", Kind.BAT),
+        Integer("battery2_warning_h", 22, "Battery 2 Warning H", "", Kind.BAT),  # 39011
+        EnumBitmap22("battery2_warning", 22, 16, BMS_WARNING_CODES, "Battery 2 Warning", Kind.BAT),
+        Integer("battery2_sw_version", 24, "Battery 2 Software Version", "", Kind.BAT),  # 39012
+        Integer("battery2_hw_version", 26, "Battery 2 Hardware Version", "", Kind.BAT),  # 39013
+        Integer("battery2_max_cell_temp_id", 28, "Battery 2 Max Cell Temperature ID", "", Kind.BAT),  # 39014
+        Integer("battery2_min_cell_temp_id", 30, "Battery 2 Min Cell Temperature ID", "", Kind.BAT),  # 39015
+        Integer("battery2_max_cell_voltage_id", 32, "Battery 2 Max Cell Voltage ID", "", Kind.BAT),  # 39016
+        Integer("battery2_min_cell_voltage_id", 34, "Battery 2 Min Cell Voltage ID", "", Kind.BAT),  # 39017
+        Temp("battery2_max_cell_temp", 36, "Battery 2 Max Cell Temperature", Kind.BAT),  # 39018
+        Temp("battery2_min_cell_temp", 38, "Battery 2 Min Cell Temperature", Kind.BAT),  # 39019
+        Voltage("battery2_max_cell_voltage", 40, "Battery 2 Max Cell Voltage", Kind.BAT),  # 39020
+        Voltage("battery2_min_cell_voltage", 42, "Battery 2 Min Cell Voltage", Kind.BAT),  # 39021
+        # Energy4("battery2_total_charge", 108, "Total Battery 2 Charge", Kind.BAT),  #39054
+        # Energy4("battery2_total_discharge", 112, "Total Battery 2 Discharge", Kind.BAT),  # 39056
+        # String8("battery2_sn", 120, "Battery 2 S/N", Kind.BAT),  # 39058-65
     )
 
     # Inverter's meter data
@@ -306,9 +341,12 @@ class ET(Inverter):
         self._READ_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x891c, 0x007d)
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
+        self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
         self._has_battery: bool = True
+        self._has_battery2: bool = False
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
+        self._sensors_battery2 = self.__all_sensors_battery2
         self._sensors_meter = self.__all_sensors_meter
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
@@ -331,7 +369,7 @@ class ET(Inverter):
         self.rated_power = read_unsigned_int(response, 2)
         self.ac_output_type = read_unsigned_int(response, 4)  # 0: 1-phase, 1: 3-phase (4 wire), 2: 3-phase (3 wire)
         self.serial_number = response[6:22].decode("ascii")
-        self.model_name = response[22:32].decode("ascii").rstrip()
+        self.model_name = self._decode(response[22:32])
         self.dsp1_version = read_unsigned_int(response, 32)
         self.dsp2_version = read_unsigned_int(response, 34)
         self.dsp_svn_version = read_unsigned_int(response, 36)
@@ -352,9 +390,12 @@ class ET(Inverter):
             self._sensors = tuple(filter(self._single_phase_only, self._sensors))
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
-        if self.arm_version >= 19:
+        if is_2_battery(self) or self.rated_power > 25000:
+            self._has_battery2 = True
+
+        if self.arm_version >= 19 or self.rated_power > 15000:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
-        if self.arm_version >= 22:
+        if self.arm_version >= 22 or self.rated_power > 15000:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
@@ -363,8 +404,21 @@ class ET(Inverter):
 
         self._has_battery = data.get('battery_mode', 0) != 0
         if self._has_battery:
-            raw_data = await self._read_from_socket(self._READ_BATTERY_INFO)
-            data.update(self._map_response(raw_data[5:-2], self._sensors_battery, include_unknown_sensors))
+            try:
+                raw_data = await self._read_from_socket(self._READ_BATTERY_INFO)
+                data.update(self._map_response(raw_data[5:-2], self._sensors_battery, include_unknown_sensors))
+            except RequestRejectedException as ex:
+                if ex.message == 'ILLEGAL DATA ADDRESS':
+                    logger.warning("Cannot read battery values, disabling further attempts.")
+                    self._has_battery = False
+        if self._has_battery2:
+            try:
+                raw_data = await self._read_from_socket(self._READ_BATTERY2_INFO)
+                data.update(self._map_response(raw_data[5:-2], self._sensors_battery2, include_unknown_sensors))
+            except RequestRejectedException as ex:
+                if ex.message == 'ILLEGAL DATA ADDRESS':
+                    logger.warning("Cannot read battery 2 values, disabling further attempts.")
+                    self._has_battery2 = False
 
         raw_data = await self._read_from_socket(self._READ_METER_DATA)
         data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
@@ -479,7 +533,9 @@ class ET(Inverter):
             await self.write_setting('battery_discharge_depth', 100 - dod)
 
     def sensors(self) -> Tuple[Sensor, ...]:
-        if self._has_battery:
+        if self._has_battery2:
+            return self._sensors + self._sensors_battery + self._sensors_battery2 + self._sensors_meter
+        elif self._has_battery:
             return self._sensors + self._sensors_battery + self._sensors_meter
         else:
             return self._sensors + self._sensors_meter

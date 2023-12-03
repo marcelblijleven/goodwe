@@ -18,6 +18,8 @@ MPPT3_MODELS = ["MSU", "MST", "PSC",
 
 MPPT4_MODELS = ["HSB"]
 
+BAT_2_MODELS = ["25KET", "29KET", "29K9ET", "30KET"]
+
 
 def is_single_phase(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
@@ -29,3 +31,7 @@ def is_3_mptt(inverter: Inverter) -> bool:
 
 def is_4_mptt(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in MPPT4_MODELS)
+
+
+def is_2_battery(inverter: Inverter) -> bool:
+    return any(model in inverter.serial_number for model in BAT_2_MODELS)
