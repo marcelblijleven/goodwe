@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 # Set the appropriate IP address
-IP_ADDRESS = "192.168.1.14"
+IP_ADDRESS = "192.168.2.14"
 FAMILY = "ET"  # One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
 COMM_ADDR = 0xf7  # Usually 0xf7 for ET/EH/EM/ES or 0x7f for DT/D-NS/XS, or None for default value
 TIMEOUT = 1

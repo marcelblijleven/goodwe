@@ -98,7 +98,7 @@ class Inverter(ABC):
 
         self.model_name: str | None = None
         self.serial_number: str | None = None
-        self.rated_power: int | None = None
+        self.rated_power: int = 0
         self.ac_output_type: int | None = None
         self.firmware: str | None = None
         self.arm_firmware: str | None = None

@@ -257,6 +257,65 @@ class ET(Inverter):
         Integer("meter_sw_version", 88, "Meter Software Version", "", Kind.GRID),  # 36044
     )
 
+    # Inverter's MPPT data
+    # Modbus registers from offset 0x89e5 (35301)
+    __all_sensors_mptt: Tuple[Sensor, ...] = (
+        Power4("ppv_total", 0, "PV Power Total", Kind.PV),  # 35301
+        # 35303 PV channel RO U16 1 1 PV channel
+        Voltage("vpv5", 6, "PV5 Voltage", Kind.PV),  # 35304
+        Current("ipv5", 8, "PV5 Current", Kind.PV),  # 35305
+        Voltage("vpv6", 10, "PV6 Voltage", Kind.PV),  # 35306
+        Current("ipv6", 12, "PV6 Current", Kind.PV),  # 35307
+        Voltage("vpv7", 14, "PV7 Voltage", Kind.PV),  # 35308
+        Current("ipv7", 16, "PV7 Current", Kind.PV),  # 35309
+        Voltage("vpv8", 18, "PV8 Voltage", Kind.PV),  # 35310
+        Current("ipv8", 20, "PV8 Current", Kind.PV),  # 35311
+        Voltage("vpv9", 22, "PV9 Voltage", Kind.PV),  # 35312
+        Current("ipv9", 24, "PV9 Current", Kind.PV),  # 35313
+        Voltage("vpv10", 26, "PV10 Voltage", Kind.PV),  # 35314
+        Current("ipv10", 28, "PV10 Current", Kind.PV),  # 35315
+        Voltage("vpv11", 30, "PV11 Voltage", Kind.PV),  # 35316
+        Current("ipv11", 32, "PV11 Current", Kind.PV),  # 35317
+        Voltage("vpv12", 34, "PV12 Voltage", Kind.PV),  # 35318
+        Current("ipv12", 36, "PV12 Current", Kind.PV),  # 35319
+        Voltage("vpv13", 38, "PV13 Voltage", Kind.PV),  # 35320
+        Current("ipv13", 40, "PV13 Current", Kind.PV),  # 35321
+        Voltage("vpv14", 42, "PV14 Voltage", Kind.PV),  # 35322
+        Current("ipv14", 44, "PV14 Current", Kind.PV),  # 35323
+        Voltage("vpv15", 46, "PV15 Voltage", Kind.PV),  # 35324
+        Current("ipv15", 48, "PV15 Current", Kind.PV),  # 35325
+        Voltage("vpv16", 50, "PV16 Voltage", Kind.PV),  # 35326
+        Current("ipv16", 52, "PV16 Current", Kind.PV),  # 35327
+        # 35328 Warning Message
+        # 35330 Grid10minAvgVoltR
+        # 35331 Grid10minAvgVoltS
+        # 35332 Grid10minAvgVoltT
+        # 35333 Error Message Extend
+        # 35335 Warning Message Extend
+        Power("pmppt1", 72, "MPPT1 Power", Kind.PV),  # 35337
+        Power("pmppt2", 74, "MPPT2 Power", Kind.PV),  # 35338
+        Power("pmppt3", 76, "MPPT3 Power", Kind.PV),  # 35339
+        Power("pmppt4", 78, "MPPT4 Power", Kind.PV),  # 35340
+        Power("pmppt5", 80, "MPPT5 Power", Kind.PV),  # 35341
+        Power("pmppt6", 82, "MPPT6 Power", Kind.PV),  # 35342
+        Power("pmppt7", 84, "MPPT7 Power", Kind.PV),  # 35343
+        Power("pmppt8", 86, "MPPT8 Power", Kind.PV),  # 35344
+        Power("imppt1", 88, "MPPT1 Current", Kind.PV),  # 35345
+        Power("imppt2", 90, "MPPT2 Current", Kind.PV),  # 35346
+        Power("imppt3", 92, "MPPT3 Current", Kind.PV),  # 35347
+        Power("imppt4", 94, "MPPT4 Current", Kind.PV),  # 35348
+        Power("imppt5", 96, "MPPT5 Current", Kind.PV),  # 35349
+        Power("imppt6", 98, "MPPT6 Current", Kind.PV),  # 35350
+        Power("imppt7", 100, "MPPT7 Current", Kind.PV),  # 35351
+        Power("imppt8", 102, "MPPT8 Current", Kind.PV),  # 35352
+        Reactive4("reactive_power1", 104, "Reactive Power L1", Kind.GRID),  # 36353/54
+        Reactive4("reactive_power2", 108, "Reactive Power L2", Kind.GRID),  # 36355/56
+        Reactive4("reactive_power3", 112, "Reactive Power L2", Kind.GRID),  # 36357/58
+        Apparent4("apparent_power1", 116, "Apparent Power L1", Kind.GRID),  # 36359/60
+        Apparent4("apparent_power2", 120, "Apparent Power L2", Kind.GRID),  # 36361/62
+        Apparent4("apparent_power3", 124, "Apparent Power L3", Kind.GRID),  # 36363/64
+    )
+
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
         Integer("comm_address", 45127, "Communication Address", ""),
@@ -342,12 +401,15 @@ class ET(Inverter):
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
+        self._READ_MPTT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89a5, 0x3d)
         self._has_battery: bool = True
         self._has_battery2: bool = False
+        self._has_mptt: bool = False
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_battery2 = self.__all_sensors_battery2
         self._sensors_meter = self.__all_sensors_meter
+        self._sensors_mptt = self.__all_sensors_mptt
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
@@ -390,12 +452,15 @@ class ET(Inverter):
             self._sensors = tuple(filter(self._single_phase_only, self._sensors))
             self._sensors_meter = tuple(filter(self._single_phase_only, self._sensors_meter))
 
-        if is_2_battery(self) or self.rated_power > 25000:
+        if is_2_battery(self) or self.rated_power >= 25000:
             self._has_battery2 = True
 
-        if self.arm_version >= 19 or self.rated_power > 15000:
+        if self.rated_power >= 15000:
+            self._has_mptt = True
+
+        if self.arm_version >= 19 or self.rated_power >= 15000:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
-        if self.arm_version >= 22 or self.rated_power > 15000:
+        if self.arm_version >= 22 or self.rated_power >= 15000:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
@@ -422,6 +487,16 @@ class ET(Inverter):
 
         raw_data = await self._read_from_socket(self._READ_METER_DATA)
         data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+
+        if self._has_mptt:
+            try:
+                raw_data = await self._read_from_socket(self._READ_MPTT_DATA)
+                data.update(self._map_response(raw_data[5:-2], self._sensors_mptt, include_unknown_sensors))
+            except RequestRejectedException as ex:
+                if ex.message == 'ILLEGAL DATA ADDRESS':
+                    logger.warning("Cannot read MPPT values, disabling further attempts.")
+                    self._has_mptt = False
+
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
@@ -533,12 +608,14 @@ class ET(Inverter):
             await self.write_setting('battery_discharge_depth', 100 - dod)
 
     def sensors(self) -> Tuple[Sensor, ...]:
+        result = self._sensors + self._sensors_meter
+        if self._has_battery:
+            result = result + self._sensors_battery
         if self._has_battery2:
-            return self._sensors + self._sensors_battery + self._sensors_battery2 + self._sensors_meter
-        elif self._has_battery:
-            return self._sensors + self._sensors_battery + self._sensors_meter
-        else:
-            return self._sensors + self._sensors_meter
+            result = result + self._sensors_battery2
+        if self._has_mptt:
+            result = result + self._sensors_mptt
+        return result
 
     def settings(self) -> Tuple[Sensor, ...]:
         return tuple(self._settings.values())
