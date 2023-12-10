@@ -319,12 +319,12 @@ class ET(Inverter):
         Power("imppt6", 98, "MPPT6 Current", Kind.PV),  # 35350
         Power("imppt7", 100, "MPPT7 Current", Kind.PV),  # 35351
         Power("imppt8", 102, "MPPT8 Current", Kind.PV),  # 35352
-        Reactive4("reactive_power1", 104, "Reactive Power L1", Kind.GRID),  # 36353/54
-        Reactive4("reactive_power2", 108, "Reactive Power L2", Kind.GRID),  # 36355/56
-        Reactive4("reactive_power3", 112, "Reactive Power L2", Kind.GRID),  # 36357/58
-        Apparent4("apparent_power1", 116, "Apparent Power L1", Kind.GRID),  # 36359/60
-        Apparent4("apparent_power2", 120, "Apparent Power L2", Kind.GRID),  # 36361/62
-        Apparent4("apparent_power3", 124, "Apparent Power L3", Kind.GRID),  # 36363/64
+        Reactive4("reactive_power1", 104, "Reactive Power L1", Kind.GRID),  # 35353/54
+        Reactive4("reactive_power2", 108, "Reactive Power L2", Kind.GRID),  # 35355/56
+        Reactive4("reactive_power3", 112, "Reactive Power L3", Kind.GRID),  # 35357/58
+        Apparent4("apparent_power1", 116, "Apparent Power L1", Kind.GRID),  # 35359/60
+        Apparent4("apparent_power2", 120, "Apparent Power L2", Kind.GRID),  # 35361/62
+        Apparent4("apparent_power3", 124, "Apparent Power L3", Kind.GRID),  # 35363/64
     )
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
