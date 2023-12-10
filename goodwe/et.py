@@ -255,6 +255,17 @@ class ET(Inverter):
         Apparent4("meter_apparent_power_total", 82, "Meter Apparent Power Total", Kind.GRID),  # 36041/42
         Integer("meter_type", 86, "Meter Type", "", Kind.GRID),  # 36043 (0: Single phase, 1: 3P3W, 2: 3P4W, 3: HomeKit)
         Integer("meter_sw_version", 88, "Meter Software Version", "", Kind.GRID),  # 36044
+        # Sensors added in some ARM fw update
+        Power4("meter2_active_power", 90, "Meter 2 Active Power", Kind.GRID),  # 36045/46
+        Float("meter2_e_total_exp", 94, 1000, "Meter 2 Total Energy (export)", "kWh", Kind.GRID),  # 36047/48
+        Float("meter2_e_total_imp", 98, 1000, "Meter 2 Total Energy (import)", "kWh", Kind.GRID),  # 36049/50
+        Integer("meter2_comm_status", 102, "Meter 2 Communication Status"),  # 36051
+        Voltage("meter_voltage1", 104, "Meter L1 Voltage", Kind.GRID),  # 36052
+        Voltage("meter_voltage2", 106, "Meter L2 Voltage", Kind.GRID),  # 36053
+        Voltage("meter_voltage3", 108, "Meter L3 Voltage", Kind.GRID),  # 36054
+        Current("meter_current1", 110, "Meter L1 Current", Kind.GRID),  # 36055
+        Current("meter_current2", 112, "Meter L2 Current", Kind.GRID),  # 36056
+        Current("meter_current3", 114, "Meter L3 Current", Kind.GRID),  # 36057
     )
 
     # Inverter's MPPT data
@@ -399,11 +410,13 @@ class ET(Inverter):
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x88b8, 0x0021)
         self._READ_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x891c, 0x007d)
         self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
+        self._READ_METER_DATA_EXTENDED: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x3a)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
-        self._READ_MPTT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89a5, 0x3d)
+        self._READ_MPTT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89e5, 0x3d)
         self._has_battery: bool = True
         self._has_battery2: bool = False
+        self._has_meter_extended: bool = False
         self._has_mptt: bool = False
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
@@ -422,6 +435,11 @@ class ET(Inverter):
     def _single_phase_only(s: Sensor) -> bool:
         """Filter to exclude phase2/3 sensors on single phase inverters"""
         return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_)
+
+    @staticmethod
+    def _not_extended_meter(s: Sensor) -> bool:
+        """Filter to exclude extended meter sensors"""
+        return s.offset < 90
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -457,6 +475,9 @@ class ET(Inverter):
 
         if self.rated_power >= 15000:
             self._has_mptt = True
+            self._has_meter_extended = True
+        else:
+            self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
 
         if self.arm_version >= 19 or self.rated_power >= 15000:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
@@ -476,6 +497,8 @@ class ET(Inverter):
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read battery values, disabling further attempts.")
                     self._has_battery = False
+                else:
+                    raise ex
         if self._has_battery2:
             try:
                 raw_data = await self._read_from_socket(self._READ_BATTERY2_INFO)
@@ -484,9 +507,25 @@ class ET(Inverter):
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read battery 2 values, disabling further attempts.")
                     self._has_battery2 = False
+                else:
+                    raise ex
 
-        raw_data = await self._read_from_socket(self._READ_METER_DATA)
-        data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+        if self._has_meter_extended:
+            try:
+                raw_data = await self._read_from_socket(self._READ_METER_DATA_EXTENDED)
+                data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+            except RequestRejectedException as ex:
+                if ex.message == 'ILLEGAL DATA ADDRESS':
+                    logger.warning("Cannot read extended meter values, disabling further attempts.")
+                    self._has_meter_extended = False
+                    self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
+                    raw_data = await self._read_from_socket(self._READ_METER_DATA)
+                    data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+                else:
+                    raise ex
+        else:
+            raw_data = await self._read_from_socket(self._READ_METER_DATA)
+            data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
 
         if self._has_mptt:
             try:
@@ -496,6 +535,8 @@ class ET(Inverter):
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read MPPT values, disabling further attempts.")
                     self._has_mptt = False
+                else:
+                    raise ex
 
         return data
 
