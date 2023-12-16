@@ -81,6 +81,20 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
             self.response_future.set_exception(MaxRetriesException)
 
 
+class ProtocolResponse:
+    """Definition of response to protocol command"""
+
+    def __init__(self, raw_data: bytes, command: ProtocolCommand):
+        self.raw_data: bytes = raw_data
+        self.command: ProtocolCommand = command
+
+    def __repr__(self):
+        return self.raw_data.hex()
+
+    def response_data(self) -> bytes:
+        return self.command.trim_response(self.raw_data)
+
+
 class ProtocolCommand:
     """Definition of inverter protocol command"""
 
@@ -91,7 +105,11 @@ class ProtocolCommand:
     def __repr__(self):
         return self.request.hex()
 
-    async def execute(self, host: str, timeout: int, retries: int) -> bytes:
+    def trim_response(self, raw_response: bytes):
+        """Trim raw response from header and checksum data"""
+        return raw_response
+
+    async def execute(self, host: str, timeout: int, retries: int) -> ProtocolResponse:
         """
         Execute the udp protocol command on the specified address/port.
         Since the UDP communication is by definition unreliable, when no (valid) response is received by specified
@@ -109,7 +127,7 @@ class ProtocolCommand:
             await response_future
             result = response_future.result()
             if result is not None:
-                return result
+                return ProtocolResponse(result, self)
             else:
                 raise RequestFailedException(
                     "No response received to '" + self.request.hex() + "' request."
@@ -179,6 +197,10 @@ class Aa55ProtocolCommand(ProtocolCommand):
             return False
         return True
 
+    def trim_response(self, raw_response: bytes):
+        """Trim raw response from header and checksum data"""
+        return raw_response[7:-2]
+
 
 class Aa55ReadCommand(Aa55ProtocolCommand):
     """
@@ -235,6 +257,10 @@ class ModbusProtocolCommand(ProtocolCommand):
             request,
             lambda x: validate_modbus_response(x, cmd, offset, value),
         )
+
+    def trim_response(self, raw_response: bytes):
+        """Trim raw response from header and checksum data"""
+        return raw_response[5:-2]
 
 
 class ModbusReadCommand(ModbusProtocolCommand):

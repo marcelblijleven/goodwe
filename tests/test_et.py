@@ -6,7 +6,7 @@ from unittest import TestCase
 from goodwe.et import ET
 from goodwe.exceptions import RequestFailedException
 from goodwe.inverter import OperationMode
-from goodwe.protocol import ProtocolCommand
+from goodwe.protocol import ProtocolCommand, ProtocolResponse
 
 
 class EtMock(TestCase, ET):
@@ -21,7 +21,7 @@ class EtMock(TestCase, ET):
     def mock_response(self, command: ProtocolCommand, filename: str):
         self._mock_responses[command] = filename
 
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
+    async def _read_from_socket(self, command: ProtocolCommand) -> ProtocolResponse:
         """Mock UDP communication"""
         root_dir = os.path.dirname(os.path.abspath(__file__))
         filename = self._mock_responses.get(command)
@@ -30,11 +30,11 @@ class EtMock(TestCase, ET):
                 response = bytes.fromhex(f.read())
                 if not command.validator(response):
                     raise RequestFailedException
-                return response
+                return ProtocolResponse(response, command)
         else:
             self.request = command.request
             self._list_of_requests.append(command.request)
-            return bytes.fromhex("aa55f700010203040506070809")
+            return ProtocolResponse(bytes.fromhex("aa55f700010203040506070809"), command)
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))

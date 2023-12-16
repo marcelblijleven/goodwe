@@ -84,13 +84,13 @@ print(f"Identified inverter\n"
 # Execute modbus protocol command
 # -------------------------------
 # response = asyncio.run(goodwe.protocol.ModbusReadCommand(COMM_ADDR, 0x88b8, 0x21).execute(IP_ADDRESS, TIMEOUT, RETRIES))
-# print(response.hex())
+# print(response)
 
 # -------------------------------
 # Execute AA55 protocol command
 # -------------------------------
 # response = asyncio.run(goodwe.protocol.Aa55ProtocolCommand("010200", "0182").execute(IP_ADDRESS, TIMEOUT, RETRIES))
-# print(response.hex())
+# print(response)
 
 
 # -----------------

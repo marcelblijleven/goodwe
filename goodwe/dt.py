@@ -146,7 +146,7 @@ class DT(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        response = response[5:-2]
+        response = response.response_data()
         try:
             self.model_name = response[22:32].decode("ascii").rstrip()
         except:
@@ -173,8 +173,8 @@ class DT(Inverter):
         pass
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
-        raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
-        data = self._map_response(raw_data[5:-2], self._sensors, include_unknown_sensors)
+        response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
+        data = self._map_response(response, self._sensors, include_unknown_sensors)
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
@@ -182,8 +182,8 @@ class DT(Inverter):
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
-        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
-        with io.BytesIO(raw_data[5:-2]) as buffer:
+        response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+        with io.BytesIO(response.response_data()) as buffer:
             return setting.read_value(buffer)
 
     async def write_setting(self, setting_id: str, value: Any):

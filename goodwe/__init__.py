@@ -69,8 +69,9 @@ async def discover(host: str, timeout: int = 1, retries: int = 3) -> Inverter:
     try:
         logger.debug("Probing inverter at %s.", host)
         response = await DISCOVERY_COMMAND.execute(host, timeout, retries)
-        model_name = response[12:22].decode("ascii").rstrip()
-        serial_number = response[38:54].decode("ascii")
+        response = response.response_data()
+        model_name = response[5:15].decode("ascii").rstrip()
+        serial_number = response[31:47].decode("ascii")
 
         inverter_class: Type[Inverter] | None = None
         for model_tag in ET_MODEL_TAGS:

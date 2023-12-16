@@ -443,7 +443,7 @@ class ET(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        response = response[5:-2]
+        response = response.response_data()
         # Modbus registers from offset (35000)
         self.modbus_version = read_unsigned_int(response, 0)
         self.rated_power = read_unsigned_int(response, 2)
@@ -485,14 +485,14 @@ class ET(Inverter):
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
-        raw_data = await self._read_from_socket(self._READ_RUNNING_DATA)
-        data = self._map_response(raw_data[5:-2], self._sensors, include_unknown_sensors)
+        response = await self._read_from_socket(self._READ_RUNNING_DATA)
+        data = self._map_response(response, self._sensors, include_unknown_sensors)
 
         self._has_battery = data.get('battery_mode', 0) != 0
         if self._has_battery:
             try:
-                raw_data = await self._read_from_socket(self._READ_BATTERY_INFO)
-                data.update(self._map_response(raw_data[5:-2], self._sensors_battery, include_unknown_sensors))
+                response = await self._read_from_socket(self._READ_BATTERY_INFO)
+                data.update(self._map_response(response, self._sensors_battery, include_unknown_sensors))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read battery values, disabling further attempts.")
@@ -501,8 +501,9 @@ class ET(Inverter):
                     raise ex
         if self._has_battery2:
             try:
-                raw_data = await self._read_from_socket(self._READ_BATTERY2_INFO)
-                data.update(self._map_response(raw_data[5:-2], self._sensors_battery2, include_unknown_sensors))
+                response = await self._read_from_socket(self._READ_BATTERY2_INFO)
+                data.update(
+                    self._map_response(response, self._sensors_battery2, include_unknown_sensors))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read battery 2 values, disabling further attempts.")
@@ -512,25 +513,26 @@ class ET(Inverter):
 
         if self._has_meter_extended:
             try:
-                raw_data = await self._read_from_socket(self._READ_METER_DATA_EXTENDED)
-                data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+                response = await self._read_from_socket(self._READ_METER_DATA_EXTENDED)
+                data.update(self._map_response(response, self._sensors_meter, include_unknown_sensors))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read extended meter values, disabling further attempts.")
                     self._has_meter_extended = False
                     self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
-                    raw_data = await self._read_from_socket(self._READ_METER_DATA)
-                    data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+                    response = await self._read_from_socket(self._READ_METER_DATA)
+                    data.update(
+                        self._map_response(response, self._sensors_meter, include_unknown_sensors))
                 else:
                     raise ex
         else:
-            raw_data = await self._read_from_socket(self._READ_METER_DATA)
-            data.update(self._map_response(raw_data[5:-2], self._sensors_meter, include_unknown_sensors))
+            response = await self._read_from_socket(self._READ_METER_DATA)
+            data.update(self._map_response(response, self._sensors_meter, include_unknown_sensors))
 
         if self._has_mptt:
             try:
-                raw_data = await self._read_from_socket(self._READ_MPTT_DATA)
-                data.update(self._map_response(raw_data[5:-2], self._sensors_mptt, include_unknown_sensors))
+                response = await self._read_from_socket(self._READ_MPTT_DATA)
+                data.update(self._map_response(response, self._sensors_mptt, include_unknown_sensors))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read MPPT values, disabling further attempts.")
@@ -545,8 +547,8 @@ class ET(Inverter):
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
-        raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
-        with io.BytesIO(raw_data[5:-2]) as buffer:
+        response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+        with io.BytesIO(response.response_data()) as buffer:
             return setting.read_value(buffer)
 
     async def write_setting(self, setting_id: str, value: Any):
@@ -555,8 +557,8 @@ class ET(Inverter):
             raise ValueError(f'Unknown setting "{setting_id}"')
         if setting.size_ == 1:
             # modbus can address/store only 16 bit values, read the other 8 bytes
-            register_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
-            raw_value = setting.encode_value(value, register_data[5:7])
+            response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+            raw_value = setting.encode_value(value, response.response_data()[0:2])
         else:
             raw_value = setting.encode_value(value)
         if len(raw_value) <= 2:

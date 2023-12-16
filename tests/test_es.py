@@ -7,7 +7,7 @@ from goodwe import DISCOVERY_COMMAND
 from goodwe.es import ES
 from goodwe.exceptions import RequestFailedException
 from goodwe.inverter import OperationMode
-from goodwe.protocol import ProtocolCommand
+from goodwe.protocol import ProtocolCommand, ProtocolResponse
 
 
 class EsMock(TestCase, ES):
@@ -21,7 +21,7 @@ class EsMock(TestCase, ES):
     def mock_response(self, command: ProtocolCommand, filename: str):
         self._mock_responses[command] = filename
 
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
+    async def _read_from_socket(self, command: ProtocolCommand) -> ProtocolResponse:
         """Mock UDP communication"""
         root_dir = os.path.dirname(os.path.abspath(__file__))
         filename = self._mock_responses.get(command)
@@ -30,10 +30,10 @@ class EsMock(TestCase, ES):
                 response = bytes.fromhex(f.read())
                 if not command.validator(response):
                     raise RequestFailedException
-                return response
+                return ProtocolResponse(response, command)
         else:
             self.request = command.request
-            return bytes.fromhex("010203040506070809")
+            return ProtocolResponse(bytes.fromhex("010203040506070809"), command)
 
     def assertSensor(self, sensor, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor))
@@ -464,9 +464,10 @@ class GW5048_ESA_Test(EsMock):
 
     def test_GW5048_ESA_discovery(self):
         response = self.loop.run_until_complete(self._read_from_socket(DISCOVERY_COMMAND))
-        self.assertEqual(86, len(response))
-        self.assertEqual('GW5048-ESA', response[12:22].decode("ascii").rstrip())
-        self.assertEqual('95048ESA223W0000', response[38:54].decode("ascii"))
+        raw_data = response.raw_data
+        self.assertEqual(86, len(raw_data))
+        self.assertEqual('GW5048-ESA', raw_data[12:22].decode("ascii").rstrip())
+        self.assertEqual('95048ESA223W0000', raw_data[38:54].decode("ascii"))
 
     def test_GW5048_ESA_device_info(self):
         self.loop.run_until_complete(self.read_device_info())

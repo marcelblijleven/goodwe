@@ -188,10 +188,11 @@ class ES(Inverter):
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-        self.firmware = self._decode(response[7:12]).rstrip()
-        self.model_name = self._decode(response[12:22]).rstrip()
-        self.serial_number = response[38:54].decode("ascii")
-        self.software_version = self._decode(response[58:70])
+        response = response.response_data()
+        self.firmware = self._decode(response[0:5]).rstrip()
+        self.model_name = self._decode(response[5:15]).rstrip()
+        self.serial_number = response[31:47].decode("ascii")
+        self.software_version = self._decode(response[51:63])
         try:
             if len(self.firmware) >= 2:
                 self.dsp1_version = int(self.firmware[0:2])
@@ -206,8 +207,8 @@ class ES(Inverter):
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
 
     async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
-        raw_data = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
-        data = self._map_response(raw_data[7:-2], self.__sensors, include_unknown_sensors)
+        response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
+        data = self._map_response(response, self.__sensors, include_unknown_sensors)
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
@@ -221,12 +222,12 @@ class ES(Inverter):
                 raise ValueError(f'Unknown setting "{setting_id}"')
             count = (setting.size_ + (setting.size_ % 2)) // 2
             if self._is_modbus_setting(setting):
-                raw_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
-                with io.BytesIO(raw_data[5:-2]) as buffer:
+                response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+                with io.BytesIO(response.response_data()) as buffer:
                     return setting.read_value(buffer)
             else:
-                raw_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
-                with io.BytesIO(raw_data[7:-2]) as buffer:
+                response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
+                with io.BytesIO(response.response_data()) as buffer:
                     return setting.read_value(buffer)
         else:
             all_settings = await self.read_settings_data()
@@ -244,11 +245,11 @@ class ES(Inverter):
             if setting.size_ == 1:
                 # modbus can address/store only 16 bit values, read the other 8 bytes
                 if self._is_modbus_setting(setting):
-                    register_data = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
-                    raw_value = setting.encode_value(value, register_data[5:7])
+                    response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+                    raw_value = setting.encode_value(value, response.response_data()[0:2])
                 else:
-                    register_data = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
-                    raw_value = setting.encode_value(value, register_data[7:9])
+                    response = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
+                    raw_value = setting.encode_value(value, response.response_data()[2:4])
             else:
                 raw_value = setting.encode_value(value)
             if len(raw_value) <= 2:
@@ -264,8 +265,8 @@ class ES(Inverter):
                     await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
-        raw_data = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
-        data = self._map_response(raw_data[7:-2], self.settings())
+        response = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
+        data = self._map_response(response, self.settings())
         return data
 
     async def get_grid_export_limit(self) -> int:

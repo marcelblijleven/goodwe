@@ -9,7 +9,7 @@ from enum import Enum, IntEnum
 from typing import Any, Callable, Dict, Tuple, Optional
 
 from .exceptions import MaxRetriesException, RequestFailedException
-from .protocol import ProtocolCommand
+from .protocol import ProtocolCommand, ProtocolResponse
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class Inverter(ABC):
             self._running_loop = asyncio.get_event_loop()
             return self._lock
 
-    async def _read_from_socket(self, command: ProtocolCommand) -> bytes:
+    async def _read_from_socket(self, command: ProtocolCommand) -> ProtocolResponse:
         async with self._ensure_lock():
             try:
                 result = await command.execute(self.host, self.timeout, self.retries)
@@ -191,7 +191,7 @@ class Inverter(ABC):
 
     async def send_command(
             self, command: bytes, validator: Callable[[bytes], bool] = lambda x: True
-    ) -> bytes:
+    ) -> ProtocolResponse:
         """
         Send low level udp command (as bytes).
         Answer command's raw response data.
@@ -281,9 +281,9 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @staticmethod
-    def _map_response(resp_data: bytes, sensors: Tuple[Sensor, ...], incl_xx: bool = True) -> Dict[str, Any]:
+    def _map_response(response: ProtocolResponse, sensors: Tuple[Sensor, ...], incl_xx: bool = True) -> Dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
-        with io.BytesIO(resp_data) as buffer:
+        with io.BytesIO(response.response_data()) as buffer:
             result = {}
             for sensor in sensors:
                 if incl_xx or not sensor.id_.startswith("xx"):
