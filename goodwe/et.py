@@ -19,312 +19,313 @@ class ET(Inverter):
 
     # Modbus registers from offset 0x891c (35100), count 0x7d (125)
     __all_sensors: Tuple[Sensor, ...] = (
-        Timestamp("timestamp", 0, "Timestamp"),  # 35100
-        Voltage("vpv1", 6, "PV1 Voltage", Kind.PV),  # 35103
-        Current("ipv1", 8, "PV1 Current", Kind.PV),  # 35104
-        Power4("ppv1", 10, "PV1 Power", Kind.PV),  # 35105
-        Voltage("vpv2", 14, "PV2 Voltage", Kind.PV),  # 35107
-        Current("ipv2", 16, "PV2 Current", Kind.PV),  # 35108
-        Power4("ppv2", 18, "PV2 Power", Kind.PV),  # 35109
-        Voltage("vpv3", 22, "PV3 Voltage", Kind.PV),  # 35111
-        Current("ipv3", 24, "PV3 Current", Kind.PV),  # 35112
-        Power4("ppv3", 26, "PV3 Power", Kind.PV),  # 35113
-        Voltage("vpv4", 30, "PV4 Voltage", Kind.PV),  # 35115
-        Current("ipv4", 32, "PV4 Current", Kind.PV),  # 35116
-        Power4("ppv4", 34, "PV4 Power", Kind.PV),  # 35117
+        Timestamp("timestamp", 35100, "Timestamp"),
+        Voltage("vpv1", 35103, "PV1 Voltage", Kind.PV),
+        Current("ipv1", 35104, "PV1 Current", Kind.PV),
+        Power4("ppv1", 35105, "PV1 Power", Kind.PV),
+        Voltage("vpv2", 35107, "PV2 Voltage", Kind.PV),
+        Current("ipv2", 35108, "PV2 Current", Kind.PV),
+        Power4("ppv2", 35109, "PV2 Power", Kind.PV),
+        Voltage("vpv3", 35111, "PV3 Voltage", Kind.PV),
+        Current("ipv3", 35112, "PV3 Current", Kind.PV),
+        Power4("ppv3", 35113, "PV3 Power", Kind.PV),
+        Voltage("vpv4", 35115, "PV4 Voltage", Kind.PV),
+        Current("ipv4", 35116, "PV4 Current", Kind.PV),
+        Power4("ppv4", 35117, "PV4 Power", Kind.PV),
         # ppv1 + ppv2 + ppv3 + ppv4
         Calculated("ppv",
                    lambda data:
-                   max(0, read_bytes4(data, 10)) +
-                   max(0, read_bytes4(data, 18)) +
-                   max(0, read_bytes4(data, 26)) +
-                   max(0, read_bytes4(data, 34)),
-                   "PV Power", "W", Kind.PV),  # 35119
-        Byte("pv4_mode", 38, "PV4 Mode code", "", Kind.PV),  # 35120 l
-        Enum("pv4_mode_label", 38, PV_MODES, "PV4 Mode", Kind.PV),
-        Byte("pv3_mode", 39, "PV3 Mode code", "", Kind.PV),  # 35120 h
-        Enum("pv3_mode_label", 39, PV_MODES, "PV3 Mode", Kind.PV),
-        Byte("pv2_mode", 40, "PV2 Mode code", "", Kind.PV),  # 35119 l
-        Enum("pv2_mode_label", 40, PV_MODES, "PV2 Mode", Kind.PV),
-        Byte("pv1_mode", 41, "PV1 Mode code", "", Kind.PV),  # 35119 h
-        Enum("pv1_mode_label", 41, PV_MODES, "PV1 Mode", Kind.PV),
-        Voltage("vgrid", 42, "On-grid L1 Voltage", Kind.AC),  # 35121
-        Current("igrid", 44, "On-grid L1 Current", Kind.AC),  # 35122
-        Frequency("fgrid", 46, "On-grid L1 Frequency", Kind.AC),  # 35123
-        # 48 reserved
-        Power("pgrid", 50, "On-grid L1 Power", Kind.AC),  # 35125
-        Voltage("vgrid2", 52, "On-grid L2 Voltage", Kind.AC),  # 35126
-        Current("igrid2", 54, "On-grid L2 Current", Kind.AC),  # 35127
-        Frequency("fgrid2", 56, "On-grid L2 Frequency", Kind.AC),  # 35128
-        # 58 reserved
-        Power("pgrid2", 60, "On-grid L2 Power", Kind.AC),  # 35130
-        Voltage("vgrid3", 62, "On-grid L3 Voltage", Kind.AC),  # 35131
-        Current("igrid3", 64, "On-grid L3 Current", Kind.AC),  # 35132
-        Frequency("fgrid3", 66, "On-grid L3 Frequency", Kind.AC),  # 35133
-        # 68 reserved
-        Power("pgrid3", 70, "On-grid L3 Power", Kind.AC),  # 35135
-        Integer("grid_mode", 72, "Grid Mode code", "", Kind.PV),  # 35136
-        Enum2("grid_mode_label", 72, GRID_MODES, "Grid Mode", Kind.PV),
-        # 74 reserved
-        Power("total_inverter_power", 76, "Total Power", Kind.AC),  # 35138
-        # 78 reserved
-        Power("active_power", 80, "Active Power", Kind.GRID),  # 35140
+                   max(0, read_bytes4(data, 35105)) +
+                   max(0, read_bytes4(data, 35109)) +
+                   max(0, read_bytes4(data, 35113)) +
+                   max(0, read_bytes4(data, 35117)),
+                   "PV Power", "W", Kind.PV),
+        ByteH("pv4_mode", 35119, "PV4 Mode code", "", Kind.PV),  # l
+        EnumL("pv4_mode_label", 35119, PV_MODES, "PV4 Mode", Kind.PV),
+        ByteH("pv3_mode", 35119, "PV3 Mode code", "", Kind.PV),  # h
+        EnumH("pv3_mode_label", 35119, PV_MODES, "PV3 Mode", Kind.PV),
+        ByteL("pv2_mode", 35120, "PV2 Mode code", "", Kind.PV),  # l
+        EnumL("pv2_mode_label", 35120, PV_MODES, "PV2 Mode", Kind.PV),
+        ByteH("pv1_mode", 35120, "PV1 Mode code", "", Kind.PV),  # h
+        EnumH("pv1_mode_label", 35120, PV_MODES, "PV1 Mode", Kind.PV),
+        Voltage("vgrid", 35121, "On-grid L1 Voltage", Kind.AC),
+        Current("igrid", 35122, "On-grid L1 Current", Kind.AC),
+        Frequency("fgrid", 35123, "On-grid L1 Frequency", Kind.AC),
+        # 35124 reserved
+        Power("pgrid", 35125, "On-grid L1 Power", Kind.AC),
+        Voltage("vgrid2", 35126, "On-grid L2 Voltage", Kind.AC),
+        Current("igrid2", 35127, "On-grid L2 Current", Kind.AC),
+        Frequency("fgrid2", 35128, "On-grid L2 Frequency", Kind.AC),
+        # 35129 reserved
+        Power("pgrid2", 35130, "On-grid L2 Power", Kind.AC),
+        Voltage("vgrid3", 35131, "On-grid L3 Voltage", Kind.AC),
+        Current("igrid3", 35132, "On-grid L3 Current", Kind.AC),
+        Frequency("fgrid3", 35133, "On-grid L3 Frequency", Kind.AC),
+        # 35134 reserved
+        Power("pgrid3", 35135, "On-grid L3 Power", Kind.AC),
+        Integer("grid_mode", 35136, "Grid Mode code", "", Kind.PV),
+        Enum2("grid_mode_label", 35136, GRID_MODES, "Grid Mode", Kind.PV),
+        # 35137 reserved
+        Power("total_inverter_power", 35138, "Total Power", Kind.AC),
+        # 35139 reserved
+        Power("active_power", 35140, "Active Power", Kind.GRID),
         Calculated("grid_in_out",
-                   lambda data: read_grid_mode(data, 80),
+                   lambda data: read_grid_mode(data, 35140),
                    "On-grid Mode code", "", Kind.GRID),
         EnumCalculated("grid_in_out_label",
-                       lambda data: read_grid_mode(data, 80), GRID_IN_OUT_MODES,
+                       lambda data: read_grid_mode(data, 35140), GRID_IN_OUT_MODES,
                        "On-grid Mode", Kind.GRID),
-        # 82 reserved
-        Reactive("reactive_power", 84, "Reactive Power", Kind.GRID),  # 35142
-        # 86 reserved
-        Apparent("apparent_power", 88, "Apparent Power", Kind.GRID),  # 35144
-        Voltage("backup_v1", 90, "Back-up L1 Voltage", Kind.UPS),  # 35145
-        Current("backup_i1", 92, "Back-up L1 Current", Kind.UPS),  # 35146
-        Frequency("backup_f1", 94, "Back-up L1 Frequency", Kind.UPS),  # 35147
-        Integer("load_mode1", 96, "Load Mode L1"),  # 35148
-        # 98 reserved
-        Power("backup_p1", 100, "Back-up L1 Power", Kind.UPS),  # 35150
-        Voltage("backup_v2", 102, "Back-up L2 Voltage", Kind.UPS),  # 35151
-        Current("backup_i2", 104, "Back-up L2 Current", Kind.UPS),  # 35152
-        Frequency("backup_f2", 106, "Back-up L2 Frequency", Kind.UPS),  # 35153
-        Integer("load_mode2", 108, "Load Mode L2"),  # 35154
-        # 110 reserved
-        Power("backup_p2", 112, "Back-up L2 Power", Kind.UPS),  # 35156
-        Voltage("backup_v3", 114, "Back-up L3 Voltage", Kind.UPS),  # 35157
-        Current("backup_i3", 116, "Back-up L3 Current", Kind.UPS),  # 35158
-        Frequency("backup_f3", 118, "Back-up L3 Frequency", Kind.UPS),  # 35159
-        Integer("load_mode3", 120, "Load Mode L3"),  # 35160
-        # 122 reserved
-        Power("backup_p3", 124, "Back-up L3 Power", Kind.UPS),  # 35162
-        # 126 reserved
-        Power("load_p1", 128, "Load L1", Kind.AC),  # 35164
-        # 130 reserved
-        Power("load_p2", 132, "Load L2", Kind.AC),  # 35166
-        # 134 reserved
-        Power("load_p3", 136, "Load L3", Kind.AC),  # 35168
-        # 138 reserved
-        Power("backup_ptotal", 140, "Back-up Load", Kind.UPS),  # 35170
-        # 142 reserved
-        Power("load_ptotal", 144, "Load", Kind.AC),  # 35172
-        Integer("ups_load", 146, "Ups Load", "%", Kind.UPS),  # 35173
-        Temp("temperature_air", 148, "Inverter Temperature (Air)", Kind.AC),  # 35174
-        Temp("temperature_module", 150, "Inverter Temperature (Module)"),  # 35175
-        Temp("temperature", 152, "Inverter Temperature (Radiator)", Kind.AC),  # 35176
-        Integer("function_bit", 154, "Function Bit"),  # 35177
-        Voltage("bus_voltage", 156, "Bus Voltage", None),  # 35178
-        Voltage("nbus_voltage", 158, "NBus Voltage", None),  # 35179
-        Voltage("vbattery1", 160, "Battery Voltage", Kind.BAT),  # 35180
-        Current("ibattery1", 162, "Battery Current", Kind.BAT),  # 35181
+        # 35141 reserved
+        Reactive("reactive_power", 35142, "Reactive Power", Kind.GRID),
+        # 35143 reserved
+        Apparent("apparent_power", 35144, "Apparent Power", Kind.GRID),
+        Voltage("backup_v1", 35145, "Back-up L1 Voltage", Kind.UPS),
+        Current("backup_i1", 35146, "Back-up L1 Current", Kind.UPS),
+        Frequency("backup_f1", 35147, "Back-up L1 Frequency", Kind.UPS),
+        Integer("load_mode1", 35148, "Load Mode L1"),
+        # 35149 reserved
+        Power("backup_p1", 35150, "Back-up L1 Power", Kind.UPS),
+        Voltage("backup_v2", 35151, "Back-up L2 Voltage", Kind.UPS),
+        Current("backup_i2", 35152, "Back-up L2 Current", Kind.UPS),
+        Frequency("backup_f2", 35153, "Back-up L2 Frequency", Kind.UPS),
+        Integer("load_mode2", 35154, "Load Mode L2"),
+        # 35155 reserved
+        Power("backup_p2", 35156, "Back-up L2 Power", Kind.UPS),
+        Voltage("backup_v3", 35157, "Back-up L3 Voltage", Kind.UPS),
+        Current("backup_i3", 35158, "Back-up L3 Current", Kind.UPS),
+        Frequency("backup_f3", 35159, "Back-up L3 Frequency", Kind.UPS),
+        Integer("load_mode3", 35160, "Load Mode L3"),
+        # 35161 reserved
+        Power("backup_p3", 35162, "Back-up L3 Power", Kind.UPS),
+        # 35163 reserved
+        Power("load_p1", 35164, "Load L1", Kind.AC),
+        # 35165 reserved
+        Power("load_p2", 35166, "Load L2", Kind.AC),
+        # 35167 reserved
+        Power("load_p3", 35168, "Load L3", Kind.AC),
+        # 35169 reserved
+        Power("backup_ptotal", 35170, "Back-up Load", Kind.UPS),
+        # 35171 reserved
+        Power("load_ptotal", 35172, "Load", Kind.AC),
+        Integer("ups_load", 35173, "Ups Load", "%", Kind.UPS),
+        Temp("temperature_air", 35174, "Inverter Temperature (Air)", Kind.AC),
+        Temp("temperature_module", 35175, "Inverter Temperature (Module)"),
+        Temp("temperature", 35176, "Inverter Temperature (Radiator)", Kind.AC),
+        Integer("function_bit", 35177, "Function Bit"),
+        Voltage("bus_voltage", 35178, "Bus Voltage", None),
+        Voltage("nbus_voltage", 35179, "NBus Voltage", None),
+        Voltage("vbattery1", 35180, "Battery Voltage", Kind.BAT),
+        Current("ibattery1", 35181, "Battery Current", Kind.BAT),
         # round(vbattery1 * ibattery1),
         Calculated("pbattery1",
-                   lambda data: round(read_voltage(data, 160) * read_current(data, 162)),
-                   "Battery Power", "W", Kind.BAT),  # 35182+35183 ?
-        Integer("battery_mode", 168, "Battery Mode code", "", Kind.BAT),  # 35184
-        Enum2("battery_mode_label", 168, BATTERY_MODES, "Battery Mode", Kind.BAT),
-        Integer("warning_code", 170, "Warning code"),  # 35185
-        Integer("safety_country", 172, "Safety Country code", "", Kind.AC),  # 35186
-        Enum2("safety_country_label", 172, SAFETY_COUNTRIES, "Safety Country", Kind.AC),
-        Integer("work_mode", 174, "Work Mode code"),  # 35187
-        Enum2("work_mode_label", 174, WORK_MODES_ET, "Work Mode"),
-        Integer("operation_mode", 176, "Operation Mode code"),  # 35188 ?
-        Long("error_codes", 178, "Error Codes"),
-        EnumBitmap4("errors", 178, ERROR_CODES, "Errors"),  # 35189
-        Energy4("e_total", 182, "Total PV Generation", Kind.PV),  # 35190/91
-        Energy4("e_day", 186, "Today's PV Generation", Kind.PV),  # 35192/93
-        Energy4("e_total_exp", 190, "Total Energy (export)", Kind.AC),  # 35194/95
-        Long("h_total", 194, "Hours Total", "h", Kind.PV),  # 35196/97
-        Energy("e_day_exp", 198, "Today Energy (export)", Kind.AC),
-        Energy4("e_total_imp", 200, "Total Energy (import)", Kind.AC),
-        Energy("e_day_imp", 204, "Today Energy (import)", Kind.AC),
-        Energy4("e_load_total", 206, "Total Load", Kind.AC),
-        Energy("e_load_day", 210, "Today Load", Kind.AC),
-        Energy4("e_bat_charge_total", 212, "Total Battery Charge", Kind.BAT),
-        Energy("e_bat_charge_day", 216, "Today Battery Charge", Kind.BAT),
-        Energy4("e_bat_discharge_total", 218, "Total Battery Discharge", Kind.BAT),
-        Energy("e_bat_discharge_day", 222, "Today Battery Discharge", Kind.BAT),
-        Long("diagnose_result", 240, "Diag Status Code"),
-        EnumBitmap4("diagnose_result_label", 240, DIAG_STATUS_CODES, "Diag Status"),
+                   lambda data: round(read_voltage(data, 35180) * read_current(data, 35181)),
+                   "Battery Power", "W", Kind.BAT),
+        # 35182+35183 ?
+        Integer("battery_mode", 35184, "Battery Mode code", "", Kind.BAT),
+        Enum2("battery_mode_label", 35184, BATTERY_MODES, "Battery Mode", Kind.BAT),
+        Integer("warning_code", 35185, "Warning code"),
+        Integer("safety_country", 35186, "Safety Country code", "", Kind.AC),
+        Enum2("safety_country_label", 35186, SAFETY_COUNTRIES, "Safety Country", Kind.AC),
+        Integer("work_mode", 35187, "Work Mode code"),
+        Enum2("work_mode_label", 35187, WORK_MODES_ET, "Work Mode"),
+        Integer("operation_mode", 35188, "Operation Mode code"),
+        Long("error_codes", 35189, "Error Codes"),
+        EnumBitmap4("errors", 35189, ERROR_CODES, "Errors"),
+        Energy4("e_total", 35191, "Total PV Generation", Kind.PV),
+        Energy4("e_day", 35193, "Today's PV Generation", Kind.PV),
+        Energy4("e_total_exp", 35195, "Total Energy (export)", Kind.AC),
+        Long("h_total", 35197, "Hours Total", "h", Kind.PV),
+        Energy("e_day_exp", 35199, "Today Energy (export)", Kind.AC),
+        Energy4("e_total_imp", 35200, "Total Energy (import)", Kind.AC),
+        Energy("e_day_imp", 35202, "Today Energy (import)", Kind.AC),
+        Energy4("e_load_total", 35203, "Total Load", Kind.AC),
+        Energy("e_load_day", 35205, "Today Load", Kind.AC),
+        Energy4("e_bat_charge_total", 35206, "Total Battery Charge", Kind.BAT),
+        Energy("e_bat_charge_day", 35208, "Today Battery Charge", Kind.BAT),
+        Energy4("e_bat_discharge_total", 35209, "Total Battery Discharge", Kind.BAT),
+        Energy("e_bat_discharge_day", 35211, "Today Battery Discharge", Kind.BAT),
+        Long("diagnose_result", 35220, "Diag Status Code"),
+        EnumBitmap4("diagnose_result_label", 35220, DIAG_STATUS_CODES, "Diag Status"),
         # ppv1 + ppv2 + pbattery - active_power
         Calculated("house_consumption",
                    lambda data:
-                   read_bytes4(data, 10) +
-                   read_bytes4(data, 18) +
-                   read_bytes4(data, 26) +
-                   read_bytes4(data, 34) +
-                   round(read_voltage(data, 160) * read_current(data, 162)) -
-                   read_bytes2(data, 80),
+                   read_bytes4(data, 35105) +
+                   read_bytes4(data, 35109) +
+                   read_bytes4(data, 35113) +
+                   read_bytes4(data, 35117) +
+                   round(read_voltage(data, 35180) * read_current(data, 35181)) -
+                   read_bytes2(data, 35140),
                    "House Consumption", "W", Kind.AC),
     )
 
     # Modbus registers from offset 0x9088 (37000)
     __all_sensors_battery: Tuple[Sensor, ...] = (
-        Integer("battery_bms", 0, "Battery BMS", "", Kind.BAT),  # 37000
-        Integer("battery_index", 2, "Battery Index", "", Kind.BAT),  # 37001
-        Integer("battery_status", 4, "Battery Status", "", Kind.BAT),  # 37002
-        Temp("battery_temperature", 6, "Battery Temperature", Kind.BAT),  # 37003
-        Integer("battery_charge_limit", 8, "Battery Charge Limit", "A", Kind.BAT),  # 37004
-        Integer("battery_discharge_limit", 10, "Battery Discharge Limit", "A", Kind.BAT),  # 37005
-        Integer("battery_error_l", 12, "Battery Error L", "", Kind.BAT),  # 37006
-        Integer("battery_soc", 14, "Battery State of Charge", "%", Kind.BAT),  # 37007
-        Integer("battery_soh", 16, "Battery State of Health", "%", Kind.BAT),  # 37008
-        Integer("battery_modules", 18, "Battery Modules", "", Kind.BAT),  # 37009
-        Integer("battery_warning_l", 20, "Battery Warning L", "", Kind.BAT),  # 37010
-        Integer("battery_protocol", 22, "Battery Protocol", "", Kind.BAT),  # 37011
-        Integer("battery_error_h", 24, "Battery Error H", "", Kind.BAT),  # 37012
-        EnumBitmap22("battery_error", 24, 12, BMS_ALARM_CODES, "Battery Error", Kind.BAT),
-        Integer("battery_warning_h", 26, "Battery Warning H", "", Kind.BAT),  # 37013
-        EnumBitmap22("battery_warning", 26, 20, BMS_WARNING_CODES, "Battery Warning", Kind.BAT),
-        Integer("battery_sw_version", 28, "Battery Software Version", "", Kind.BAT),  # 37014
-        Integer("battery_hw_version", 30, "Battery Hardware Version", "", Kind.BAT),  # 37015
-        Integer("battery_max_cell_temp_id", 32, "Battery Max Cell Temperature ID", "", Kind.BAT),  # 37016
-        Integer("battery_min_cell_temp_id", 34, "Battery Min Cell Temperature ID", "", Kind.BAT),  # 37017
-        Integer("battery_max_cell_voltage_id", 36, "Battery Max Cell Voltage ID", "", Kind.BAT),  # 37018
-        Integer("battery_min_cell_voltage_id", 38, "Battery Min Cell Voltage ID", "", Kind.BAT),  # 37019
-        Temp("battery_max_cell_temp", 40, "Battery Max Cell Temperature", Kind.BAT),  # 37020
-        Temp("battery_min_cell_temp", 42, "Battery Min Cell Temperature", Kind.BAT),  # 37021
-        Voltage("battery_max_cell_voltage", 44, "Battery Max Cell Voltage", Kind.BAT),  # 37022
-        Voltage("battery_min_cell_voltage", 46, "Battery Min Cell Voltage", Kind.BAT),  # 37023
-        # Energy4("battery_total_charge", 112, "Total Battery 1 Charge", Kind.BAT),  #37056
-        # Energy4("battery_total_discharge", 116, "Total Battery 1 Discharge", Kind.BAT),  # 37058
-        # String8("battery_sn", 120, "Battery S/N", Kind.BAT),  # 37060-67
+        Integer("battery_bms", 37000, "Battery BMS", "", Kind.BAT),
+        Integer("battery_index", 37001, "Battery Index", "", Kind.BAT),
+        Integer("battery_status", 37002, "Battery Status", "", Kind.BAT),
+        Temp("battery_temperature", 37003, "Battery Temperature", Kind.BAT),
+        Integer("battery_charge_limit", 37004, "Battery Charge Limit", "A", Kind.BAT),
+        Integer("battery_discharge_limit", 37005, "Battery Discharge Limit", "A", Kind.BAT),
+        Integer("battery_error_l", 37006, "Battery Error L", "", Kind.BAT),
+        Integer("battery_soc", 37007, "Battery State of Charge", "%", Kind.BAT),
+        Integer("battery_soh", 37008, "Battery State of Health", "%", Kind.BAT),
+        Integer("battery_modules", 37009, "Battery Modules", "", Kind.BAT),
+        Integer("battery_warning_l", 37010, "Battery Warning L", "", Kind.BAT),
+        Integer("battery_protocol", 37011, "Battery Protocol", "", Kind.BAT),
+        Integer("battery_error_h", 37012, "Battery Error H", "", Kind.BAT),
+        EnumBitmap22("battery_error", 37012, 37006, BMS_ALARM_CODES, "Battery Error", Kind.BAT),
+        Integer("battery_warning_h", 37013, "Battery Warning H", "", Kind.BAT),
+        EnumBitmap22("battery_warning", 37013, 37010, BMS_WARNING_CODES, "Battery Warning", Kind.BAT),
+        Integer("battery_sw_version", 37014, "Battery Software Version", "", Kind.BAT),
+        Integer("battery_hw_version", 37015, "Battery Hardware Version", "", Kind.BAT),
+        Integer("battery_max_cell_temp_id", 37016, "Battery Max Cell Temperature ID", "", Kind.BAT),
+        Integer("battery_min_cell_temp_id", 37017, "Battery Min Cell Temperature ID", "", Kind.BAT),
+        Integer("battery_max_cell_voltage_id", 37018, "Battery Max Cell Voltage ID", "", Kind.BAT),
+        Integer("battery_min_cell_voltage_id", 37019, "Battery Min Cell Voltage ID", "", Kind.BAT),
+        Temp("battery_max_cell_temp", 37020, "Battery Max Cell Temperature", Kind.BAT),
+        Temp("battery_min_cell_temp", 37021, "Battery Min Cell Temperature", Kind.BAT),
+        Voltage("battery_max_cell_voltage", 37022, "Battery Max Cell Voltage", Kind.BAT),
+        Voltage("battery_min_cell_voltage", 37023, "Battery Min Cell Voltage", Kind.BAT),
+        # Energy4("battery_total_charge", 37056, "Total Battery 1 Charge", Kind.BAT),
+        # Energy4("battery_total_discharge", 37058, "Total Battery 1 Discharge", Kind.BAT),
+        # String8("battery_sn", 37060, "Battery S/N", Kind.BAT),
     )
 
     # Modbus registers from offset 0x9858 (39000)
     __all_sensors_battery2: Tuple[Sensor, ...] = (
-        Integer("battery2_status", 0, "Battery 2 Status", "", Kind.BAT),  # 39000
-        Temp("battery2_temperature", 2, "Battery 2 Temperature", Kind.BAT),  # 39001
-        Integer("battery2_charge_limit", 4, "Battery 2 Charge Limit", "A", Kind.BAT),  # 39002
-        Integer("battery2_discharge_limit", 6, "Battery 2 Discharge Limit", "A", Kind.BAT),  # 39003
-        Integer("battery2_error_l", 8, "Battery 2 rror L", "", Kind.BAT),  # 39004
-        Integer("battery2_soc", 10, "Battery 2 State of Charge", "%", Kind.BAT),  # 39005
-        Integer("battery2_soh", 12, "Battery 2 State of Health", "%", Kind.BAT),  # 39006
-        Integer("battery2_modules", 14, "Battery 2 Modules", "", Kind.BAT),  # 39007
-        Integer("battery2_warning_l", 16, "Battery 2 Warning L", "", Kind.BAT),  # 39008
-        Integer("battery2_protocol", 18, "Battery 2 Protocol", "", Kind.BAT),  # 39009
-        Integer("battery2_error_h", 20, "Battery 2 Error H", "", Kind.BAT),  # 39010
-        EnumBitmap22("battery2_error", 20, 8, BMS_ALARM_CODES, "Battery 2 Error", Kind.BAT),
-        Integer("battery2_warning_h", 22, "Battery 2 Warning H", "", Kind.BAT),  # 39011
-        EnumBitmap22("battery2_warning", 22, 16, BMS_WARNING_CODES, "Battery 2 Warning", Kind.BAT),
-        Integer("battery2_sw_version", 24, "Battery 2 Software Version", "", Kind.BAT),  # 39012
-        Integer("battery2_hw_version", 26, "Battery 2 Hardware Version", "", Kind.BAT),  # 39013
-        Integer("battery2_max_cell_temp_id", 28, "Battery 2 Max Cell Temperature ID", "", Kind.BAT),  # 39014
-        Integer("battery2_min_cell_temp_id", 30, "Battery 2 Min Cell Temperature ID", "", Kind.BAT),  # 39015
-        Integer("battery2_max_cell_voltage_id", 32, "Battery 2 Max Cell Voltage ID", "", Kind.BAT),  # 39016
-        Integer("battery2_min_cell_voltage_id", 34, "Battery 2 Min Cell Voltage ID", "", Kind.BAT),  # 39017
-        Temp("battery2_max_cell_temp", 36, "Battery 2 Max Cell Temperature", Kind.BAT),  # 39018
-        Temp("battery2_min_cell_temp", 38, "Battery 2 Min Cell Temperature", Kind.BAT),  # 39019
-        Voltage("battery2_max_cell_voltage", 40, "Battery 2 Max Cell Voltage", Kind.BAT),  # 39020
-        Voltage("battery2_min_cell_voltage", 42, "Battery 2 Min Cell Voltage", Kind.BAT),  # 39021
-        # Energy4("battery2_total_charge", 108, "Total Battery 2 Charge", Kind.BAT),  #39054
-        # Energy4("battery2_total_discharge", 112, "Total Battery 2 Discharge", Kind.BAT),  # 39056
-        # String8("battery2_sn", 120, "Battery 2 S/N", Kind.BAT),  # 39058-65
+        Integer("battery2_status", 39000, "Battery 2 Status", "", Kind.BAT),
+        Temp("battery2_temperature", 39001, "Battery 2 Temperature", Kind.BAT),
+        Integer("battery2_charge_limit", 39002, "Battery 2 Charge Limit", "A", Kind.BAT),
+        Integer("battery2_discharge_limit", 39003, "Battery 2 Discharge Limit", "A", Kind.BAT),
+        Integer("battery2_error_l", 39004, "Battery 2 rror L", "", Kind.BAT),
+        Integer("battery2_soc", 39005, "Battery 2 State of Charge", "%", Kind.BAT),
+        Integer("battery2_soh", 39006, "Battery 2 State of Health", "%", Kind.BAT),
+        Integer("battery2_modules", 39007, "Battery 2 Modules", "", Kind.BAT),
+        Integer("battery2_warning_l", 39008, "Battery 2 Warning L", "", Kind.BAT),
+        Integer("battery2_protocol", 39009, "Battery 2 Protocol", "", Kind.BAT),
+        Integer("battery2_error_h", 39010, "Battery 2 Error H", "", Kind.BAT),
+        EnumBitmap22("battery2_error", 39010, 39004, BMS_ALARM_CODES, "Battery 2 Error", Kind.BAT),
+        Integer("battery2_warning_h", 39011, "Battery 2 Warning H", "", Kind.BAT),
+        EnumBitmap22("battery2_warning", 39011, 39008, BMS_WARNING_CODES, "Battery 2 Warning", Kind.BAT),
+        Integer("battery2_sw_version", 39012, "Battery 2 Software Version", "", Kind.BAT),
+        Integer("battery2_hw_version", 39013, "Battery 2 Hardware Version", "", Kind.BAT),
+        Integer("battery2_max_cell_temp_id", 39014, "Battery 2 Max Cell Temperature ID", "", Kind.BAT),
+        Integer("battery2_min_cell_temp_id", 39015, "Battery 2 Min Cell Temperature ID", "", Kind.BAT),
+        Integer("battery2_max_cell_voltage_id", 39016, "Battery 2 Max Cell Voltage ID", "", Kind.BAT),
+        Integer("battery2_min_cell_voltage_id", 39017, "Battery 2 Min Cell Voltage ID", "", Kind.BAT),
+        Temp("battery2_max_cell_temp", 39018, "Battery 2 Max Cell Temperature", Kind.BAT),
+        Temp("battery2_min_cell_temp", 39019, "Battery 2 Min Cell Temperature", Kind.BAT),
+        Voltage("battery2_max_cell_voltage", 39020, "Battery 2 Max Cell Voltage", Kind.BAT),
+        Voltage("battery2_min_cell_voltage", 39021, "Battery 2 Min Cell Voltage", Kind.BAT),
+        # Energy4("battery2_total_charge", 39054, "Total Battery 2 Charge", Kind.BAT),
+        # Energy4("battery2_total_discharge", 39056, "Total Battery 2 Discharge", Kind.BAT),
+        # String8("battery2_sn", 39058, "Battery 2 S/N", Kind.BAT),
     )
 
     # Inverter's meter data
     # Modbus registers from offset 0x8ca0 (36000)
     __all_sensors_meter: Tuple[Sensor, ...] = (
-        Integer("commode", 0, "Commode"),  # 36000
-        Integer("rssi", 2, "RSSI"),  # 36001
-        Integer("manufacture_code", 4, "Manufacture Code"),  # 36002
-        Integer("meter_test_status", 6, "Meter Test Status"),  # 1: correct，2: reverse，3: incorrect，0: not checked
-        Integer("meter_comm_status", 8, "Meter Communication Status"),  # 36004 # 1 OK, 0 NotOK
-        Power("active_power1", 10, "Active Power L1", Kind.GRID),  # 36005
-        Power("active_power2", 12, "Active Power L2", Kind.GRID),  # 36006
-        Power("active_power3", 14, "Active Power L3", Kind.GRID),  # 36007
-        Power("active_power_total", 16, "Active Power Total", Kind.GRID),  # 36008
-        Reactive("reactive_power_total", 18, "Reactive Power Total", Kind.GRID),  # 36009
-        Decimal("meter_power_factor1", 20, 1000, "Meter Power Factor L1", "", Kind.GRID),  # 36010
-        Decimal("meter_power_factor2", 22, 1000, "Meter Power Factor L2", "", Kind.GRID),  # 36011
-        Decimal("meter_power_factor3", 24, 1000, "Meter Power Factor L3", "", Kind.GRID),  # 36012
-        Decimal("meter_power_factor", 26, 1000, "Meter Power Factor", "", Kind.GRID),  # 36013
-        Frequency("meter_freq", 28, "Meter Frequency", Kind.GRID),  # 36014
-        Float("meter_e_total_exp", 30, 1000, "Meter Total Energy (export)", "kWh", Kind.GRID),  # 36015/16
-        Float("meter_e_total_imp", 34, 1000, "Meter Total Energy (import)", "kWh", Kind.GRID),  # 36017/18
-        Power4("meter_active_power1", 38, "Meter Active Power L1", Kind.GRID),  # 36019/20
-        Power4("meter_active_power2", 42, "Meter Active Power L2", Kind.GRID),  # 36021/22
-        Power4("meter_active_power3", 46, "Meter Active Power L3", Kind.GRID),  # 36023/24
-        Power4("meter_active_power_total", 50, "Meter Active Power Total", Kind.GRID),  # 36025/26
-        Reactive4("meter_reactive_power1", 54, "Meter Reactive Power L1", Kind.GRID),  # 36027/28
-        Reactive4("meter_reactive_power2", 58, "Meter Reactive Power L2", Kind.GRID),  # 36029/30
-        Reactive4("meter_reactive_power3", 62, "Meter Reactive Power L2", Kind.GRID),  # 36031/32
-        Reactive4("meter_reactive_power_total", 66, "Meter Reactive Power Total", Kind.GRID),  # 36033/34
-        Apparent4("meter_apparent_power1", 70, "Meter Apparent Power L1", Kind.GRID),  # 36035/36
-        Apparent4("meter_apparent_power2", 74, "Meter Apparent Power L2", Kind.GRID),  # 36037/38
-        Apparent4("meter_apparent_power3", 78, "Meter Apparent Power L3", Kind.GRID),  # 36039/40
-        Apparent4("meter_apparent_power_total", 82, "Meter Apparent Power Total", Kind.GRID),  # 36041/42
-        Integer("meter_type", 86, "Meter Type", "", Kind.GRID),  # 36043 (0: Single phase, 1: 3P3W, 2: 3P4W, 3: HomeKit)
-        Integer("meter_sw_version", 88, "Meter Software Version", "", Kind.GRID),  # 36044
+        Integer("commode", 36000, "Commode"),
+        Integer("rssi", 36001, "RSSI"),
+        Integer("manufacture_code", 36002, "Manufacture Code"),
+        Integer("meter_test_status", 36003, "Meter Test Status"),  # 1: correct，2: reverse，3: incorrect，0: not checked
+        Integer("meter_comm_status", 36004, "Meter Communication Status"),  # 1 OK, 0 NotOK
+        Power("active_power1", 36005, "Active Power L1", Kind.GRID),
+        Power("active_power2", 36006, "Active Power L2", Kind.GRID),
+        Power("active_power3", 36007, "Active Power L3", Kind.GRID),
+        Power("active_power_total", 36008, "Active Power Total", Kind.GRID),
+        Reactive("reactive_power_total", 36009, "Reactive Power Total", Kind.GRID),
+        Decimal("meter_power_factor1", 36010, 1000, "Meter Power Factor L1", "", Kind.GRID),
+        Decimal("meter_power_factor2", 36011, 1000, "Meter Power Factor L2", "", Kind.GRID),
+        Decimal("meter_power_factor3", 36012, 1000, "Meter Power Factor L3", "", Kind.GRID),
+        Decimal("meter_power_factor", 36013, 1000, "Meter Power Factor", "", Kind.GRID),
+        Frequency("meter_freq", 36014, "Meter Frequency", Kind.GRID),
+        Float("meter_e_total_exp", 36015, 1000, "Meter Total Energy (export)", "kWh", Kind.GRID),
+        Float("meter_e_total_imp", 36017, 1000, "Meter Total Energy (import)", "kWh", Kind.GRID),
+        Power4("meter_active_power1", 36019, "Meter Active Power L1", Kind.GRID),
+        Power4("meter_active_power2", 36021, "Meter Active Power L2", Kind.GRID),
+        Power4("meter_active_power3", 36023, "Meter Active Power L3", Kind.GRID),
+        Power4("meter_active_power_total", 36025, "Meter Active Power Total", Kind.GRID),
+        Reactive4("meter_reactive_power1", 36027, "Meter Reactive Power L1", Kind.GRID),
+        Reactive4("meter_reactive_power2", 36029, "Meter Reactive Power L2", Kind.GRID),
+        Reactive4("meter_reactive_power3", 36031, "Meter Reactive Power L2", Kind.GRID),
+        Reactive4("meter_reactive_power_total", 36033, "Meter Reactive Power Total", Kind.GRID),
+        Apparent4("meter_apparent_power1", 36035, "Meter Apparent Power L1", Kind.GRID),
+        Apparent4("meter_apparent_power2", 36037, "Meter Apparent Power L2", Kind.GRID),
+        Apparent4("meter_apparent_power3", 36039, "Meter Apparent Power L3", Kind.GRID),
+        Apparent4("meter_apparent_power_total", 36041, "Meter Apparent Power Total", Kind.GRID),
+        Integer("meter_type", 36043, "Meter Type", "", Kind.GRID),  # (0: Single phase, 1: 3P3W, 2: 3P4W, 3: HomeKit)
+        Integer("meter_sw_version", 36044, "Meter Software Version", "", Kind.GRID),
         # Sensors added in some ARM fw update
-        Power4("meter2_active_power", 90, "Meter 2 Active Power", Kind.GRID),  # 36045/46
-        Float("meter2_e_total_exp", 94, 1000, "Meter 2 Total Energy (export)", "kWh", Kind.GRID),  # 36047/48
-        Float("meter2_e_total_imp", 98, 1000, "Meter 2 Total Energy (import)", "kWh", Kind.GRID),  # 36049/50
-        Integer("meter2_comm_status", 102, "Meter 2 Communication Status"),  # 36051
-        Voltage("meter_voltage1", 104, "Meter L1 Voltage", Kind.GRID),  # 36052
-        Voltage("meter_voltage2", 106, "Meter L2 Voltage", Kind.GRID),  # 36053
-        Voltage("meter_voltage3", 108, "Meter L3 Voltage", Kind.GRID),  # 36054
-        Current("meter_current1", 110, "Meter L1 Current", Kind.GRID),  # 36055
-        Current("meter_current2", 112, "Meter L2 Current", Kind.GRID),  # 36056
-        Current("meter_current3", 114, "Meter L3 Current", Kind.GRID),  # 36057
+        Power4("meter2_active_power", 36045, "Meter 2 Active Power", Kind.GRID),
+        Float("meter2_e_total_exp", 36047, 1000, "Meter 2 Total Energy (export)", "kWh", Kind.GRID),
+        Float("meter2_e_total_imp", 36049, 1000, "Meter 2 Total Energy (import)", "kWh", Kind.GRID),
+        Integer("meter2_comm_status", 36051, "Meter 2 Communication Status"),
+        Voltage("meter_voltage1", 36052, "Meter L1 Voltage", Kind.GRID),
+        Voltage("meter_voltage2", 36053, "Meter L2 Voltage", Kind.GRID),
+        Voltage("meter_voltage3", 36054, "Meter L3 Voltage", Kind.GRID),
+        Current("meter_current1", 36055, "Meter L1 Current", Kind.GRID),
+        Current("meter_current2", 36056, "Meter L2 Current", Kind.GRID),
+        Current("meter_current3", 36057, "Meter L3 Current", Kind.GRID),
     )
 
     # Inverter's MPPT data
     # Modbus registers from offset 0x89e5 (35301)
     __all_sensors_mptt: Tuple[Sensor, ...] = (
-        Power4("ppv_total", 0, "PV Power Total", Kind.PV),  # 35301
+        Power4("ppv_total", 35301, "PV Power Total", Kind.PV),
         # 35303 PV channel RO U16 1 1 PV channel
-        Voltage("vpv5", 6, "PV5 Voltage", Kind.PV),  # 35304
-        Current("ipv5", 8, "PV5 Current", Kind.PV),  # 35305
-        Voltage("vpv6", 10, "PV6 Voltage", Kind.PV),  # 35306
-        Current("ipv6", 12, "PV6 Current", Kind.PV),  # 35307
-        Voltage("vpv7", 14, "PV7 Voltage", Kind.PV),  # 35308
-        Current("ipv7", 16, "PV7 Current", Kind.PV),  # 35309
-        Voltage("vpv8", 18, "PV8 Voltage", Kind.PV),  # 35310
-        Current("ipv8", 20, "PV8 Current", Kind.PV),  # 35311
-        Voltage("vpv9", 22, "PV9 Voltage", Kind.PV),  # 35312
-        Current("ipv9", 24, "PV9 Current", Kind.PV),  # 35313
-        Voltage("vpv10", 26, "PV10 Voltage", Kind.PV),  # 35314
-        Current("ipv10", 28, "PV10 Current", Kind.PV),  # 35315
-        Voltage("vpv11", 30, "PV11 Voltage", Kind.PV),  # 35316
-        Current("ipv11", 32, "PV11 Current", Kind.PV),  # 35317
-        Voltage("vpv12", 34, "PV12 Voltage", Kind.PV),  # 35318
-        Current("ipv12", 36, "PV12 Current", Kind.PV),  # 35319
-        Voltage("vpv13", 38, "PV13 Voltage", Kind.PV),  # 35320
-        Current("ipv13", 40, "PV13 Current", Kind.PV),  # 35321
-        Voltage("vpv14", 42, "PV14 Voltage", Kind.PV),  # 35322
-        Current("ipv14", 44, "PV14 Current", Kind.PV),  # 35323
-        Voltage("vpv15", 46, "PV15 Voltage", Kind.PV),  # 35324
-        Current("ipv15", 48, "PV15 Current", Kind.PV),  # 35325
-        Voltage("vpv16", 50, "PV16 Voltage", Kind.PV),  # 35326
-        Current("ipv16", 52, "PV16 Current", Kind.PV),  # 35327
+        Voltage("vpv5", 35304, "PV5 Voltage", Kind.PV),
+        Current("ipv5", 35305, "PV5 Current", Kind.PV),
+        Voltage("vpv6", 35306, "PV6 Voltage", Kind.PV),
+        Current("ipv6", 35307, "PV6 Current", Kind.PV),
+        Voltage("vpv7", 35308, "PV7 Voltage", Kind.PV),
+        Current("ipv7", 35309, "PV7 Current", Kind.PV),
+        Voltage("vpv8", 35310, "PV8 Voltage", Kind.PV),
+        Current("ipv8", 35311, "PV8 Current", Kind.PV),
+        Voltage("vpv9", 35312, "PV9 Voltage", Kind.PV),
+        Current("ipv9", 35313, "PV9 Current", Kind.PV),
+        Voltage("vpv10", 35314, "PV10 Voltage", Kind.PV),
+        Current("ipv10", 35315, "PV10 Current", Kind.PV),
+        Voltage("vpv11", 35316, "PV11 Voltage", Kind.PV),
+        Current("ipv11", 35317, "PV11 Current", Kind.PV),
+        Voltage("vpv12", 35318, "PV12 Voltage", Kind.PV),
+        Current("ipv12", 35319, "PV12 Current", Kind.PV),
+        Voltage("vpv13", 35320, "PV13 Voltage", Kind.PV),
+        Current("ipv13", 35321, "PV13 Current", Kind.PV),
+        Voltage("vpv14", 35322, "PV14 Voltage", Kind.PV),
+        Current("ipv14", 35323, "PV14 Current", Kind.PV),
+        Voltage("vpv15", 35324, "PV15 Voltage", Kind.PV),
+        Current("ipv15", 35325, "PV15 Current", Kind.PV),
+        Voltage("vpv16", 35326, "PV16 Voltage", Kind.PV),
+        Current("ipv16", 35327, "PV16 Current", Kind.PV),
         # 35328 Warning Message
         # 35330 Grid10minAvgVoltR
         # 35331 Grid10minAvgVoltS
         # 35332 Grid10minAvgVoltT
         # 35333 Error Message Extend
         # 35335 Warning Message Extend
-        Power("pmppt1", 72, "MPPT1 Power", Kind.PV),  # 35337
-        Power("pmppt2", 74, "MPPT2 Power", Kind.PV),  # 35338
-        Power("pmppt3", 76, "MPPT3 Power", Kind.PV),  # 35339
-        Power("pmppt4", 78, "MPPT4 Power", Kind.PV),  # 35340
-        Power("pmppt5", 80, "MPPT5 Power", Kind.PV),  # 35341
-        Power("pmppt6", 82, "MPPT6 Power", Kind.PV),  # 35342
-        Power("pmppt7", 84, "MPPT7 Power", Kind.PV),  # 35343
-        Power("pmppt8", 86, "MPPT8 Power", Kind.PV),  # 35344
-        Power("imppt1", 88, "MPPT1 Current", Kind.PV),  # 35345
-        Power("imppt2", 90, "MPPT2 Current", Kind.PV),  # 35346
-        Power("imppt3", 92, "MPPT3 Current", Kind.PV),  # 35347
-        Power("imppt4", 94, "MPPT4 Current", Kind.PV),  # 35348
-        Power("imppt5", 96, "MPPT5 Current", Kind.PV),  # 35349
-        Power("imppt6", 98, "MPPT6 Current", Kind.PV),  # 35350
-        Power("imppt7", 100, "MPPT7 Current", Kind.PV),  # 35351
-        Power("imppt8", 102, "MPPT8 Current", Kind.PV),  # 35352
-        Reactive4("reactive_power1", 104, "Reactive Power L1", Kind.GRID),  # 35353/54
-        Reactive4("reactive_power2", 108, "Reactive Power L2", Kind.GRID),  # 35355/56
-        Reactive4("reactive_power3", 112, "Reactive Power L3", Kind.GRID),  # 35357/58
-        Apparent4("apparent_power1", 116, "Apparent Power L1", Kind.GRID),  # 35359/60
-        Apparent4("apparent_power2", 120, "Apparent Power L2", Kind.GRID),  # 35361/62
-        Apparent4("apparent_power3", 124, "Apparent Power L3", Kind.GRID),  # 35363/64
+        Power("pmppt1", 35337, "MPPT1 Power", Kind.PV),
+        Power("pmppt2", 35338, "MPPT2 Power", Kind.PV),
+        Power("pmppt3", 35339, "MPPT3 Power", Kind.PV),
+        Power("pmppt4", 35340, "MPPT4 Power", Kind.PV),
+        Power("pmppt5", 35341, "MPPT5 Power", Kind.PV),
+        Power("pmppt6", 35342, "MPPT6 Power", Kind.PV),
+        Power("pmppt7", 35343, "MPPT7 Power", Kind.PV),
+        Power("pmppt8", 35344, "MPPT8 Power", Kind.PV),
+        Power("imppt1", 35345, "MPPT1 Current", Kind.PV),
+        Power("imppt2", 35346, "MPPT2 Current", Kind.PV),
+        Power("imppt3", 35347, "MPPT3 Current", Kind.PV),
+        Power("imppt4", 35348, "MPPT4 Current", Kind.PV),
+        Power("imppt5", 35349, "MPPT5 Current", Kind.PV),
+        Power("imppt6", 35350, "MPPT6 Current", Kind.PV),
+        Power("imppt7", 35351, "MPPT7 Current", Kind.PV),
+        Power("imppt8", 35352, "MPPT8 Current", Kind.PV),
+        Reactive4("reactive_power1", 35353, "Reactive Power L1", Kind.GRID),
+        Reactive4("reactive_power2", 35355, "Reactive Power L2", Kind.GRID),
+        Reactive4("reactive_power3", 35357, "Reactive Power L3", Kind.GRID),
+        Apparent4("apparent_power1", 35359, "Apparent Power L1", Kind.GRID),
+        Apparent4("apparent_power2", 35361, "Apparent Power L2", Kind.GRID),
+        Apparent4("apparent_power3", 35363, "Apparent Power L3", Kind.GRID),
     )
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
@@ -439,7 +440,7 @@ class ET(Inverter):
     @staticmethod
     def _not_extended_meter(s: Sensor) -> bool:
         """Filter to exclude extended meter sensors"""
-        return s.offset < 90
+        return s.offset < 36045
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -548,8 +549,7 @@ class ET(Inverter):
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
         response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
-        with io.BytesIO(response.response_data()) as buffer:
-            return setting.read_value(buffer)
+        return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
         setting = self._settings.get(setting_id)

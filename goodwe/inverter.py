@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import io
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -44,11 +43,11 @@ class Sensor:
     unit: str
     kind: Optional[SensorKind]
 
-    def read_value(self, data: io.BytesIO) -> Any:
+    def read_value(self, data: ProtocolResponse) -> Any:
         """Read the sensor value from data at current position"""
         raise NotImplementedError()
 
-    def read(self, data: io.BytesIO) -> Any:
+    def read(self, data: ProtocolResponse) -> Any:
         """Read the sensor value from data (at sensor offset)"""
         data.seek(self.offset)
         return self.read_value(data)
@@ -283,16 +282,15 @@ class Inverter(ABC):
     @staticmethod
     def _map_response(response: ProtocolResponse, sensors: Tuple[Sensor, ...], incl_xx: bool = True) -> Dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
-        with io.BytesIO(response.response_data()) as buffer:
-            result = {}
-            for sensor in sensors:
-                if incl_xx or not sensor.id_.startswith("xx"):
-                    try:
-                        result[sensor.id_] = sensor.read(buffer)
-                    except ValueError:
-                        logger.exception("Error reading sensor %s.", sensor.id_)
-                        result[sensor.id_] = None
-            return result
+        result = {}
+        for sensor in sensors:
+            if incl_xx or not sensor.id_.startswith("xx"):
+                try:
+                    result[sensor.id_] = sensor.read(response)
+                except ValueError:
+                    logger.exception("Error reading sensor %s.", sensor.id_)
+                    result[sensor.id_] = None
+        return result
 
     @staticmethod
     def _decode(data: bytes) -> str:

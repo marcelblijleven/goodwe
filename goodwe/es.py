@@ -223,12 +223,10 @@ class ES(Inverter):
             count = (setting.size_ + (setting.size_ % 2)) // 2
             if self._is_modbus_setting(setting):
                 response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
-                with io.BytesIO(response.response_data()) as buffer:
-                    return setting.read_value(buffer)
+                return setting.read_value(response)
             else:
                 response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
-                with io.BytesIO(response.response_data()) as buffer:
-                    return setting.read_value(buffer)
+                return setting.read_value(response)
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 from abc import ABC, abstractmethod
 from datetime import datetime
 from struct import unpack
@@ -8,6 +7,7 @@ from typing import Any, Callable, Optional
 
 from .const import *
 from .inverter import Sensor, SensorKind
+from .protocol import ProtocolResponse
 
 DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
@@ -18,7 +18,7 @@ class Voltage(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "V", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_voltage(data)
 
     def encode_value(self, value: Any) -> bytes:
@@ -31,7 +31,7 @@ class Current(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "A", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_current(data)
 
     def encode_value(self, value: Any) -> bytes:
@@ -44,7 +44,7 @@ class Frequency(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "Hz", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_freq(data)
 
 
@@ -54,7 +54,7 @@ class Power(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "W", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes2(data)
 
 
@@ -64,7 +64,7 @@ class Power4(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 4, "W", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes4(data)
 
 
@@ -74,7 +74,7 @@ class Energy(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "kWh", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         value = read_bytes2(data)
         if value == -1:
             return None
@@ -88,7 +88,7 @@ class Energy4(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 4, "kWh", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         value = read_bytes4(data)
         if value == -1:
             return None
@@ -102,7 +102,7 @@ class Apparent(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "VA", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes2(data)
 
 
@@ -112,7 +112,7 @@ class Apparent4(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "VA", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes4(data)
 
 
@@ -122,7 +122,7 @@ class Reactive(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "var", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes2(data)
 
 
@@ -132,7 +132,7 @@ class Reactive4(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "var", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes4(data)
 
 
@@ -142,7 +142,7 @@ class Temp(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 2, "C", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_temp(data)
 
 
@@ -152,7 +152,7 @@ class Byte(Sensor):
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 1, unit, kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_byte(data)
 
     def encode_value(self, value: Any) -> bytes:
@@ -164,6 +164,9 @@ class ByteH(Byte):
 
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, unit, kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_byte(data)
 
     def encode_value(self, value: Any, register_value: bytes) -> bytes:
         word = bytearray(register_value)
@@ -177,6 +180,10 @@ class ByteL(Byte):
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, unit, kind)
 
+    def read_value(self, data: ProtocolResponse):
+        read_byte(data)
+        return read_byte(data)
+
     def encode_value(self, value: Any, register_value: bytes) -> bytes:
         word = bytearray(register_value)
         word[1] = int.to_bytes(int(value), length=1, byteorder="big", signed=True)[0]
@@ -189,7 +196,7 @@ class Integer(Sensor):
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 2, unit, kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes2(data)
 
     def encode_value(self, value: Any) -> bytes:
@@ -202,7 +209,7 @@ class Long(Sensor):
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 4, unit, kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_bytes4(data)
 
     def encode_value(self, value: Any) -> bytes:
@@ -216,7 +223,7 @@ class Decimal(Sensor):
         super().__init__(id_, offset, name, 2, unit, kind)
         self.scale = scale
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_decimal2(data, self.scale)
 
     def encode_value(self, value: Any) -> bytes:
@@ -230,7 +237,7 @@ class Float(Sensor):
         super().__init__(id_, offset, name, 4, unit, kind)
         self.scale = scale
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return round(read_float4(data) / self.scale, 3)
 
 
@@ -240,7 +247,7 @@ class Timestamp(Sensor):
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 6, "", kind)
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return read_datetime(data)
 
     def encode_value(self, value: Any) -> bytes:
@@ -254,7 +261,30 @@ class Enum(Sensor):
         super().__init__(id_, offset, name, 1, "", kind)
         self._labels: Dict = labels
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
+        return self._labels.get(read_byte(data))
+
+
+class EnumH(Sensor):
+    """Sensor representing label from enumeration encoded in 1 (high 8 bits of 16bit register)"""
+
+    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 1, "", kind)
+        self._labels: Dict = labels
+
+    def read_value(self, data: ProtocolResponse):
+        return self._labels.get(read_byte(data))
+
+
+class EnumL(Sensor):
+    """Sensor representing label from enumeration encoded in 1 bytes (low 8 bits of 16bit register)"""
+
+    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 1, "", kind)
+        self._labels: Dict = labels
+
+    def read_value(self, data: ProtocolResponse):
+        read_byte(data)
         return self._labels.get(read_byte(data))
 
 
@@ -265,7 +295,7 @@ class Enum2(Sensor):
         super().__init__(id_, offset, name, 2, "", kind)
         self._labels: Dict = labels
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         return self._labels.get(read_bytes2(data))
 
 
@@ -276,10 +306,10 @@ class EnumBitmap4(Sensor):
         super().__init__(id_, offset, name, 4, "", kind)
         self._labels: Dict = labels
 
-    def read_value(self, data: io.BytesIO) -> Any:
+    def read_value(self, data: ProtocolResponse) -> Any:
         raise NotImplementedError()
 
-    def read(self, data: io.BytesIO):
+    def read(self, data: ProtocolResponse):
         return decode_bitmap(read_bytes4(data, self.offset), self._labels)
 
 
@@ -292,26 +322,26 @@ class EnumBitmap22(Sensor):
         self._labels: Dict = labels
         self._offsetL: int = offsetL
 
-    def read_value(self, data: io.BytesIO) -> Any:
+    def read_value(self, data: ProtocolResponse) -> Any:
         raise NotImplementedError()
 
-    def read(self, data: io.BytesIO):
+    def read(self, data: ProtocolResponse):
         return decode_bitmap(read_bytes2(data, self.offset) << 16 + read_bytes2(data, self._offsetL), self._labels)
 
 
 class EnumCalculated(Sensor):
     """Sensor representing label from enumeration of calculated value"""
 
-    def __init__(self, id_: str, getter: Callable[[io.BytesIO], Any], labels: Dict, name: str,
+    def __init__(self, id_: str, getter: Callable[[ProtocolResponse], Any], labels: Dict, name: str,
                  kind: Optional[SensorKind] = None):
         super().__init__(id_, 0, name, 0, "", kind)
-        self._getter: Callable[[io.BytesIO], Any] = getter
+        self._getter: Callable[[ProtocolResponse], Any] = getter
         self._labels: Dict = labels
 
-    def read_value(self, data: io.BytesIO) -> Any:
+    def read_value(self, data: ProtocolResponse) -> Any:
         raise NotImplementedError()
 
-    def read(self, data: io.BytesIO):
+    def read(self, data: ProtocolResponse):
         return self._labels.get(self._getter(data))
 
 
@@ -357,7 +387,7 @@ class EcoModeV1(Sensor, EcoMode):
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% {'On' if self.on_off != 0 else 'Off'}"
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
             raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
@@ -385,7 +415,7 @@ class EcoModeV1(Sensor, EcoMode):
     def encode_value(self, value: Any) -> bytes:
         if isinstance(value, bytes) and len(value) == 8:
             # try to read_value to check if values are valid
-            if self.read_value(io.BytesIO(value)):
+            if self.read_value(ProtocolResponse(value, None)):
                 return value
         raise ValueError
 
@@ -455,7 +485,7 @@ class EcoModeV2(Sensor, EcoMode):
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (SoC {self.soc}%) {'On' if self.on_off != 0 else 'Off'}"
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
             raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
@@ -486,7 +516,7 @@ class EcoModeV2(Sensor, EcoMode):
     def encode_value(self, value: Any) -> bytes:
         if isinstance(value, bytes) and len(value) == 12:
             # try to read_value to check if values are valid
-            if self.read_value(io.BytesIO(value)):
+            if self.read_value(ProtocolResponse(value, None)):
                 return value
         raise ValueError
 
@@ -556,7 +586,7 @@ class PeakShavingMode(Sensor):
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.import_power}kW (SoC {self.soc}%) {'On' if self.on_off == -4 else 'Off'}"
 
-    def read_value(self, data: io.BytesIO):
+    def read_value(self, data: ProtocolResponse):
         self.start_h = read_byte(data)
         if (self.start_h < 0 or self.start_h > 23) and self.start_h != 48:
             raise ValueError(f"{self.id_}: start_h value {self.start_h} out of range.")
@@ -587,7 +617,7 @@ class PeakShavingMode(Sensor):
     def encode_value(self, value: Any) -> bytes:
         if isinstance(value, bytes) and len(value) == 12:
             # try to read_value to check if values are valid
-            if self.read_value(io.BytesIO(value)):
+            if self.read_value(ProtocolResponse(value, None)):
                 return value
         raise ValueError
 
@@ -599,47 +629,47 @@ class PeakShavingMode(Sensor):
 class Calculated(Sensor):
     """Sensor representing calculated value"""
 
-    def __init__(self, id_: str, getter: Callable[[io.BytesIO], Any], name: str, unit: str,
+    def __init__(self, id_: str, getter: Callable[[ProtocolResponse], Any], name: str, unit: str,
                  kind: Optional[SensorKind] = None):
         super().__init__(id_, 0, name, 0, unit, kind)
-        self._getter: Callable[[io.BytesIO], Any] = getter
+        self._getter: Callable[[ProtocolResponse], Any] = getter
 
-    def read_value(self, data: io.BytesIO) -> Any:
+    def read_value(self, data: ProtocolResponse) -> Any:
         raise NotImplementedError()
 
-    def read(self, data: io.BytesIO):
+    def read(self, data: ProtocolResponse):
         return self._getter(data)
 
 
-def read_byte(buffer: io.BytesIO, offset: int = None) -> int:
+def read_byte(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve single byte (signed int) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(1), byteorder="big", signed=True)
 
 
-def read_bytes2(buffer: io.BytesIO, offset: int = None) -> int:
+def read_bytes2(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 2 byte (signed int) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(2), byteorder="big", signed=True)
 
 
-def read_bytes4(buffer: io.BytesIO, offset: int = None) -> int:
+def read_bytes4(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 4 byte (signed int) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(4), byteorder="big", signed=True)
 
 
-def read_decimal2(buffer: io.BytesIO, scale: int, offset: int = None) -> float:
+def read_decimal2(buffer: ProtocolResponse, scale: int, offset: int = None) -> float:
     """Retrieve 2 byte (signed float) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
     return float(int.from_bytes(buffer.read(2), byteorder="big", signed=True)) / scale
 
 
-def read_float4(buffer: io.BytesIO, offset: int = None) -> float:
+def read_float4(buffer: ProtocolResponse, offset: int = None) -> float:
     """Retrieve 4 byte (signed float) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -650,7 +680,7 @@ def read_float4(buffer: io.BytesIO, offset: int = None) -> float:
         return float(0)
 
 
-def read_voltage(buffer: io.BytesIO, offset: int = None) -> float:
+def read_voltage(buffer: ProtocolResponse, offset: int = None) -> float:
     """Retrieve voltage [V] value (2 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -663,7 +693,7 @@ def encode_voltage(value: Any) -> bytes:
     return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=True)
 
 
-def read_current(buffer: io.BytesIO, offset: int = None) -> float:
+def read_current(buffer: ProtocolResponse, offset: int = None) -> float:
     """Retrieve current [A] value (2 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -676,7 +706,7 @@ def encode_current(value: Any) -> bytes:
     return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=True)
 
 
-def read_freq(buffer: io.BytesIO, offset: int = None) -> float:
+def read_freq(buffer: ProtocolResponse, offset: int = None) -> float:
     """Retrieve frequency [Hz] value (2 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -684,7 +714,7 @@ def read_freq(buffer: io.BytesIO, offset: int = None) -> float:
     return float(value) / 100
 
 
-def read_temp(buffer: io.BytesIO, offset: int = None) -> float:
+def read_temp(buffer: ProtocolResponse, offset: int = None) -> float:
     """Retrieve temperature [C] value (2 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -692,7 +722,7 @@ def read_temp(buffer: io.BytesIO, offset: int = None) -> float:
     return float(value) / 10
 
 
-def read_datetime(buffer: io.BytesIO, offset: int = None) -> datetime:
+def read_datetime(buffer: ProtocolResponse, offset: int = None) -> datetime:
     """Retrieve datetime value (6 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -722,7 +752,7 @@ def encode_datetime(value: Any) -> bytes:
     return result
 
 
-def read_grid_mode(buffer: io.BytesIO, offset: int = None) -> int:
+def read_grid_mode(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 'grid mode' sign value from buffer"""
     value = read_bytes2(buffer, offset)
     if value < -90:

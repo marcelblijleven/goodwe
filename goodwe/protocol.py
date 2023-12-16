@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
 from asyncio.futures import Future
 from typing import Tuple, Optional, Callable
@@ -87,12 +88,25 @@ class ProtocolResponse:
     def __init__(self, raw_data: bytes, command: ProtocolCommand):
         self.raw_data: bytes = raw_data
         self.command: ProtocolCommand = command
+        self._bytes: io.BytesIO = io.BytesIO(self.response_data())
 
     def __repr__(self):
         return self.raw_data.hex()
 
     def response_data(self) -> bytes:
-        return self.command.trim_response(self.raw_data)
+        if self.command is not None:
+            return self.command.trim_response(self.raw_data)
+        else:
+            return self.raw_data
+
+    def seek(self, address: int) -> None:
+        if self.command is not None:
+            self._bytes.seek(self.command.get_offset(address))
+        else:
+            self._bytes.seek(address)
+
+    def read(self, size: int) -> bytes:
+        return self._bytes.read(size)
 
 
 class ProtocolCommand:
@@ -108,6 +122,10 @@ class ProtocolCommand:
     def trim_response(self, raw_response: bytes):
         """Trim raw response from header and checksum data"""
         return raw_response
+
+    def get_offset(self, address: int):
+        """Calculate relative offset to start of the response bytes"""
+        return address
 
     async def execute(self, host: str, timeout: int, retries: int) -> ProtocolResponse:
         """
@@ -257,10 +275,15 @@ class ModbusProtocolCommand(ProtocolCommand):
             request,
             lambda x: validate_modbus_response(x, cmd, offset, value),
         )
+        self.first_address: int = offset
 
     def trim_response(self, raw_response: bytes):
         """Trim raw response from header and checksum data"""
         return raw_response[5:-2]
+
+    def get_offset(self, address: int):
+        """Calculate relative offset to start of the response bytes"""
+        return (address - self.first_address) * 2
 
 
 class ModbusReadCommand(ModbusProtocolCommand):
