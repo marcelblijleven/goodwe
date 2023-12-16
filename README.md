@@ -43,24 +43,6 @@ async def get_runtime_data():
 asyncio.run(get_runtime_data())
 ```
 
-or the old way (for XS inverters only), create a processor and inverter instance:
-
-```python
-import asyncio
-from goodwe import GoodWeInverter, GoodWeXSProcessor
-
-
-async def get_data():
-    ip_address = '192.168.200.100'
-    processor = GoodWeXSProcessor()
-    inverter = GoodWeInverter(inverter_address=(ip_address, 8899), processor=processor)
-    data = await inverter.request_data()
-    print(f'power is {data.power} at {data.date:%H:%M:%S}')
-
-
-asyncio.run(get_data())
-```
-
 ## References and useful links
 
 - https://github.com/mletenay/home-assistant-goodwe-inverter

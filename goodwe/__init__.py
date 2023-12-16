@@ -8,7 +8,6 @@ from .dt import DT
 from .es import ES
 from .et import ET
 from .exceptions import InverterError, RequestFailedException
-from .goodwe import GoodWeXSProcessor, AbstractDataProcessor, GoodWeInverter
 from .inverter import Inverter, OperationMode, Sensor, SensorKind
 from .model import DT_MODEL_TAGS, ES_MODEL_TAGS, ET_MODEL_TAGS
 from .protocol import ProtocolCommand, UdpInverterProtocol, Aa55ProtocolCommand

@@ -29,9 +29,5 @@ class RequestRejectedException(InverterError):
         self.message: str = message
 
 
-class ProcessingException(InverterError):
-    """Indicates an error occurred during processing of inverter data"""
-
-
 class MaxRetriesException(InverterError):
     """Indicates the maximum number of retries has been reached"""
