@@ -21,7 +21,7 @@ class Voltage(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_voltage(data)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return encode_voltage(value)
 
 
@@ -34,7 +34,7 @@ class Current(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_current(data)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return encode_current(value)
 
 
@@ -155,7 +155,7 @@ class Byte(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_byte(data)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         raise NotImplementedError()
 
 
@@ -168,7 +168,7 @@ class ByteH(Byte):
     def read_value(self, data: ProtocolResponse):
         return read_byte(data)
 
-    def encode_value(self, value: Any, register_value: bytes) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         word = bytearray(register_value)
         word[0] = int.to_bytes(int(value), length=1, byteorder="big", signed=True)[0]
         return bytes(word)
@@ -184,7 +184,7 @@ class ByteL(Byte):
         read_byte(data)
         return read_byte(data)
 
-    def encode_value(self, value: Any, register_value: bytes) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         word = bytearray(register_value)
         word[1] = int.to_bytes(int(value), length=1, byteorder="big", signed=True)[0]
         return bytes(word)
@@ -199,7 +199,7 @@ class Integer(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_bytes2(data)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return int.to_bytes(int(value), length=2, byteorder="big", signed=True)
 
 
@@ -212,7 +212,7 @@ class Long(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_bytes4(data)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return int.to_bytes(int(value), length=4, byteorder="big", signed=True)
 
 
@@ -226,7 +226,7 @@ class Decimal(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_decimal2(data, self.scale)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return int.to_bytes(int(value * self.scale), length=2, byteorder="big", signed=True)
 
 
@@ -250,7 +250,7 @@ class Timestamp(Sensor):
     def read_value(self, data: ProtocolResponse):
         return read_datetime(data)
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return encode_datetime(value)
 
 
@@ -412,7 +412,7 @@ class EcoModeV1(Sensor, EcoMode):
             raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
         return self
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         if isinstance(value, bytes) and len(value) == 8:
             # try to read_value to check if values are valid
             if self.read_value(ProtocolResponse(value, None)):
@@ -513,7 +513,7 @@ class EcoModeV2(Sensor, EcoMode):
             raise ValueError(f"{self.id_}: SoC value {self.soc} out of range.")
         return self
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         if isinstance(value, bytes) and len(value) == 12:
             # try to read_value to check if values are valid
             if self.read_value(ProtocolResponse(value, None)):
@@ -614,7 +614,7 @@ class PeakShavingMode(Sensor):
             raise ValueError(f"{self.id_}: soc value {self.soc} out of range.")
         return self
 
-    def encode_value(self, value: Any) -> bytes:
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         if isinstance(value, bytes) and len(value) == 12:
             # try to read_value to check if values are valid
             if self.read_value(ProtocolResponse(value, None)):

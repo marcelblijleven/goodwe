@@ -52,8 +52,8 @@ class Sensor:
         data.seek(self.offset)
         return self.read_value(data)
 
-    def encode_value(self, value: Any) -> bytes:
-        """Encode the (setting mostly) value to (usually) 2 byte raw register value"""
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
+        """Encode the (setting mostly) value to (usually) 2 bytes raw register value"""
         raise NotImplementedError()
 
 

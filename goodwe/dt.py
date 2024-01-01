@@ -207,7 +207,6 @@ class DT(Inverter):
         return await self.read_setting('grid_export_limit')
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
-        setting = self._settings.get('grid_export_limit')
         if export_limit >= 0:
             return await self.write_setting('grid_export_limit', export_limit)
 
