@@ -10,14 +10,14 @@ DT_MODEL_TAGS = ["DTU", "DTS", "MSU", "MST", "DSN", "DTN", "DST", "NSU", "SSN", 
 
 SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
                        "MSU", "MST", "PSB", "PSC",
-                       "MSC", # Found on third gen MS
+                       "MSC",  # Found on third gen MS
                        "EHU", "EHR", "HSB",  # ET
                        "ESN", "EMN", "ERN", "EBN", "HLB", "HMB", "HBB", "SPN"]  # ES Gen 2
 
-MPPT3_MODELS = ["MSU", "MST", "PSC", "MSC",
-                "25KET", "29KET", "29K9ET", "30KET"]
+MPPT3_MODELS = ["MSU", "MST", "PSC", "MSC"]
 
-MPPT4_MODELS = ["HSB"]
+MPPT4_MODELS = ["HSB",
+                "25KET", "29KET", "29K9ET", "30KET"]
 
 BAT_2_MODELS = ["25KET", "29KET", "29K9ET", "30KET"]
 

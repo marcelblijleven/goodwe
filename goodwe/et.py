@@ -256,7 +256,7 @@ class ET(Inverter):
         Apparent4("meter_apparent_power_total", 36041, "Meter Apparent Power Total", Kind.GRID),
         Integer("meter_type", 36043, "Meter Type", "", Kind.GRID),  # (0: Single phase, 1: 3P3W, 2: 3P4W, 3: HomeKit)
         Integer("meter_sw_version", 36044, "Meter Software Version", "", Kind.GRID),
-        # Sensors added in some ARM fw update
+        # Sensors added in some ARM fw update, read when flag _has_meter_extended is on
         Power4("meter2_active_power", 36045, "Meter 2 Active Power", Kind.GRID),
         Float("meter2_e_total_exp", 36047, 1000, "Meter 2 Total Energy (export)", "kWh", Kind.GRID),
         Float("meter2_e_total_imp", 36049, 1000, "Meter 2 Total Energy (import)", "kWh", Kind.GRID),
@@ -273,7 +273,7 @@ class ET(Inverter):
     # Modbus registers from offset 0x89e5 (35301)
     __all_sensors_mptt: Tuple[Sensor, ...] = (
         Power4("ppv_total", 35301, "PV Power Total", Kind.PV),
-        # 35303 PV channel RO U16 1 1 PV channel
+        Integer("pv_channel", 35303, "PV Channel", "", Kind.PV),
         Voltage("vpv5", 35304, "PV5 Voltage", Kind.PV),
         Current("ipv5", 35305, "PV5 Current", Kind.PV),
         Voltage("vpv6", 35306, "PV6 Voltage", Kind.PV),

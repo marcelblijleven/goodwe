@@ -914,7 +914,7 @@ class GW25K_ET_Test(EtMock):
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
         data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(231, len(data))
+        self.assertEqual(237, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2023-12-03 14:07:07', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 737.9, 'V', data)
@@ -926,7 +926,12 @@ class GW25K_ET_Test(EtMock):
         self.assertSensor('vpv3', 755.4, 'V', data)
         self.assertSensor('ipv3', 1.3, 'A', data)
         self.assertSensor('ppv3', 0, 'W', data)
+        self.assertSensor('vpv4', 755.4, 'V', data)
+        self.assertSensor('ipv4', 0.0, 'A', data)
+        self.assertSensor('ppv4', 0, 'W', data)
         self.assertSensor('ppv', 2014, 'W', data)
+        self.assertSensor('pv4_mode', 0, '', data)
+        self.assertSensor('pv4_mode_label', 'PV panels not connected', '', data)
         self.assertSensor('pv3_mode', 0, '', data)
         self.assertSensor('pv3_mode_label', 'PV panels not connected', '', data)
         self.assertSensor('pv2_mode', 2, '', data)
@@ -1103,6 +1108,7 @@ class GW25K_ET_Test(EtMock):
         self.assertSensor('meter_current2', 2.2, 'A', data)
         self.assertSensor('meter_current3', 1.9, 'A', data)
         self.assertSensor('ppv_total', 529, 'W', data)
+        self.assertSensor('pv_channel', 2, '', data)
         self.assertSensor('vpv5', 0.0, 'V', data)
         self.assertSensor('ipv5', 0.0, 'A', data)
         self.assertSensor('vpv6', 0.0, 'V', data)
