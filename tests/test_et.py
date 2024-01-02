@@ -895,7 +895,7 @@ class GW25K_ET_Test(EtMock):
 
     def test_GW25K_ET_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
-        self.assertEqual('00000000000000000000', self.model_name)
+        self.assertEqual('', self.model_name)
         self.assertEqual('9025KETT00000000', self.serial_number)
         self.assertEqual(25000, self.rated_power)
         self.assertEqual(0, self.modbus_version)
@@ -905,7 +905,7 @@ class GW25K_ET_Test(EtMock):
         self.assertEqual(6017, self.dsp_svn_version)
         self.assertEqual(8, self.arm_version)
         self.assertEqual(362, self.arm_svn_version)
-        self.assertEqual('00300034003000360032002d', self.firmware)
+        self.assertEqual('04062-', self.firmware)
         self.assertEqual('02020-08-S01', self.arm_firmware)
 
     def test_GW25K_ET_runtime_data(self):

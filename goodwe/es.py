@@ -191,7 +191,7 @@ class ES(Inverter):
         response = response.response_data()
         self.firmware = self._decode(response[0:5]).rstrip()
         self.model_name = self._decode(response[5:15]).rstrip()
-        self.serial_number = response[31:47].decode("ascii")
+        self.serial_number = self._decode(response[31:47])
         self.software_version = self._decode(response[51:63])
         try:
             if len(self.firmware) >= 2:

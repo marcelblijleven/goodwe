@@ -297,7 +297,7 @@ class Inverter(ABC):
         """Decode the bytes to ascii string"""
         try:
             if any(x < 32 for x in data):
-                return data.hex()
+                return data.decode("utf-16be").rstrip().replace('\x00', '')
             return data.decode("ascii").rstrip()
         except ValueError:
             return data.hex()

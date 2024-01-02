@@ -556,7 +556,7 @@ class GW6000_ES_20_Test(EsMock):
 
     def test_GW6000_ES_20_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
-        self.assertEqual('00000000000000000000', self.model_name)
+        self.assertEqual('', self.model_name)
         self.assertEqual('56000ESN00AW0000', self.serial_number)
         self.assertEqual('0002000205', self.firmware)
         self.assertEqual(0, self.dsp1_version)

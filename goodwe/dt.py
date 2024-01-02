@@ -151,7 +151,7 @@ class DT(Inverter):
             self.model_name = response[22:32].decode("ascii").rstrip()
         except:
             print("No model name sent from the inverter.")
-        self.serial_number = response[6:22].decode("ascii")
+        self.serial_number = self._decode(response[6:22])
         self.dsp1_version = read_unsigned_int(response, 66)
         self.dsp2_version = read_unsigned_int(response, 68)
         self.arm_version = read_unsigned_int(response, 70)

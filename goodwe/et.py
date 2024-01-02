@@ -449,7 +449,7 @@ class ET(Inverter):
         self.modbus_version = read_unsigned_int(response, 0)
         self.rated_power = read_unsigned_int(response, 2)
         self.ac_output_type = read_unsigned_int(response, 4)  # 0: 1-phase, 1: 3-phase (4 wire), 2: 3-phase (3 wire)
-        self.serial_number = response[6:22].decode("ascii")
+        self.serial_number = self._decode(response[6:22])
         self.model_name = self._decode(response[22:32])
         self.dsp1_version = read_unsigned_int(response, 32)
         self.dsp2_version = read_unsigned_int(response, 34)
