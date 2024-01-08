@@ -385,7 +385,9 @@ class EcoModeV1(Sensor, EcoMode):
         self.soc: int = 100  # just to keep same API with V2
 
     def __str__(self):
-        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% {'On' if self.on_off != 0 else 'Off'}"
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} " \
+               f"{self.power}% " \
+               f"{'On' if self.on_off != 0 else 'Off'}"
 
     def read_value(self, data: ProtocolResponse):
         self.start_h = read_byte(data)
@@ -483,7 +485,9 @@ class EcoModeV2(Sensor, EcoMode):
         # 2 bytes padding 0000
 
     def __str__(self):
-        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.power}% (SoC {self.soc}%) {'On' if self.on_off != 0 else 'Off'}"
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} " \
+               f"{self.power}% (SoC {self.soc}%) " \
+               f"{'On' if self.on_off == -1 else 'Off' if self.on_off == 0 else 'Unset'}"
 
     def read_value(self, data: ProtocolResponse):
         self.start_h = read_byte(data)
@@ -499,7 +503,7 @@ class EcoModeV2(Sensor, EcoMode):
         if self.end_m < 0 or self.end_m > 59:
             raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
         self.on_off = read_byte(data)
-        if self.on_off not in (0, -1):
+        if self.on_off not in (0, -1, 85):
             raise ValueError(f"{self.id_}: on_off value {self.on_off} out of range.")
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)
@@ -539,7 +543,7 @@ class EcoModeV2(Sensor, EcoMode):
                and self.start_m == 0 \
                and self.end_h == 23 \
                and self.end_m == 59 \
-               and self.on_off != 0 \
+               and self.on_off == -1 \
                and self.day_bits == 127 \
                and self.power < 0
 
@@ -549,7 +553,7 @@ class EcoModeV2(Sensor, EcoMode):
                and self.start_m == 0 \
                and self.end_h == 23 \
                and self.end_m == 59 \
-               and self.on_off != 0 \
+               and self.on_off == -1 \
                and self.day_bits == 127 \
                and self.power > 0
 
@@ -561,7 +565,7 @@ class EcoModeV2(Sensor, EcoMode):
         result.end_h = self.end_h
         result.end_m = self.end_m
         result.power = self.power
-        result.on_off = self.on_off
+        result.on_off = -1 if self.on_off == -1 else 0
         result.day_bits = self.day_bits
         result.days = self.days
         return result
@@ -584,7 +588,9 @@ class PeakShavingMode(Sensor):
         # 2 bytes padding 0000
 
     def __str__(self):
-        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} {self.import_power}kW (SoC {self.soc}%) {'On' if self.on_off == -4 else 'Off'}"
+        return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} " \
+               f"{self.import_power}kW (SoC {self.soc}%) " \
+               f"{'On' if self.on_off == -4 else 'Off' if self.on_off == 3 else 'Unset'}"
 
     def read_value(self, data: ProtocolResponse):
         self.start_h = read_byte(data)
@@ -600,7 +606,7 @@ class PeakShavingMode(Sensor):
         if self.end_m < 0 or self.end_m > 59:
             raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
         self.on_off = read_byte(data)
-        if self.on_off not in (-4, 3):
+        if self.on_off not in (-4, 3, 85):
             raise ValueError(f"{self.id_}: on_off value {self.on_off} out of range.")
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)

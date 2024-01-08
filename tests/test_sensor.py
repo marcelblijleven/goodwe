@@ -175,6 +175,9 @@ class TestUtils(TestCase):
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
 
+        data = MockResponse("0000173b5500001400640000")
+        self.assertEqual("0:0-23:59  20% (SoC 100%) Unset", testee.read(data).__str__())
+
     def test_peak_shaving_mode(self):
         testee = PeakShavingMode("", 0, "")
 
