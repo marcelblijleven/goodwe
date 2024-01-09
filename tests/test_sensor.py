@@ -189,6 +189,6 @@ class TestUtils(TestCase):
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
         self.assertEqual('Utility Loss', decode_bitmap(512, ERROR_CODES))
-        self.assertEqual(', Utility Loss', decode_bitmap(516, ERROR_CODES))
+        self.assertEqual('Utility Loss', decode_bitmap(516, ERROR_CODES))
         self.assertEqual('Utility Loss, Vac Failure', decode_bitmap(131584, ERROR_CODES))
         self.assertEqual('err16', decode_bitmap(65536, BMS_WARNING_CODES))

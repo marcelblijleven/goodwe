@@ -58,51 +58,49 @@ class DT(Inverter):
         Calculated("pgrid3",
                    lambda data: round(read_voltage(data, 30120) * read_current(data, 30123)),
                    "On-grid L3 Power", "W", Kind.AC),
-        Integer("xx54", 30127, "Unknown sensor@54"),
+        # 30127 reserved
         Power("ppv", 30128, "PV Power", Kind.PV),
         Integer("work_mode", 30129, "Work Mode code"),
         Enum2("work_mode_label", 30129, WORK_MODES, "Work Mode"),
         Long("error_codes", 30130, "Error Codes"),
         Integer("warning_code", 30132, "Warning code"),
-        Integer("xx66", 30133, "Unknown sensor@66"),
-        Integer("xx68", 30134, "Unknown sensor@68"),
-        Integer("xx70", 30135, "Unknown sensor@70"),
-        Integer("xx72", 30136, "Unknown sensor@72"),
-        Integer("xx74", 30137, "Unknown sensor@74"),
-        Integer("xx76", 30138, "Unknown sensor@76"),
-        Integer("xx78", 30139, "Unknown sensor@78"),
-        Integer("xx80", 30140, "Unknown sensor@80"),
+        Apparent4("apparent_power", 30133, "Apparent Power", Kind.AC),
+        Reactive4("reactive_power", 30135, "Reactive Power", Kind.AC),
+        # 30137 reserved
+        # 30138 reserved
+        # 30139 reserved
+        # 30140 reserved
         Temp("temperature", 30141, "Inverter Temperature", Kind.AC),
-        Integer("xx84", 30142, "Unknown sensor@84"),
-        Integer("xx86", 30143, "Unknown sensor@86"),
+        # 30142 reserved
+        # 30143 reserved
         Energy("e_day", 30144, "Today's PV Generation", Kind.PV),
         Energy4("e_total", 30145, "Total PV Generation", Kind.PV),
         Long("h_total", 30147, "Hours Total", "h", Kind.PV),
         Integer("safety_country", 30149, "Safety Country code", "", Kind.AC),
         Enum2("safety_country_label", 30149, SAFETY_COUNTRIES, "Safety Country", Kind.AC),
-        Integer("xx100", 30150, "Unknown sensor@100"),
-        Integer("xx102", 30151, "Unknown sensor@102"),
-        Integer("xx104", 30152, "Unknown sensor@104"),
-        Integer("xx106", 30153, "Unknown sensor@106"),
-        Integer("xx108", 30154, "Unknown sensor@108"),
-        Integer("xx110", 30155, "Unknown sensor@110"),
-        Integer("xx112", 30156, "Unknown sensor@112"),
-        Integer("xx114", 30157, "Unknown sensor@114"),
-        Integer("xx116", 30158, "Unknown sensor@116"),
-        Integer("xx118", 30159, "Unknown sensor@118"),
-        Integer("xx120", 30160, "Unknown sensor@120"),
-        Integer("xx122", 30161, "Unknown sensor@122"),
+        # 30150 reserved
+        # 30151 reserved
+        # 30152 reserved
+        # 30153 reserved
+        # 30154 reserved
+        # 30155 reserved
+        # 30156 reserved
+        # 30157 reserved
+        # 30158 reserved
+        # 30159 reserved
+        # 30160 reserved
+        # 30161 reserved
         Integer("funbit", 30162, "FunBit", "", Kind.PV),
         Voltage("vbus", 30163, "Bus Voltage", Kind.PV),
         Voltage("vnbus", 30164, "NBus Voltage", Kind.PV),
-        Integer("xx130", 30165, "Unknown sensor@130"),
-        Integer("xx132", 30166, "Unknown sensor@132"),
-        Integer("xx134", 30167, "Unknown sensor@134"),
-        Integer("xx136", 30168, "Unknown sensor@136"),
-        Integer("xx138", 30169, "Unknown sensor@138"),
-        Integer("xx140", 30170, "Unknown sensor@140"),
-        Integer("xx142", 30171, "Unknown sensor@142"),
-        Integer("xx144", 30172, "Unknown sensor@144"),
+        Long("derating_mode", 30165, "Derating Mode code"),
+        EnumBitmap4("derating_mode_label", 30165, DERATING_MODE_CODES, "Derating Mode"),
+        # 30167 reserved
+        # 30168 reserved
+        # 30169 reserved
+        # 30170 reserved
+        # 30171 reserved
+        # 30172 reserved
     )
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
@@ -137,7 +135,7 @@ class DT(Inverter):
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
         """Filter to exclude phase2/3 sensors on single phase inverters"""
-        return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_ and not s.id_.startswith('xx'))
+        return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_)
 
     @staticmethod
     def _pv1_pv2_only(s: Sensor) -> bool:
@@ -172,9 +170,9 @@ class DT(Inverter):
             self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
         pass
 
-    async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
+    async def read_runtime_data(self) -> Dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
-        data = self._map_response(response, self._sensors, include_unknown_sensors)
+        data = self._map_response(response, self._sensors)
         return data
 
     async def read_setting(self, setting_id: str) -> Any:

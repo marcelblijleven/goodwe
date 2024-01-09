@@ -148,14 +148,11 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
+    async def read_runtime_data(self) -> Dict[str, Any]:
         """
         Request the runtime data from the inverter.
         Answer dictionary of individual sensors and their values.
         List of supported sensors (and their definitions) is provided by sensors() method.
-
-        If include_unknown_sensors parameter is set to True, return all runtime values,
-        including those "xx*" sensors whose meaning is not yet identified.
         """
         raise NotImplementedError()
 
@@ -280,16 +277,15 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @staticmethod
-    def _map_response(response: ProtocolResponse, sensors: Tuple[Sensor, ...], incl_xx: bool = True) -> Dict[str, Any]:
+    def _map_response(response: ProtocolResponse, sensors: Tuple[Sensor, ...]) -> Dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
         result = {}
         for sensor in sensors:
-            if incl_xx or not sensor.id_.startswith("xx"):
-                try:
-                    result[sensor.id_] = sensor.read(response)
-                except ValueError:
-                    logger.exception("Error reading sensor %s.", sensor.id_)
-                    result[sensor.id_] = None
+            try:
+                result[sensor.id_] = sensor.read(response)
+            except ValueError:
+                logger.exception("Error reading sensor %s.", sensor.id_)
+                result[sensor.id_] = None
         return result
 
     @staticmethod

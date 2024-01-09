@@ -75,7 +75,7 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(145, len(data))
 
         # for sensor in self.sensors():
@@ -388,7 +388,7 @@ class GW6000_EH_Test(EtMock):
 
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(89, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
@@ -478,7 +478,7 @@ class GEH10_1U_10_Test(EtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(125, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2023-01-26 11:34:07', '%Y-%m-%d %H:%M:%S'), '', data)
@@ -636,7 +636,7 @@ class GW6000_EH_Test(EtMock):
 
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(89, len(data))
 
         self.assertSensor('vpv1', 330.3, 'V', data)
@@ -726,7 +726,7 @@ class GEH10_1U_10_Test(EtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(125, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2023-01-26 11:34:07', '%Y-%m-%d %H:%M:%S'), '', data)
@@ -913,7 +913,7 @@ class GW25K_ET_Test(EtMock):
         self.loop.run_until_complete(self.read_device_info())
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
+        data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(237, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2023-12-03 14:07:07', '%Y-%m-%d %H:%M:%S'), '', data)

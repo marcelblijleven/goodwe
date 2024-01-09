@@ -310,7 +310,8 @@ class EnumBitmap4(Sensor):
         raise NotImplementedError()
 
     def read(self, data: ProtocolResponse):
-        return decode_bitmap(read_bytes4(data, self.offset), self._labels)
+        bits = read_bytes4(data, self.offset)
+        return decode_bitmap(bits if bits != -1 else 0, self._labels)
 
 
 class EnumBitmap22(Sensor):
@@ -779,7 +780,8 @@ def decode_bitmap(value: int, bitmap: Dict[int, str]) -> str:
     result = []
     for i in range(32):
         if bits & 0x1 == 1:
-            result.append(bitmap.get(i, f'err{i}'))
+            if bitmap.get(i, f'err{i}'):
+                result.append(bitmap.get(i, f'err{i}'))
         bits = bits >> 1
     return ", ".join(result)
 

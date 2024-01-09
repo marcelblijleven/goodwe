@@ -63,8 +63,8 @@ class GW5048D_ES_Test(EsMock):
         self.assertEqual(16, self.arm_version)
 
     def test_GW5048D_ES_runtime_data(self):
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(59, len(data))
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 0.0, 'V', data)
         self.assertSensor('ipv1', 0.1, 'A', data)
@@ -120,8 +120,6 @@ class GW5048D_ES_Test(EsMock):
         self.assertSensor('pback_up', 535, 'W', data)
         self.assertSensor('plant_power', 691, 'W', data)
         self.assertSensor('meter_power_factor', 0.001, '', data)
-        self.assertSensor('xx85', 0, '', data)
-        self.assertSensor('xx87', 5, '', data)
         self.assertSensor('diagnose_result', 117440576, '', data)
         self.assertSensor('diagnose_result_label',
                           'Discharge Driver On, Export power limit set, PF value set, Real power limit set', '', data)
@@ -185,8 +183,8 @@ class GW5048_EM_Test(EsMock):
         self.assertFalse(self._supports_eco_mode_v2())
 
     def test_GW5048_EM_runtime_data(self):
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(59, len(data))
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 130.8, 'V', data)
         self.assertSensor('ipv1', 0.3, 'A', data)
@@ -242,8 +240,6 @@ class GW5048_EM_Test(EsMock):
         self.assertSensor('pback_up', 847, 'W', data)
         self.assertSensor('plant_power', 1056, 'W', data)
         self.assertSensor('meter_power_factor', 0.001, '', data)
-        self.assertSensor('xx85', 0, '', data)
-        self.assertSensor('xx87', -3, '', data)
         self.assertSensor('diagnose_result', 64, '', data)
         self.assertSensor('diagnose_result_label', 'Discharge Driver On', '', data)
         # self.assertSensor('e_total_exp', 512.9, 'kWh', data)
@@ -266,8 +262,8 @@ class GW5048_EM_No_Batt_Test(EsMock):
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048-EM-no-bat_running_data.hex')
 
     def test_GW5048_EM_no_batt_runtime_data(self):
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(59, len(data))
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 334.3, 'V', data)
         self.assertSensor('ipv1', 0.4, 'A', data)
@@ -323,8 +319,6 @@ class GW5048_EM_No_Batt_Test(EsMock):
         self.assertSensor('pback_up', 0, 'W', data)
         self.assertSensor('plant_power', 249, 'W', data)
         self.assertSensor('meter_power_factor', 0.001, '', data)
-        self.assertSensor('xx85', 0, '', data)
-        self.assertSensor('xx87', -35, '', data)
         self.assertSensor('diagnose_result', 18501, '', data)
         self.assertSensor('diagnose_result_label',
                           'Battery voltage low, Battery SOC in back, Discharge Driver On, Self-use load light, Battery Disconnected',
@@ -347,8 +341,8 @@ class GW5000S_BP_Test(EsMock):
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5000S-BP_running_data.hex')
 
     def test_GW5000S_BP_runtime_data(self):
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(59, len(data))
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 374.9, 'V', data)
         self.assertSensor('ipv1', 2.2, 'A', data)
@@ -404,8 +398,6 @@ class GW5000S_BP_Test(EsMock):
         self.assertSensor('pback_up', 0, 'W', data)
         self.assertSensor('plant_power', 1285, 'W', data)
         self.assertSensor('meter_power_factor', 0.001, '', data)
-        self.assertSensor('xx85', 0, '', data)
-        self.assertSensor('xx87', 211, '', data)
         self.assertSensor('diagnose_result', 524320, '', data)
         self.assertSensor('diagnose_result_label', 'Charge time on, Self-use off', '', data)
         # self.assertSensor('e_total_exp', 538.4, 'kWh', data)
@@ -479,8 +471,8 @@ class GW5048_ESA_Test(EsMock):
         self.assertEqual(10, self.arm_version)
 
     def test_GW5048_ESA_runtime_data(self):
-        data = self.loop.run_until_complete(self.read_runtime_data(True))
-        self.assertEqual(59, len(data))
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(57, len(data))
 
         self.assertSensor('vpv1', 111.9, 'V', data)
         self.assertSensor('ipv1', 0.0, 'A', data)
@@ -536,8 +528,6 @@ class GW5048_ESA_Test(EsMock):
         self.assertSensor('pback_up', 0, 'W', data)
         self.assertSensor('plant_power', 916, 'W', data)
         self.assertSensor('meter_power_factor', 0.001, '', data)
-        self.assertSensor('xx85', 0, '', data)
-        self.assertSensor('xx87', 915, '', data)
         self.assertSensor('diagnose_result', 16780352, '', data)
         self.assertSensor('diagnose_result_label',
                           'Discharge Driver On, Meter connection reversed, Self-use load light, Export power limit set',

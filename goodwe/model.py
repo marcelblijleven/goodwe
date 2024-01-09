@@ -6,7 +6,9 @@ ET_MODEL_TAGS = ["ETU", "ETL", "ETR", "ETC", "EHU", "EHR", "EHB", "BTU", "BTN", 
                  "ESN", "EMN", "ERN", "EBN",  # ES Gen 2
                  "HLB", "HMB", "HBB", "SPN"]  # Gen 2
 ES_MODEL_TAGS = ["ESU", "EMU", "ESA", "BPS", "BPU", "EMJ", "IJL"]
-DT_MODEL_TAGS = ["DTU", "DTS", "MSU", "MST", "DSN", "DTN", "DST", "NSU", "SSN", "SST", "SSX", "SSY", "PSB", "PSC"]
+DT_MODEL_TAGS = ["DTU", "DTS",
+                 "MSU", "MST", "MSC", "DSN", "DTN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",
+                 "PSB", "PSC"]
 
 SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
                        "MSU", "MST", "PSB", "PSC",

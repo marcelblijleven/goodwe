@@ -98,8 +98,8 @@ class ES(Inverter):
                    lambda data: round(read_bytes2(data, 47) + read_bytes2(data, 81)),
                    "Plant Power", "W", Kind.AC),
         Decimal("meter_power_factor", 83, 1000, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
-        Integer("xx85", 85, "Unknown sensor@85"),
-        Integer("xx87", 87, "Unknown sensor@87"),
+        # Integer("xx85", 85, "Unknown sensor@85"),
+        # Integer("xx87", 87, "Unknown sensor@87"),
         Long("diagnose_result", 89, "Diag Status Code"),
         EnumBitmap4("diagnose_result_label", 89, DIAG_STATUS_CODES, "Diag Status"),
         # Energy4("e_total_exp", 93, "Total Energy (export)", Kind.GRID),
@@ -206,9 +206,9 @@ class ES(Inverter):
         if self._supports_eco_mode_v2():
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
 
-    async def read_runtime_data(self, include_unknown_sensors: bool = False) -> Dict[str, Any]:
+    async def read_runtime_data(self) -> Dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
-        data = self._map_response(response, self.__sensors, include_unknown_sensors)
+        data = self._map_response(response, self.__sensors)
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
