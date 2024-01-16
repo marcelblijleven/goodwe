@@ -40,7 +40,7 @@ class ET(Inverter):
                    max(0, read_bytes4(data, 35113)) +
                    max(0, read_bytes4(data, 35117)),
                    "PV Power", "W", Kind.PV),
-        ByteH("pv4_mode", 35119, "PV4 Mode code", "", Kind.PV),  # l
+        ByteL("pv4_mode", 35119, "PV4 Mode code", "", Kind.PV),  # l
         EnumL("pv4_mode_label", 35119, PV_MODES, "PV4 Mode", Kind.PV),
         ByteH("pv3_mode", 35119, "PV3 Mode code", "", Kind.PV),  # h
         EnumH("pv3_mode_label", 35119, PV_MODES, "PV3 Mode", Kind.PV),
