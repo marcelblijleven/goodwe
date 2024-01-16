@@ -40,14 +40,14 @@ class ET(Inverter):
                    max(0, read_bytes4(data, 35113)) +
                    max(0, read_bytes4(data, 35117)),
                    "PV Power", "W", Kind.PV),
-        ByteL("pv4_mode", 35119, "PV4 Mode code", "", Kind.PV),  # l
-        EnumL("pv4_mode_label", 35119, PV_MODES, "PV4 Mode", Kind.PV),
-        ByteH("pv3_mode", 35119, "PV3 Mode code", "", Kind.PV),  # h
-        EnumH("pv3_mode_label", 35119, PV_MODES, "PV3 Mode", Kind.PV),
-        ByteL("pv2_mode", 35120, "PV2 Mode code", "", Kind.PV),  # l
-        EnumL("pv2_mode_label", 35120, PV_MODES, "PV2 Mode", Kind.PV),
-        ByteH("pv1_mode", 35120, "PV1 Mode code", "", Kind.PV),  # h
-        EnumH("pv1_mode_label", 35120, PV_MODES, "PV1 Mode", Kind.PV),
+        ByteH("pv4_mode", 35119, "PV4 Mode code", "", Kind.PV),
+        EnumH("pv4_mode_label", 35119, PV_MODES, "PV4 Mode", Kind.PV),
+        ByteL("pv3_mode", 35119, "PV3 Mode code", "", Kind.PV),
+        EnumL("pv3_mode_label", 35119, PV_MODES, "PV3 Mode", Kind.PV),
+        ByteH("pv2_mode", 35120, "PV2 Mode code", "", Kind.PV),
+        EnumH("pv2_mode_label", 35120, PV_MODES, "PV2 Mode", Kind.PV),
+        ByteL("pv1_mode", 35120, "PV1 Mode code", "", Kind.PV),
+        EnumL("pv1_mode_label", 35120, PV_MODES, "PV1 Mode", Kind.PV),
         Voltage("vgrid", 35121, "On-grid L1 Voltage", Kind.AC),
         Current("igrid", 35122, "On-grid L1 Current", Kind.AC),
         Frequency("fgrid", 35123, "On-grid L1 Frequency", Kind.AC),
