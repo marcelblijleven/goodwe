@@ -19,9 +19,9 @@ SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
 MPPT3_MODELS = ["MSU", "MST", "PSC", "MSC"]
 
 MPPT4_MODELS = ["HSB",
-                "25KET", "29KET", "29K9ET", "30KET"]
+                "25KET", "29K9ET"]
 
-BAT_2_MODELS = ["25KET", "29KET", "29K9ET", "30KET"]
+BAT_2_MODELS = ["25KET", "29K9ET"]
 
 
 def is_single_phase(inverter: Inverter) -> bool:
