@@ -423,10 +423,10 @@ class ET(Inverter):
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
-        return self.arm_version >= 19
+        return self.arm_version >= 19 or 'ETU' not in self.serial_number
 
     def _supports_peak_shaving(self) -> bool:
-        return self.arm_version >= 22
+        return self.arm_version >= 22 or 'ETU' not in self.serial_number
 
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
@@ -476,9 +476,9 @@ class ET(Inverter):
         else:
             self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
 
-        if self.arm_version >= 19 or self.rated_power >= 15000:
+        if self.arm_version >= 19 or 'ETU' not in self.serial_number:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
-        if self.arm_version >= 22 or self.rated_power >= 15000:
+        if self.arm_version >= 22 or 'ETU' not in self.serial_number:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
 
     async def read_runtime_data(self) -> Dict[str, Any]:
