@@ -116,11 +116,7 @@ class ET(Inverter):
         Voltage("nbus_voltage", 35179, "NBus Voltage", None),
         Voltage("vbattery1", 35180, "Battery Voltage", Kind.BAT),
         Current("ibattery1", 35181, "Battery Current", Kind.BAT),
-        # round(vbattery1 * ibattery1),
-        Calculated("pbattery1",
-                   lambda data: round(read_voltage(data, 35180) * read_current(data, 35181)),
-                   "Battery Power", "W", Kind.BAT),
-        # 35182+35183 ?
+        Power4("pbattery1", 35182, "Battery Power", Kind.BAT),
         Integer("battery_mode", 35184, "Battery Mode code", "", Kind.BAT),
         Enum2("battery_mode_label", 35184, BATTERY_MODES, "Battery Mode", Kind.BAT),
         Integer("warning_code", 35185, "Warning code"),
@@ -146,14 +142,14 @@ class ET(Inverter):
         Energy("e_bat_discharge_day", 35211, "Today Battery Discharge", Kind.BAT),
         Long("diagnose_result", 35220, "Diag Status Code"),
         EnumBitmap4("diagnose_result_label", 35220, DIAG_STATUS_CODES, "Diag Status"),
-        # ppv1 + ppv2 + pbattery - active_power
+        # ppv1 + ppv2 + ppv3 + ppv4 + pbattery1 - active_power
         Calculated("house_consumption",
                    lambda data:
                    read_bytes4(data, 35105) +
                    read_bytes4(data, 35109) +
                    read_bytes4(data, 35113) +
                    read_bytes4(data, 35117) +
-                   round(read_voltage(data, 35180) * read_current(data, 35181)) -
+                   read_bytes4(data, 35182) -
                    read_bytes2(data, 35140),
                    "House Consumption", "W", Kind.AC),
     )

@@ -142,7 +142,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('nbus_voltage', 401.8, 'V', data)
         self.assertSensor('vbattery1', 254.2, 'V', data)
         self.assertSensor('ibattery1', -9.8, 'A', data)
-        self.assertSensor('pbattery1', -2491, 'W', data)
+        self.assertSensor('pbattery1', -2512, 'W', data)
         self.assertSensor('battery_mode', 3, '', data)
         self.assertSensor('battery_mode_label', 'Charge', '', data)
         self.assertSensor('warning_code', 0, '', data)
@@ -170,7 +170,7 @@ class GW10K_ET_Test(EtMock):
         self.assertSensor('diagnose_result_label',
                           'Self-use load light, Export power limit set, PF value set, Real power limit set',
                           '', data)
-        self.assertSensor('house_consumption', 968, 'W', data)
+        self.assertSensor('house_consumption', 947, 'W', data)
         self.assertSensor('battery_bms', 255, '', data)
         self.assertSensor('battery_index', 256, '', data)
         self.assertSensor('battery_status', 1, '', data)
@@ -780,7 +780,7 @@ class GEH10_1U_10_Test(EtMock):
         self.assertSensor('nbus_voltage', -0.1, 'V', data)
         self.assertSensor('vbattery1', 406.1, 'V', data)
         self.assertSensor('ibattery1', -3.8, 'A', data)
-        self.assertSensor('pbattery1', -1543, 'W', data)
+        self.assertSensor('pbattery1', -1566, 'W', data)
         self.assertSensor('battery_mode', 3, '', data)
         self.assertSensor('battery_mode_label', 'Charge', '', data)
         self.assertSensor('warning_code', 0, '', data)
@@ -808,7 +808,7 @@ class GEH10_1U_10_Test(EtMock):
         self.assertSensor('diagnose_result_label',
                           'BMS: Discharge current low, APP: Discharge current too low, Self-use load light, PF value set',
                           '', data)
-        self.assertSensor('house_consumption', 4967, 'W', data)
+        self.assertSensor('house_consumption', 4944, 'W', data)
         self.assertSensor('battery_bms', 515, '', data)
         self.assertSensor('battery_index', 1029, '', data)
         self.assertSensor('battery_status', 1543, '', data)
