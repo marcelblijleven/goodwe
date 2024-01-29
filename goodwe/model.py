@@ -28,11 +28,11 @@ def is_single_phase(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
 
 
-def is_3_mptt(inverter: Inverter) -> bool:
+def is_3_mppt(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in MPPT3_MODELS)
 
 
-def is_4_mptt(inverter: Inverter) -> bool:
+def is_4_mppt(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in MPPT4_MODELS)
 
 

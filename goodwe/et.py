@@ -7,7 +7,7 @@ from .exceptions import RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_2_battery, is_3_mptt, is_4_mptt, is_single_phase
+from .model import is_2_battery, is_3_mppt, is_4_mppt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -267,7 +267,7 @@ class ET(Inverter):
 
     # Inverter's MPPT data
     # Modbus registers from offset 0x89e5 (35301)
-    __all_sensors_mptt: Tuple[Sensor, ...] = (
+    __all_sensors_mppt: Tuple[Sensor, ...] = (
         Power4("ppv_total", 35301, "PV Power Total", Kind.PV),
         Integer("pv_channel", 35303, "PV Channel", "", Kind.PV),
         Voltage("vpv5", 35304, "PV5 Voltage", Kind.PV),
@@ -410,16 +410,16 @@ class ET(Inverter):
         self._READ_METER_DATA_EXTENDED: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x3a)
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
-        self._READ_MPTT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89e5, 0x3d)
+        self._READ_MPPT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89e5, 0x3d)
         self._has_battery: bool = True
         self._has_battery2: bool = False
         self._has_meter_extended: bool = False
-        self._has_mptt: bool = False
+        self._has_mppt: bool = False
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_battery2 = self.__all_sensors_battery2
         self._sensors_meter = self.__all_sensors_meter
-        self._sensors_mptt = self.__all_sensors_mptt
+        self._sensors_mppt = self.__all_sensors_mppt
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
@@ -455,10 +455,10 @@ class ET(Inverter):
         self.firmware = self._decode(response[42:54])
         self.arm_firmware = self._decode(response[54:66])
 
-        if not is_4_mptt(self):
+        if not is_4_mppt(self):
             # This inverter does not have 4th MPPTs
             self._sensors = tuple(filter(lambda s: not ('pv4' in s.id_), self._sensors))
-            if not is_3_mptt(self):
+            if not is_3_mppt(self):
                 # This inverter neither has 3rd MPPTs
                 self._sensors = tuple(filter(lambda s: not ('pv3' in s.id_), self._sensors))
 
@@ -471,7 +471,7 @@ class ET(Inverter):
             self._has_battery2 = True
 
         if self.rated_power >= 15000:
-            self._has_mptt = True
+            self._has_mppt = True
             self._has_meter_extended = True
         else:
             self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
@@ -526,14 +526,14 @@ class ET(Inverter):
             response = await self._read_from_socket(self._READ_METER_DATA)
             data.update(self._map_response(response, self._sensors_meter))
 
-        if self._has_mptt:
+        if self._has_mppt:
             try:
-                response = await self._read_from_socket(self._READ_MPTT_DATA)
-                data.update(self._map_response(response, self._sensors_mptt))
+                response = await self._read_from_socket(self._READ_MPPT_DATA)
+                data.update(self._map_response(response, self._sensors_mppt))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
                     logger.warning("Cannot read MPPT values, disabling further attempts.")
-                    self._has_mptt = False
+                    self._has_mppt = False
                 else:
                     raise ex
 
@@ -652,8 +652,8 @@ class ET(Inverter):
             result = result + self._sensors_battery
         if self._has_battery2:
             result = result + self._sensors_battery2
-        if self._has_mptt:
-            result = result + self._sensors_mptt
+        if self._has_mppt:
+            result = result + self._sensors_mppt
         return result
 
     def settings(self) -> Tuple[Sensor, ...]:

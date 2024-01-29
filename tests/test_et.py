@@ -890,7 +890,7 @@ class GW25K_ET_Test(EtMock):
         self.mock_response(self._READ_RUNNING_DATA, 'GW25K-ET_running_data.hex')
         self.mock_response(self._READ_METER_DATA_EXTENDED, 'GW25K-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW25K-ET_battery_info.hex')
-        self.mock_response(self._READ_MPTT_DATA, 'GW25K-ET_mppt_data.hex')
+        self.mock_response(self._READ_MPPT_DATA, 'GW25K-ET_mppt_data.hex')
 
     def test_GW25K_ET_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -1167,7 +1167,7 @@ class GW29K9_ET_Test(EtMock):
         self.mock_response(self._READ_METER_DATA_EXTENDED, 'GW29K9-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW29K9-ET_battery_info.hex')
         self.mock_response(self._READ_BATTERY2_INFO, 'GW29K9-ET_battery2_info.hex')
-        self.mock_response(self._READ_MPTT_DATA, 'GW29K9-ET_mppt_data.hex')
+        self.mock_response(self._READ_MPPT_DATA, 'GW29K9-ET_mppt_data.hex')
 
     def test_GW29K9_ET_device_info(self):
         self.loop.run_until_complete(self.read_device_info())

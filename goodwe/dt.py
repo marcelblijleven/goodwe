@@ -6,7 +6,7 @@ from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_3_mptt, is_single_phase
+from .model import is_3_mppt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -162,7 +162,7 @@ class DT(Inverter):
         else:
             self._settings.update({s.id_: s for s in self.__settings_three_phase})
 
-        if is_3_mptt(self):
+        if is_3_mppt(self):
             # this is 3 PV strings inverter, keep all sensors
             pass
         else:
