@@ -146,6 +146,16 @@ class Temp(Sensor):
         return read_temp(data)
 
 
+class CellVoltage(Sensor):
+    """Sensor representing battery cell voltage [V] value encoded in 2 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "V", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_voltage(data) / 100
+
+
 class Byte(Sensor):
     """Sensor representing signed int value encoded in 1 byte"""
 
@@ -437,22 +447,22 @@ class EcoModeV1(Sensor, EcoMode):
     def is_eco_charge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power < 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off != 0 \
+            and self.day_bits == 127 \
+            and self.power < 0
 
     def is_eco_discharge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off != 0 \
-               and self.day_bits == 127 \
-               and self.power > 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off != 0 \
+            and self.day_bits == 127 \
+            and self.power > 0
 
     def as_eco_mode_v2(self) -> EcoModeV2:
         """Convert V1 to V2 EcoMode"""
@@ -541,22 +551,22 @@ class EcoModeV2(Sensor, EcoMode):
     def is_eco_charge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off == -1 \
-               and self.day_bits == 127 \
-               and self.power < 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off == -1 \
+            and self.day_bits == 127 \
+            and self.power < 0
 
     def is_eco_discharge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
-               and self.start_m == 0 \
-               and self.end_h == 23 \
-               and self.end_m == 59 \
-               and self.on_off == -1 \
-               and self.day_bits == 127 \
-               and self.power > 0
+            and self.start_m == 0 \
+            and self.end_h == 23 \
+            and self.end_m == 59 \
+            and self.on_off == -1 \
+            and self.day_bits == 127 \
+            and self.power > 0
 
     def as_eco_mode_v1(self) -> EcoModeV1:
         """Convert V2 to V1 EcoMode"""
