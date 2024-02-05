@@ -7,7 +7,7 @@ from .exceptions import RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_2_battery, is_3_mppt, is_4_mppt, is_single_phase
+from .model import is_2_battery, is_4_mppt, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -455,12 +455,10 @@ class ET(Inverter):
         self.firmware = self._decode(response[42:54])
         self.arm_firmware = self._decode(response[54:66])
 
-        if not is_4_mppt(self):
-            # This inverter does not have 4th MPPTs
+        if not is_4_mppt(self) and self.rated_power < 15000:
+            # This inverter does not have 4 MPPTs or PV strings
             self._sensors = tuple(filter(lambda s: not ('pv4' in s.id_), self._sensors))
-            if not is_3_mppt(self):
-                # This inverter neither has 3rd MPPTs
-                self._sensors = tuple(filter(lambda s: not ('pv3' in s.id_), self._sensors))
+            self._sensors = tuple(filter(lambda s: not ('pv3' in s.id_), self._sensors))
 
         if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
