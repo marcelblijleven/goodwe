@@ -327,7 +327,7 @@ class ES(Inverter):
         return await self.read_setting('dod')
 
     async def set_ongrid_battery_dod(self, dod: int) -> None:
-        if 0 <= dod <= 89:
+        if 0 <= dod <= 100:
             await self._read_from_socket(Aa55WriteCommand(0x560, 100 - dod))
 
     async def _reset_inverter(self) -> None:
