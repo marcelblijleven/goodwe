@@ -148,11 +148,12 @@ class TestUtils(TestCase):
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
 
-    def test_eco_mode_v2(self):
-        testee = EcoModeV2("", 0, "")
+    def test_schedule(self):
+        testee = Schedule("", 0, "")
 
         data = MockResponse("0d1e0e28ff1affc4005a0000")
         self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% (SoC 90%) On", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.ECO_MODE, testee.schedule_type)
         self.assertEqual(bytes.fromhex("0d1e0e28ff1affc4005a0000"),
                          testee.encode_value(bytes.fromhex("0d1e0e28ff1affc4005a0000")))
         self.assertRaises(ValueError, lambda: testee.encode_value(bytes.fromhex("0d1e0e28ffffffc4005a0000")))
@@ -177,14 +178,69 @@ class TestUtils(TestCase):
 
         data = MockResponse("0000173b5500001400640000")
         self.assertEqual("0:0-23:59  20% (SoC 100%) Unset", testee.read(data).__str__())
+        data = MockResponse("ffffffff557f000000010001")
+        self.assertEqual("-1:-1--1:-1 Sun,Mon,Tue,Wed,Thu,Fri,Sat Jan 0% (SoC 1%) Unset", testee.read(data).__str__())
+        data = MockResponse("000000005500000000000000")
+        self.assertEqual("0:0-0:0  0% (SoC 0%) Unset", testee.read(data).__str__())
+
+    def test_eco_mode_v745(self):
+        testee = Schedule("", 0, "", ScheduleType.ECO_MODE_745)
+
+        data = MockResponse("0d1e0e28f91affc4005a0000")
+        self.assertEqual("13:30-14:40 Mon,Wed,Thu -6% (SoC 90%) On", testee.read(data).__str__())
+        self.assertEqual(bytes.fromhex("0d1e0e28f91affc4005a0000"),
+                         testee.encode_value(bytes.fromhex("0d1e0e28f91affc4005a0000")))
+        self.assertFalse(testee.read(data).is_eco_charge_mode())
+        self.assertFalse(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+
+        data = MockResponse(testee.encode_charge(-40, 80).hex())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% (SoC 80%) On", testee.read(data).__str__())
+        self.assertTrue(testee.read(data).is_eco_charge_mode())
+        self.assertFalse(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        data = MockResponse(testee.encode_discharge(60).hex())
+        self.assertEqual("0:0-23:59 Sun,Mon,Tue,Wed,Thu,Fri,Sat 60% (SoC 100%) On", testee.read(data).__str__())
+        self.assertFalse(testee.read(data).is_eco_charge_mode())
+        self.assertTrue(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        data = MockResponse(testee.encode_off().hex())
+        self.assertEqual("48:0-48:0  100% (SoC 100%) Off", testee.read(data).__str__())
+        self.assertFalse(testee.read(data).is_eco_charge_mode())
+        self.assertFalse(testee.read(data).is_eco_discharge_mode())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+
+        data = MockResponse("10001600f97f00c800000fff")
+        self.assertEqual("16:0-22:0 Sun,Mon,Tue,Wed,Thu,Fri,Sat 20% (SoC 0%) On", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        data = MockResponse("10001600067f00c800000fff")
+        self.assertEqual("16:0-22:0 Sun,Mon,Tue,Wed,Thu,Fri,Sat 20% (SoC 0%) Off", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        data = MockResponse("10001600f97ffe70004b0fff")
+        self.assertEqual("16:0-22:0 Sun,Mon,Tue,Wed,Thu,Fri,Sat -40% (SoC 75%) On", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        data = MockResponse("10001600f97fff3800320fff")
+        self.assertEqual("16:0-22:0 Sun,Mon,Tue,Wed,Thu,Fri,Sat -20% (SoC 50%) On", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        data = MockResponse("10001600f902ff38004b0002")
+        self.assertEqual("16:0-22:0 Mon Feb -20% (SoC 75%) On", testee.read(data).__str__())
+        data = MockResponse("10001600f902ff38004b0004")
+        self.assertEqual("16:0-22:0 Mon Mar -20% (SoC 75%) On", testee.read(data).__str__())
 
     def test_peak_shaving_mode(self):
         testee = PeakShavingMode("", 0, "")
 
         data = MockResponse("010a020a037f00fa00370000")
-        self.assertEqual("1:10-2:10 Sun,Mon,Tue,Wed,Thu,Fri,Sat 2.5kW (SoC 55%) Off", testee.read(data).__str__())
+        self.assertEqual("1:10-2:10 Sun,Mon,Tue,Wed,Thu,Fri,Sat 2500W (SoC 55%) Off", testee.read(data).__str__())
         self.assertEqual(bytes.fromhex("010a020a037f00fa00370000"),
                          testee.encode_value(bytes.fromhex("010a020a037f00fa00370000")))
+
+        data = MockResponse("00000d08fc7f006400140000")
+        self.assertEqual("0:0-13:8 Sun,Mon,Tue,Wed,Thu,Fri,Sat 1000W (SoC 20%) On", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.PEAK_SHAVING, testee.schedule_type)
+        data = MockResponse("00000d08037f000000000000")
+        self.assertEqual("0:0-13:8 Sun,Mon,Tue,Wed,Thu,Fri,Sat 0W (SoC 0%) Off", testee.read(data).__str__())
+        self.assertEqual(ScheduleType.PEAK_SHAVING, testee.schedule_type)
 
     def test_decode_bitmap(self):
         self.assertEqual('', decode_bitmap(0, ERROR_CODES))
