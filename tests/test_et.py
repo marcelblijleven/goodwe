@@ -4,9 +4,9 @@ from datetime import datetime
 from unittest import TestCase
 
 from goodwe.et import ET
-from goodwe.exceptions import RequestFailedException
+from goodwe.exceptions import RequestRejectedException, RequestFailedException
 from goodwe.inverter import OperationMode
-from goodwe.protocol import ProtocolCommand, ProtocolResponse
+from goodwe.protocol import ModbusReadCommand, ProtocolCommand, ProtocolResponse
 
 
 class EtMock(TestCase, ET):
@@ -26,6 +26,8 @@ class EtMock(TestCase, ET):
         root_dir = os.path.dirname(os.path.abspath(__file__))
         filename = self._mock_responses.get(command)
         if filename is not None:
+            if 'ILLEGAL DATA ADDRESS' == filename:
+                raise RequestRejectedException('ILLEGAL DATA ADDRESS')
             with open(root_dir + '/sample/et/' + filename, 'r') as f:
                 response = bytes.fromhex(f.read())
                 if not command.validator(response):
@@ -54,6 +56,9 @@ class GW10K_ET_Test(EtMock):
         self.mock_response(self._READ_RUNNING_DATA, 'GW10K-ET_running_data.hex')
         self.mock_response(self._READ_METER_DATA, 'GW10K-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW10K-ET_battery_info.hex')
+        self.mock_response(ModbusReadCommand(self.comm_addr, 47547, 6), 'ILLEGAL DATA ADDRESS')
+        self.mock_response(ModbusReadCommand(self.comm_addr, 47589, 6), 'ILLEGAL DATA ADDRESS')
+        self.mock_response(ModbusReadCommand(self.comm_addr, 47515, 4), 'eco_mode_v1.hex')
 
     def test_GW10K_ET_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -305,6 +310,8 @@ class GW10K_ET_fw819_Test(EtMock):
     def __init__(self, methodName='runTest'):
         EtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-ET_device_info_fw819.hex')
+        self.mock_response(ModbusReadCommand(self.comm_addr, 47547, 6), 'eco_mode_v2.hex')
+        self.mock_response(ModbusReadCommand(self.comm_addr, 47589, 6), 'ILLEGAL DATA ADDRESS')
         asyncio.get_event_loop().run_until_complete(self.read_device_info())
 
     def test_GW10K_ET_fw819_device_info(self):

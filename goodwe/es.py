@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple, cast
+from typing import Tuple
 
 from .exceptions import InverterError
 from .inverter import Inverter
@@ -220,16 +220,19 @@ class ES(Inverter):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
-            count = (setting.size_ + (setting.size_ % 2)) // 2
-            if self._is_modbus_setting(setting):
-                response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
-                return setting.read_value(response)
-            else:
-                response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
-                return setting.read_value(response)
+            return await self._read_setting(setting)
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
+
+    async def _read_setting(self, setting: Sensor) -> Any:
+        count = (setting.size_ + (setting.size_ % 2)) // 2
+        if self._is_modbus_setting(setting):
+            response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+            return setting.read_value(response)
+        else:
+            response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
+            return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
         if setting_id == 'time':
@@ -240,27 +243,30 @@ class ES(Inverter):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
-            if setting.size_ == 1:
-                # modbus can address/store only 16 bit values, read the other 8 bytes
-                if self._is_modbus_setting(setting):
-                    response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
-                    raw_value = setting.encode_value(value, response.response_data()[0:2])
-                else:
-                    response = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
-                    raw_value = setting.encode_value(value, response.response_data()[2:4])
+            await self._write_setting(setting, value)
+
+    async def _write_setting(self, setting: Sensor, value: Any):
+        if setting.size_ == 1:
+            # modbus can address/store only 16 bit values, read the other 8 bytes
+            if self._is_modbus_setting(setting):
+                response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+                raw_value = setting.encode_value(value, response.response_data()[0:2])
             else:
-                raw_value = setting.encode_value(value)
-            if len(raw_value) <= 2:
-                value = int.from_bytes(raw_value, byteorder="big", signed=True)
-                if self._is_modbus_setting(setting):
-                    await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
-                else:
-                    await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
+                response = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
+                raw_value = setting.encode_value(value, response.response_data()[2:4])
+        else:
+            raw_value = setting.encode_value(value)
+        if len(raw_value) <= 2:
+            value = int.from_bytes(raw_value, byteorder="big", signed=True)
+            if self._is_modbus_setting(setting):
+                await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
             else:
-                if self._is_modbus_setting(setting):
-                    await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
-                else:
-                    await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
+                await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
+        else:
+            if self._is_modbus_setting(setting):
+                await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
+            else:
+                await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
@@ -313,7 +319,8 @@ class ES(Inverter):
                 raise ValueError()
             if eco_mode_soc < 0 or eco_mode_soc > 100:
                 raise ValueError()
-            eco_mode: EcoMode = self._convert_eco_mode(EcoModeV2("", 0, ""))
+            eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
+            await self._read_setting(eco_mode)
             if operation_mode == OperationMode.ECO_CHARGE:
                 await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
             else:
@@ -427,13 +434,5 @@ class ES(Inverter):
     async def _set_work_mode(self, mode: int) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("035901" + "{:02x}".format(mode), "03D9"))
 
-    def _convert_eco_mode(self, sensor: Sensor) -> Sensor | EcoMode:
-        if EcoModeV1 == type(sensor) and self._supports_eco_mode_v2():
-            return cast(EcoModeV1, sensor).as_eco_mode_v2()
-        elif EcoModeV2 == type(sensor) and not self._supports_eco_mode_v2():
-            return cast(EcoModeV2, sensor).as_eco_mode_v1()
-        else:
-            return sensor
-
     def _is_modbus_setting(self, sensor: Sensor) -> bool:
-        return EcoModeV2 == type(sensor) or sensor.offset > 30000
+        return sensor.offset > 30000

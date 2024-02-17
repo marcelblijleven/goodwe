@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple, cast
+from typing import Tuple
 
 from .exceptions import RequestRejectedException
 from .inverter import Inverter
@@ -411,6 +411,8 @@ class ET(Inverter):
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
         self._READ_MPPT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89e5, 0x3d)
+        self._has_eco_mode_v2: bool = True
+        self._has_peak_shaving: bool = True
         self._has_battery: bool = True
         self._has_battery2: bool = False
         self._has_meter_extended: bool = False
@@ -421,12 +423,6 @@ class ET(Inverter):
         self._sensors_meter = self.__all_sensors_meter
         self._sensors_mppt = self.__all_sensors_mppt
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
-
-    def _supports_eco_mode_v2(self) -> bool:
-        return self.arm_version >= 19 or 'ETU' not in self.serial_number
-
-    def _supports_peak_shaving(self) -> bool:
-        return self.arm_version >= 22 or 'ETU' not in self.serial_number
 
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
@@ -474,10 +470,23 @@ class ET(Inverter):
         else:
             self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
 
-        if self.arm_version >= 19 or 'ETU' not in self.serial_number:
+        # Check and add EcoModeV2 settings added in (ETU fw 19)
+        try:
+            await self._read_from_socket(ModbusReadCommand(self.comm_addr, 47547, 6))
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
-        if self.arm_version >= 22 or 'ETU' not in self.serial_number:
+        except RequestRejectedException as ex:
+            if ex.message == 'ILLEGAL DATA ADDRESS':
+                logger.debug("Cannot read EcoModeV2 settings, using to EcoModeV1.")
+                self._has_eco_mode_v2 = False
+
+        # Check and add Peak Shaving settings added in (ETU fw 22)
+        try:
+            await self._read_from_socket(ModbusReadCommand(self.comm_addr, 47589, 6))
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
+        except RequestRejectedException as ex:
+            if ex.message == 'ILLEGAL DATA ADDRESS':
+                logger.debug("Cannot read PeakShaving setting, disabling it.")
+                self._has_peak_shaving = False
 
     async def read_runtime_data(self) -> Dict[str, Any]:
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -541,6 +550,9 @@ class ET(Inverter):
         setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
+        return await self._read_setting(setting)
+
+    async def _read_setting(self, setting: Sensor) -> Any:
         count = (setting.size_ + (setting.size_ % 2)) // 2
         response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
         return setting.read_value(response)
@@ -549,6 +561,9 @@ class ET(Inverter):
         setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
+        await self._write_setting(setting, value)
+
+    async def _write_setting(self, setting: Sensor, value: Any):
         if setting.size_ == 1:
             # modbus can address/store only 16 bit values, read the other 8 bytes
             response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
@@ -581,7 +596,7 @@ class ET(Inverter):
 
     async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
         result = [e for e in OperationMode]
-        if not self._supports_peak_shaving():
+        if not self._has_peak_shaving:
             result.remove(OperationMode.PEAK_SHAVING)
         if not include_emulated:
             result.remove(OperationMode.ECO_CHARGE)
@@ -626,7 +641,8 @@ class ET(Inverter):
                 raise ValueError()
             if eco_mode_soc < 0 or eco_mode_soc > 100:
                 raise ValueError()
-            eco_mode: EcoMode = self._convert_eco_mode(EcoModeV2("", 0, ""))
+            eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
+            await self._read_setting(eco_mode)
             if operation_mode == OperationMode.ECO_CHARGE:
                 await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
             else:
@@ -663,11 +679,3 @@ class ET(Inverter):
     async def _set_offline(self, mode: bool) -> None:
         value = bytes.fromhex('00070000') if mode else bytes.fromhex('00010000')
         await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, 0xb997, value))
-
-    def _convert_eco_mode(self, sensor: Sensor) -> Sensor | EcoMode:
-        if EcoModeV1 == type(sensor) and self._supports_eco_mode_v2():
-            return cast(EcoModeV1, sensor).as_eco_mode_v2()
-        elif EcoModeV2 == type(sensor) and not self._supports_eco_mode_v2():
-            return cast(EcoModeV2, sensor).as_eco_mode_v1()
-        else:
-            return sensor

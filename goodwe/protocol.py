@@ -85,7 +85,7 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
 class ProtocolResponse:
     """Definition of response to protocol command"""
 
-    def __init__(self, raw_data: bytes, command: ProtocolCommand):
+    def __init__(self, raw_data: bytes, command: Optional[ProtocolCommand]):
         self.raw_data: bytes = raw_data
         self.command: ProtocolCommand = command
         self._bytes: io.BytesIO = io.BytesIO(self.response_data())
@@ -115,6 +115,15 @@ class ProtocolCommand:
     def __init__(self, request: bytes, validator: Callable[[bytes], bool]):
         self.request: bytes = request
         self.validator: Callable[[bytes], bool] = validator
+
+    def __eq__(self, other):
+        if not isinstance(other, ProtocolCommand):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+        return self.request == other.request
+
+    def __hash__(self):
+        return hash(self.request)
 
     def __repr__(self):
         return self.request.hex()
@@ -276,6 +285,7 @@ class ModbusProtocolCommand(ProtocolCommand):
             lambda x: validate_modbus_response(x, cmd, offset, value),
         )
         self.first_address: int = offset
+        self.value = value
 
     def trim_response(self, raw_response: bytes):
         """Trim raw response from header and checksum data"""
@@ -296,6 +306,12 @@ class ModbusReadCommand(ModbusProtocolCommand):
             create_modbus_request(comm_addr, MODBUS_READ_CMD, offset, count),
             MODBUS_READ_CMD, offset, count)
 
+    def __repr__(self):
+        if self.value > 1:
+            return f'READ {self.value} registers from {self.first_address} ({self.request.hex()})'
+        else:
+            return f'READ register {self.first_address} ({self.request.hex()})'
+
 
 class ModbusWriteCommand(ModbusProtocolCommand):
     """
@@ -306,6 +322,9 @@ class ModbusWriteCommand(ModbusProtocolCommand):
         super().__init__(
             create_modbus_request(comm_addr, MODBUS_WRITE_CMD, register, value),
             MODBUS_WRITE_CMD, register, value)
+
+    def __repr__(self):
+        return f'WRITE {self.value} to register {self.first_address} ({self.request.hex()})'
 
 
 class ModbusWriteMultiCommand(ModbusProtocolCommand):
