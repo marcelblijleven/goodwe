@@ -173,6 +173,7 @@ class ES(Inverter):
         if not self.comm_addr:
             # Set the default inverter address
             self.comm_addr = 0xf7
+        self._eco_mode: ScheduleType = ScheduleType.ECO_MODE
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
@@ -295,9 +296,9 @@ class ES(Inverter):
         if OperationMode.ECO != mode:
             return mode
         ecomode = await self.read_setting('eco_mode_1')
-        if ecomode.is_eco_charge_mode():
+        if ecomode.is_eco_charge_mode(self._eco_mode):
             return OperationMode.ECO_CHARGE
-        elif ecomode.is_eco_discharge_mode():
+        elif ecomode.is_eco_discharge_mode(self._eco_mode):
             return OperationMode.ECO_DISCHARGE
         else:
             return OperationMode.ECO
@@ -322,9 +323,9 @@ class ES(Inverter):
             eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
             await self._read_setting(eco_mode)
             if operation_mode == OperationMode.ECO_CHARGE:
-                await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
+                await self.write_setting('eco_mode_1', eco_mode.encode_charge(self._eco_mode, eco_mode_power, eco_mode_soc))
             else:
-                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
+                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(self._eco_mode, eco_mode_power))
             await self.write_setting('eco_mode_2_switch', 0)
             await self.write_setting('eco_mode_3_switch', 0)
             await self.write_setting('eco_mode_4_switch', 0)

@@ -2,7 +2,7 @@ from .inverter import Inverter
 
 # Serial number tags to identify inverter type
 ET_MODEL_TAGS = ["ETU", "ETL", "ETR", "ETC", "EHU", "EHR", "EHB", "BTU", "BTN", "BTC", "BHU", "AES", "ABP", "HHI",
-                 "HSB", "HUA", "CUA",
+                 "HSB", "HUA", "CUA", "ETT",
                  "ESN", "EMN", "ERN", "EBN",  # ES Gen 2
                  "HLB", "HMB", "HBB", "SPN"]  # Gen 2
 ES_MODEL_TAGS = ["ESU", "EMU", "ESA", "BPS", "BPU", "EMJ", "IJL"]
@@ -23,6 +23,7 @@ MPPT4_MODELS = ["HSB"]
 
 BAT_2_MODELS = ["25KET", "29K9ET"]
 
+PLATFORM_745_MODELS = ["ETT", "ESN"]
 
 def is_single_phase(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
@@ -38,3 +39,6 @@ def is_4_mppt(inverter: Inverter) -> bool:
 
 def is_2_battery(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in BAT_2_MODELS)
+
+def is_745_platform(inverter: Inverter) -> bool:
+    return any(model in inverter.serial_number for model in PLATFORM_745_MODELS)

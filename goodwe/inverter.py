@@ -67,6 +67,7 @@ class OperationMode(IntEnum):
     BACKUP - Backup mode
     ECO - Eco mode
     PEAK_SHAVING - Peak shaving mode
+    SELF_USE - Self use mode
     ECO_CHARGE - Eco mode with a single "Charge" group valid all the time (from 00:00-23:59, Mon-Sun)
     ECO_DISCHARGE - Eco mode with a single "Discharge" group valid all the time (from 00:00-23:59, Mon-Sun)
     """
@@ -76,8 +77,9 @@ class OperationMode(IntEnum):
     BACKUP = 2
     ECO = 3
     PEAK_SHAVING = 4
-    ECO_CHARGE = 5
-    ECO_DISCHARGE = 6
+    SELF_USE = 5
+    ECO_CHARGE = 6
+    ECO_DISCHARGE = 7
 
 
 class Inverter(ABC):

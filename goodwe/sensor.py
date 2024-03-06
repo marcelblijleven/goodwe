@@ -21,12 +21,13 @@ class ScheduleType(IntEnum):
     PEAK_SHAVING = 3,
     BACKUP_MODE = 4,
     SMART_CHARGE_MODE = 5,
-    ECO_MODE_745 = 6
+    ECO_MODE_745 = 6,
+    NOT_SET = 85
 
     @classmethod
     def detect_schedule_type(cls, value: int) -> ScheduleType:
         """Detect schedule type from its on/off value"""
-        if value in (0, -1, 85):
+        if value in (0, -1):
             return ScheduleType.ECO_MODE
         elif value in (1, -2):
             return ScheduleType.DRY_CONTACT_LOAD
@@ -40,6 +41,8 @@ class ScheduleType(IntEnum):
             return ScheduleType.SMART_CHARGE_MODE
         elif value in (6, -7):
             return ScheduleType.ECO_MODE_745
+        elif value == 85:
+            return ScheduleType.NOT_SET
         else:
             raise ValueError(f"{value}: on_off value {value} out of range.")
 
@@ -52,22 +55,21 @@ class ScheduleType(IntEnum):
 
     def decode_power(self, value: int) -> int:
         """Decode human readable value of power parameter"""
-        if self == ScheduleType.ECO_MODE:
-            return value
-        elif self == ScheduleType.PEAK_SHAVING:
+        if self == ScheduleType.PEAK_SHAVING:
             return value * 10
-        if self == ScheduleType.ECO_MODE_745:
+        elif self == ScheduleType.ECO_MODE_745:
             return int(value / 10)
+        elif self == ScheduleType.NOT_SET:
+            if value < -100 or value > 100:
+                return int(value / 10)
         else:
             return value
 
-    def encode_power(self, value: int) -> int:
+    def encode_power(self, eco_mode, value: int) -> int:
         """Encode human readable value of power parameter"""
-        if self == ScheduleType.ECO_MODE:
-            return value
-        elif self == ScheduleType.PEAK_SHAVING:
+        if self == ScheduleType.PEAK_SHAVING:
             return int(value / 10)
-        if self == ScheduleType.ECO_MODE_745:
+        elif eco_mode == ScheduleType.ECO_MODE_745:
             return value * 10
         else:
             return value
@@ -76,7 +78,7 @@ class ScheduleType(IntEnum):
         """Check if the value fits in allowed values range"""
         if self == ScheduleType.ECO_MODE:
             return -100 <= value <= 100
-        if self == ScheduleType.ECO_MODE_745:
+        elif self == ScheduleType.ECO_MODE_745:
             return -1000 <= value <= 1000
         else:
             return True
@@ -595,6 +597,7 @@ class Schedule(Sensor, EcoMode):
         self.power = read_bytes2(data)  # negative=charge, positive=discharge
         if not self.schedule_type.is_in_range(self.power):
             raise ValueError(f"{self.id_}: power value {self.power} out of range.")
+        self.power = self.schedule_type.decode_power(self.power)
         self.soc = read_bytes2(data)
         if self.soc < 0 or self.soc > 100:
             raise ValueError(f"{self.id_}: SoC value {self.soc} out of range.")
@@ -609,46 +612,46 @@ class Schedule(Sensor, EcoMode):
                 return value
         raise ValueError
 
-    def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
+    def encode_charge(self, eco_mode, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
         """Answer bytes representing all the time enabled charging eco mode group"""
         return bytes.fromhex(
             "0000173b{:02x}7f{:04x}{:04x}{:04x}".format(
-                255 - self.schedule_type,
-                (-1 * abs(self.schedule_type.encode_power(eco_mode_power))) & (2 ** 16 - 1),
+                255 - eco_mode,
+                (-1 * abs(self.schedule_type.encode_power(eco_mode, eco_mode_power))) & (2 ** 16 - 1),
                 eco_mode_soc,
-                0 if self.schedule_type != ScheduleType.ECO_MODE_745 else 0x0fff))
+                0 if eco_mode != ScheduleType.ECO_MODE_745 else 0x0fff))
 
-    def encode_discharge(self, eco_mode_power: int) -> bytes:
+    def encode_discharge(self, eco_mode, eco_mode_power: int) -> bytes:
         """Answer bytes representing all the time enabled discharging eco mode group"""
         return bytes.fromhex("0000173b{:02x}7f{:04x}0064{:04x}".format(
-            255 - self.schedule_type,
-            abs(self.schedule_type.encode_power(eco_mode_power)),
-            0 if self.schedule_type != ScheduleType.ECO_MODE_745 else 0x0fff))
+            255 - eco_mode,
+            abs(self.schedule_type.encode_power(eco_mode, eco_mode_power)),
+            0 if eco_mode != ScheduleType.ECO_MODE_745 else 0x0fff))
 
     def encode_off(self) -> bytes:
         """Answer bytes representing empty and disabled schedule group"""
         return bytes.fromhex("30003000{:02x}00{:04x}00640000".format(
             self.schedule_type.value,
-            self.schedule_type.encode_power(100)))
+            self.schedule_type.encode_power(ScheduleType.NOT_SET, 100)))
 
-    def is_eco_charge_mode(self) -> bool:
+    def is_eco_charge_mode(self, eco_mode) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
             and self.start_m == 0 \
             and self.end_h == 23 \
             and self.end_m == 59 \
-            and self.on_off == (-1 - self.schedule_type) \
+            and self.on_off == (-1 - eco_mode) \
             and self.day_bits == 127 \
             and self.power < 0 \
             and (self.month_bits == 0 or self.month_bits == 0x0fff)
 
-    def is_eco_discharge_mode(self) -> bool:
+    def is_eco_discharge_mode(self, eco_mode) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
         return self.start_h == 0 \
             and self.start_m == 0 \
             and self.end_h == 23 \
             and self.end_m == 59 \
-            and self.on_off == (-1 - self.schedule_type) \
+            and self.on_off == (-1 - eco_mode) \
             and self.day_bits == 127 \
             and self.power > 0 \
             and (self.month_bits == 0 or self.month_bits == 0x0fff)

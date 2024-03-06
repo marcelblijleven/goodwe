@@ -7,7 +7,7 @@ from .exceptions import RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_2_battery, is_4_mppt, is_single_phase
+from .model import is_2_battery, is_4_mppt, is_single_phase, is_745_platform
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -387,6 +387,10 @@ class ET(Inverter):
         Integer("load_control_soc", 47596, "Load Control SoC", "", Kind.AC),
 
         Integer("fast_charging_power", 47603, "Fast Charging Power", "%", Kind.BAT),
+
+        Integer("backup_mode_enable", 47605, "Enable Backup Mode"),
+        Integer("smart_charging_mode_enable", 47609, "Enable Smart Charging Mode"),
+        Integer("eco_mode_enable", 47612, "Enable Eco Mode"),
     )
 
     # Settings added in ARM firmware 22
@@ -411,8 +415,10 @@ class ET(Inverter):
         self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
         self._READ_MPPT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89e5, 0x3d)
+        self._eco_mode: ScheduleType = ScheduleType.ECO_MODE
         self._has_eco_mode_v2: bool = True
         self._has_peak_shaving: bool = True
+        self._has_self_use: bool = False
         self._has_battery: bool = True
         self._has_battery2: bool = False
         self._has_meter_extended: bool = False
@@ -469,6 +475,10 @@ class ET(Inverter):
             self._has_meter_extended = True
         else:
             self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
+
+        if is_745_platform(self):
+            self._eco_mode = ScheduleType.ECO_MODE_745
+            self._has_self_use = True
 
         # Check and add EcoModeV2 settings added in (ETU fw 19)
         try:
@@ -601,6 +611,8 @@ class ET(Inverter):
         if not include_emulated:
             result.remove(OperationMode.ECO_CHARGE)
             result.remove(OperationMode.ECO_DISCHARGE)
+        if not self._has_self_use:
+            result.remove(OperationMode.SELF_USE)
         return tuple(result)
 
     async def get_operation_mode(self) -> OperationMode:
@@ -608,9 +620,9 @@ class ET(Inverter):
         if OperationMode.ECO != mode:
             return mode
         ecomode = await self.read_setting('eco_mode_1')
-        if ecomode.is_eco_charge_mode():
+        if ecomode.is_eco_charge_mode(self._eco_mode):
             return OperationMode.ECO_CHARGE
-        elif ecomode.is_eco_discharge_mode():
+        elif ecomode.is_eco_discharge_mode(self._eco_mode):
             return OperationMode.ECO_DISCHARGE
         else:
             return OperationMode.ECO
@@ -618,24 +630,36 @@ class ET(Inverter):
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
                                  eco_mode_soc: int = 100) -> None:
         if operation_mode == OperationMode.GENERAL:
-            await self.write_setting('work_mode', 0)
+            await self.write_setting('work_mode', operation_mode)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+            await self.disable_all_modes()
         elif operation_mode == OperationMode.OFF_GRID:
-            await self.write_setting('work_mode', 1)
+            await self.write_setting('work_mode', operation_mode)
+            await self.disable_all_modes()
             await self._set_offline(True)
             await self.write_setting('backup_supply', 1)
             await self.write_setting('cold_start', 4)
         elif operation_mode == OperationMode.BACKUP:
-            await self.write_setting('work_mode', 2)
+            await self.write_setting('work_mode', operation_mode)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+            await self.disable_all_modes()
+            await self.write_setting("backup_mode_enable", 1)
         elif operation_mode == OperationMode.ECO:
-            await self.write_setting('work_mode', 3)
+            await self.write_setting('work_mode', operation_mode)
             await self._set_offline(False)
+            await self.disable_all_modes()
+            await self.write_setting("eco_mode_enable", 1)
         elif operation_mode == OperationMode.PEAK_SHAVING:
-            await self.write_setting('work_mode', 4)
+            await self.write_setting('work_mode', operation_mode)
             await self._set_offline(False)
+            await self.disable_all_modes()
+        elif operation_mode == OperationMode.SELF_USE:
+            await self.write_setting('work_mode', operation_mode)
+            await self._set_offline(False)
+            await self._clear_battery_mode_param()
+            await self.disable_all_modes()
         elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
             if eco_mode_power < 0 or eco_mode_power > 100:
                 raise ValueError()
@@ -644,14 +668,21 @@ class ET(Inverter):
             eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
             await self._read_setting(eco_mode)
             if operation_mode == OperationMode.ECO_CHARGE:
-                await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
+                await self.write_setting('eco_mode_1', eco_mode.encode_charge(self._eco_mode, eco_mode_power, eco_mode_soc))
             else:
-                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
+                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(self._eco_mode, eco_mode_power))
             await self.write_setting('eco_mode_2_switch', 0)
             await self.write_setting('eco_mode_3_switch', 0)
             await self.write_setting('eco_mode_4_switch', 0)
-            await self.write_setting('work_mode', 3)
+            await self.write_setting('work_mode', OperationMode.ECO)
             await self._set_offline(False)
+            await self.disable_all_modes()
+            await self.write_setting("eco_mode_enable", 1)
+
+    async def disable_all_modes(self):
+        await self.write_setting("backup_mode_enable", 0)
+        await self.write_setting("smart_charging_mode_enable", 0)
+        await self.write_setting("eco_mode_enable", 0)
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting('battery_discharge_depth')
