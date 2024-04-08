@@ -83,7 +83,7 @@ class ScheduleType(IntEnum):
 
 
 class Voltage(Sensor):
-    """Sensor representing voltage [V] value encoded in 2 bytes"""
+    """Sensor representing voltage [V] value encoded in 2 (unsigned) bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "V", kind)
@@ -96,7 +96,7 @@ class Voltage(Sensor):
 
 
 class Current(Sensor):
-    """Sensor representing current [A] value encoded in 2 bytes"""
+    """Sensor representing current [A] value encoded in 2 (unsigned) bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "A", kind)
@@ -106,6 +106,19 @@ class Current(Sensor):
 
     def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return encode_current(value)
+
+
+class CurrentS(Sensor):
+    """Sensor representing current [A] value encoded in 2 (signed) bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "A", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_current_signed(data)
+
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
+        return encode_current_signed(value)
 
 
 class Frequency(Sensor):
@@ -736,7 +749,7 @@ def read_float4(buffer: ProtocolResponse, offset: int = None) -> float:
 
 
 def read_voltage(buffer: ProtocolResponse, offset: int = None) -> float:
-    """Retrieve voltage [V] value (2 bytes) from buffer"""
+    """Retrieve voltage [V] value (2 unsigned bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=False)
@@ -744,12 +757,20 @@ def read_voltage(buffer: ProtocolResponse, offset: int = None) -> float:
 
 
 def encode_voltage(value: Any) -> bytes:
-    """Encode voltage value to raw (2 bytes) payload"""
+    """Encode voltage value to raw (2 unsigned bytes) payload"""
     return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=False)
 
 
 def read_current(buffer: ProtocolResponse, offset: int = None) -> float:
-    """Retrieve current [A] value (2 bytes) from buffer"""
+    """Retrieve current [A] value (2 unsigned bytes) from buffer"""
+    if offset is not None:
+        buffer.seek(offset)
+    value = int.from_bytes(buffer.read(2), byteorder="big", signed=False)
+    return float(value) / 10
+
+
+def read_current_signed(buffer: ProtocolResponse, offset: int = None) -> float:
+    """Retrieve current [A] value (2 signed bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
@@ -757,7 +778,12 @@ def read_current(buffer: ProtocolResponse, offset: int = None) -> float:
 
 
 def encode_current(value: Any) -> bytes:
-    """Encode current value to raw (2 bytes) payload"""
+    """Encode current value to raw (2 unsigned bytes) payload"""
+    return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=False)
+
+
+def encode_current_signed(value: Any) -> bytes:
+    """Encode current value to raw (2 signed bytes) payload"""
     return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=True)
 
 

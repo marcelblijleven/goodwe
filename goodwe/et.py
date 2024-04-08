@@ -115,7 +115,7 @@ class ET(Inverter):
         Voltage("bus_voltage", 35178, "Bus Voltage", None),
         Voltage("nbus_voltage", 35179, "NBus Voltage", None),
         Voltage("vbattery1", 35180, "Battery Voltage", Kind.BAT),
-        Current("ibattery1", 35181, "Battery Current", Kind.BAT),
+        CurrentS("ibattery1", 35181, "Battery Current", Kind.BAT),
         Power4("pbattery1", 35182, "Battery Power", Kind.BAT),
         Integer("battery_mode", 35184, "Battery Mode code", "", Kind.BAT),
         Enum2("battery_mode_label", 35184, BATTERY_MODES, "Battery Mode", Kind.BAT),

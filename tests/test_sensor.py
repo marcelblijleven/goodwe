@@ -78,8 +78,25 @@ class TestUtils(TestCase):
         self.assertEqual(803.6, testee.read(data))
         self.assertEqual("1f64", testee.encode_value(803.6).hex())
 
+        data = MockResponse("a000")
+        self.assertEqual(4096.0, testee.read(data))
+
+        data = MockResponse("ffff")
+        self.assertEqual(0, testee.read(data))
+
     def test_current(self):
         testee = Current("", 0, "", None)
+
+        data = MockResponse("0031")
+        self.assertEqual(4.9, testee.read(data))
+        self.assertEqual("0031", testee.encode_value(4.9).hex())
+
+        data = MockResponse("ff9e")
+        self.assertEqual(6543.8, testee.read(data))
+        self.assertEqual("ff9e", testee.encode_value(6543.8).hex())
+
+    def test_current_signed(self):
+        testee = CurrentS("", 0, "", None)
 
         data = MockResponse("0031")
         self.assertEqual(4.9, testee.read(data))
