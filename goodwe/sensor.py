@@ -142,13 +142,23 @@ class Power(Sensor):
 
 
 class Power4(Sensor):
-    """Sensor representing power [W] value encoded in 4 bytes"""
+    """Sensor representing power [W] value encoded in 4 (unsigned) bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 4, "W", kind)
 
     def read_value(self, data: ProtocolResponse):
         return read_bytes4(data)
+
+
+class Power4S(Sensor):
+    """Sensor representing power [W] value encoded in 4 (signed) bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 4, "W", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_bytes4_signed(data)
 
 
 class Energy(Sensor):
@@ -172,7 +182,7 @@ class Energy4(Sensor):
         super().__init__(id_, offset, name, 4, "kWh", kind)
 
     def read_value(self, data: ProtocolResponse):
-        value = read_bytes4(data)
+        value = read_bytes4_signed(data)
         if value == -1:
             return None
         else:
@@ -196,7 +206,7 @@ class Apparent4(Sensor):
         super().__init__(id_, offset, name, 2, "VA", kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes4(data)
+        return read_bytes4_signed(data)
 
 
 class Reactive(Sensor):
@@ -216,7 +226,7 @@ class Reactive4(Sensor):
         super().__init__(id_, offset, name, 2, "var", kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes4(data)
+        return read_bytes4_signed(data)
 
 
 class Temp(Sensor):
@@ -303,7 +313,7 @@ class Long(Sensor):
         super().__init__(id_, offset, name, 4, unit, kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes4(data)
+        return read_bytes4_signed(data)
 
     def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return int.to_bytes(int(value), length=4, byteorder="big", signed=True)
@@ -403,7 +413,7 @@ class EnumBitmap4(Sensor):
         raise NotImplementedError()
 
     def read(self, data: ProtocolResponse):
-        bits = read_bytes4(data, self.offset)
+        bits = read_bytes4_signed(data, self.offset)
         return decode_bitmap(bits if bits != -1 else 0, self._labels)
 
 
@@ -724,6 +734,14 @@ def read_bytes2(buffer: ProtocolResponse, offset: int = None) -> int:
 
 
 def read_bytes4(buffer: ProtocolResponse, offset: int = None) -> int:
+    """Retrieve 4 byte (unsigned int) value from buffer"""
+    if offset is not None:
+        buffer.seek(offset)
+    value = int.from_bytes(buffer.read(4), byteorder="big", signed=False)
+    return value if value != 0xffffffff else 0
+
+
+def read_bytes4_signed(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 4 byte (signed int) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -766,7 +784,7 @@ def read_current(buffer: ProtocolResponse, offset: int = None) -> float:
     if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=False)
-    return float(value) / 10
+    return float(value) / 10 if value != 0xffff else 0
 
 
 def read_current_signed(buffer: ProtocolResponse, offset: int = None) -> float:

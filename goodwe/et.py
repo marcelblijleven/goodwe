@@ -116,7 +116,7 @@ class ET(Inverter):
         Voltage("nbus_voltage", 35179, "NBus Voltage", None),
         Voltage("vbattery1", 35180, "Battery Voltage", Kind.BAT),
         CurrentS("ibattery1", 35181, "Battery Current", Kind.BAT),
-        Power4("pbattery1", 35182, "Battery Power", Kind.BAT),
+        Power4S("pbattery1", 35182, "Battery Power", Kind.BAT),
         Integer("battery_mode", 35184, "Battery Mode code", "", Kind.BAT),
         Enum2("battery_mode_label", 35184, BATTERY_MODES, "Battery Mode", Kind.BAT),
         Integer("warning_code", 35185, "Warning code"),
@@ -149,7 +149,7 @@ class ET(Inverter):
                    read_bytes4(data, 35109) +
                    read_bytes4(data, 35113) +
                    read_bytes4(data, 35117) +
-                   read_bytes4(data, 35182) -
+                   read_bytes4_signed(data, 35182) -
                    read_bytes2(data, 35140),
                    "House Consumption", "W", Kind.AC),
     )
@@ -238,10 +238,10 @@ class ET(Inverter):
         Frequency("meter_freq", 36014, "Meter Frequency", Kind.GRID),
         Float("meter_e_total_exp", 36015, 1000, "Meter Total Energy (export)", "kWh", Kind.GRID),
         Float("meter_e_total_imp", 36017, 1000, "Meter Total Energy (import)", "kWh", Kind.GRID),
-        Power4("meter_active_power1", 36019, "Meter Active Power L1", Kind.GRID),
-        Power4("meter_active_power2", 36021, "Meter Active Power L2", Kind.GRID),
-        Power4("meter_active_power3", 36023, "Meter Active Power L3", Kind.GRID),
-        Power4("meter_active_power_total", 36025, "Meter Active Power Total", Kind.GRID),
+        Power4S("meter_active_power1", 36019, "Meter Active Power L1", Kind.GRID),
+        Power4S("meter_active_power2", 36021, "Meter Active Power L2", Kind.GRID),
+        Power4S("meter_active_power3", 36023, "Meter Active Power L3", Kind.GRID),
+        Power4S("meter_active_power_total", 36025, "Meter Active Power Total", Kind.GRID),
         Reactive4("meter_reactive_power1", 36027, "Meter Reactive Power L1", Kind.GRID),
         Reactive4("meter_reactive_power2", 36029, "Meter Reactive Power L2", Kind.GRID),
         Reactive4("meter_reactive_power3", 36031, "Meter Reactive Power L2", Kind.GRID),
@@ -253,7 +253,7 @@ class ET(Inverter):
         Integer("meter_type", 36043, "Meter Type", "", Kind.GRID),  # (0: Single phase, 1: 3P3W, 2: 3P4W, 3: HomeKit)
         Integer("meter_sw_version", 36044, "Meter Software Version", "", Kind.GRID),
         # Sensors added in some ARM fw update, read when flag _has_meter_extended is on
-        Power4("meter2_active_power", 36045, "Meter 2 Active Power", Kind.GRID),
+        Power4S("meter2_active_power", 36045, "Meter 2 Active Power", Kind.GRID),
         Float("meter2_e_total_exp", 36047, 1000, "Meter 2 Total Energy (export)", "kWh", Kind.GRID),
         Float("meter2_e_total_imp", 36049, 1000, "Meter 2 Total Energy (import)", "kWh", Kind.GRID),
         Integer("meter2_comm_status", 36051, "Meter 2 Communication Status"),

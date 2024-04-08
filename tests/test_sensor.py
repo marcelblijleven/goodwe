@@ -95,6 +95,9 @@ class TestUtils(TestCase):
         self.assertEqual(6543.8, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(6543.8).hex())
 
+        data = MockResponse("ffff")
+        self.assertEqual(0, testee.read(data))
+
     def test_current_signed(self):
         testee = CurrentS("", 0, "", None)
 
@@ -108,6 +111,18 @@ class TestUtils(TestCase):
 
     def test_power4(self):
         testee = Power4("", 0, "", None)
+
+        data = MockResponse("0000069f")
+        self.assertEqual(1695, testee.read(data))
+
+        data = MockResponse("fffffffd")
+        self.assertEqual(4294967293, testee.read(data))
+
+        data = MockResponse("ffffffff")
+        self.assertEqual(0, testee.read(data))
+
+    def test_power4_signed(self):
+        testee = Power4S("", 0, "", None)
 
         data = MockResponse("0000069f")
         self.assertEqual(1695, testee.read(data))
