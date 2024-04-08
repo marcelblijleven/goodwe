@@ -739,13 +739,13 @@ def read_voltage(buffer: ProtocolResponse, offset: int = None) -> float:
     """Retrieve voltage [V] value (2 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
-    value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
-    return float(value) / 10
+    value = int.from_bytes(buffer.read(2), byteorder="big", signed=False)
+    return float(value) / 10 if value != 0xffff else 0
 
 
 def encode_voltage(value: Any) -> bytes:
     """Encode voltage value to raw (2 bytes) payload"""
-    return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=True)
+    return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=False)
 
 
 def read_current(buffer: ProtocolResponse, offset: int = None) -> float:
