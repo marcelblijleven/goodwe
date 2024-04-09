@@ -52,23 +52,23 @@ class ET(Inverter):
         Current("igrid", 35122, "On-grid L1 Current", Kind.AC),
         Frequency("fgrid", 35123, "On-grid L1 Frequency", Kind.AC),
         # 35124 reserved
-        Power("pgrid", 35125, "On-grid L1 Power", Kind.AC),
+        PowerS("pgrid", 35125, "On-grid L1 Power", Kind.AC),
         Voltage("vgrid2", 35126, "On-grid L2 Voltage", Kind.AC),
         Current("igrid2", 35127, "On-grid L2 Current", Kind.AC),
         Frequency("fgrid2", 35128, "On-grid L2 Frequency", Kind.AC),
         # 35129 reserved
-        Power("pgrid2", 35130, "On-grid L2 Power", Kind.AC),
+        PowerS("pgrid2", 35130, "On-grid L2 Power", Kind.AC),
         Voltage("vgrid3", 35131, "On-grid L3 Voltage", Kind.AC),
         Current("igrid3", 35132, "On-grid L3 Current", Kind.AC),
         Frequency("fgrid3", 35133, "On-grid L3 Frequency", Kind.AC),
         # 35134 reserved
-        Power("pgrid3", 35135, "On-grid L3 Power", Kind.AC),
+        PowerS("pgrid3", 35135, "On-grid L3 Power", Kind.AC),
         Integer("grid_mode", 35136, "Grid Mode code", "", Kind.PV),
         Enum2("grid_mode_label", 35136, GRID_MODES, "Grid Mode", Kind.PV),
         # 35137 reserved
-        Power("total_inverter_power", 35138, "Total Power", Kind.AC),
+        PowerS("total_inverter_power", 35138, "Total Power", Kind.AC),
         # 35139 reserved
-        Power("active_power", 35140, "Active Power", Kind.GRID),
+        PowerS("active_power", 35140, "Active Power", Kind.GRID),
         Calculated("grid_in_out",
                    lambda data: read_grid_mode(data, 35140),
                    "On-grid Mode code", "", Kind.GRID),
@@ -84,29 +84,29 @@ class ET(Inverter):
         Frequency("backup_f1", 35147, "Back-up L1 Frequency", Kind.UPS),
         Integer("load_mode1", 35148, "Load Mode L1"),
         # 35149 reserved
-        Power("backup_p1", 35150, "Back-up L1 Power", Kind.UPS),
+        PowerS("backup_p1", 35150, "Back-up L1 Power", Kind.UPS),
         Voltage("backup_v2", 35151, "Back-up L2 Voltage", Kind.UPS),
         Current("backup_i2", 35152, "Back-up L2 Current", Kind.UPS),
         Frequency("backup_f2", 35153, "Back-up L2 Frequency", Kind.UPS),
         Integer("load_mode2", 35154, "Load Mode L2"),
         # 35155 reserved
-        Power("backup_p2", 35156, "Back-up L2 Power", Kind.UPS),
+        PowerS("backup_p2", 35156, "Back-up L2 Power", Kind.UPS),
         Voltage("backup_v3", 35157, "Back-up L3 Voltage", Kind.UPS),
         Current("backup_i3", 35158, "Back-up L3 Current", Kind.UPS),
         Frequency("backup_f3", 35159, "Back-up L3 Frequency", Kind.UPS),
         Integer("load_mode3", 35160, "Load Mode L3"),
         # 35161 reserved
-        Power("backup_p3", 35162, "Back-up L3 Power", Kind.UPS),
+        PowerS("backup_p3", 35162, "Back-up L3 Power", Kind.UPS),
         # 35163 reserved
-        Power("load_p1", 35164, "Load L1", Kind.AC),
+        PowerS("load_p1", 35164, "Load L1", Kind.AC),
         # 35165 reserved
-        Power("load_p2", 35166, "Load L2", Kind.AC),
+        PowerS("load_p2", 35166, "Load L2", Kind.AC),
         # 35167 reserved
-        Power("load_p3", 35168, "Load L3", Kind.AC),
+        PowerS("load_p3", 35168, "Load L3", Kind.AC),
         # 35169 reserved
-        Power("backup_ptotal", 35170, "Back-up Load", Kind.UPS),
+        PowerS("backup_ptotal", 35170, "Back-up Load", Kind.UPS),
         # 35171 reserved
-        Power("load_ptotal", 35172, "Load", Kind.AC),
+        PowerS("load_ptotal", 35172, "Load", Kind.AC),
         Integer("ups_load", 35173, "Ups Load", "%", Kind.UPS),
         Temp("temperature_air", 35174, "Inverter Temperature (Air)", Kind.AC),
         Temp("temperature_module", 35175, "Inverter Temperature (Module)"),
@@ -226,10 +226,10 @@ class ET(Inverter):
         Integer("manufacture_code", 36002, "Manufacture Code"),
         Integer("meter_test_status", 36003, "Meter Test Status"),  # 1: correct，2: reverse，3: incorrect，0: not checked
         Integer("meter_comm_status", 36004, "Meter Communication Status"),  # 1 OK, 0 NotOK
-        Power("active_power1", 36005, "Active Power L1", Kind.GRID),
-        Power("active_power2", 36006, "Active Power L2", Kind.GRID),
-        Power("active_power3", 36007, "Active Power L3", Kind.GRID),
-        Power("active_power_total", 36008, "Active Power Total", Kind.GRID),
+        PowerS("active_power1", 36005, "Active Power L1", Kind.GRID),
+        PowerS("active_power2", 36006, "Active Power L2", Kind.GRID),
+        PowerS("active_power3", 36007, "Active Power L3", Kind.GRID),
+        PowerS("active_power_total", 36008, "Active Power Total", Kind.GRID),
         Reactive("reactive_power_total", 36009, "Reactive Power Total", Kind.GRID),
         Decimal("meter_power_factor1", 36010, 1000, "Meter Power Factor L1", "", Kind.GRID),
         Decimal("meter_power_factor2", 36011, 1000, "Meter Power Factor L2", "", Kind.GRID),

@@ -132,7 +132,17 @@ class Frequency(Sensor):
 
 
 class Power(Sensor):
-    """Sensor representing power [W] value encoded in 2 bytes"""
+    """Sensor representing power [W] value encoded in 2 (unsigned) bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "W", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_bytes2(data)
+
+
+class PowerS(Sensor):
+    """Sensor representing power [W] value encoded in 2 (signed) bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
         super().__init__(id_, offset, name, 2, "W", kind)

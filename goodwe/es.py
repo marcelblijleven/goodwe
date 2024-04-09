@@ -87,7 +87,7 @@ class ES(Inverter):
         Energy("e_day", 67, "Today's PV Generation", Kind.PV),
         Energy("e_load_day", 69, "Today's Load", Kind.AC),
         Energy4("e_load_total", 71, "Total Load", Kind.AC),
-        Power("total_power", 75, "Total Power", Kind.AC),  # modbus 0x52c
+        PowerS("total_power", 75, "Total Power", Kind.AC),  # modbus 0x52c
         Byte("effective_work_mode", 77, "Effective Work Mode code"),
         Integer("effective_relay_control", 78, "Effective Relay Control", "", None),
         Byte("grid_in_out", 80, "On-grid Mode code", "", Kind.GRID),
