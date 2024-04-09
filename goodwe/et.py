@@ -150,7 +150,7 @@ class ET(Inverter):
                    read_bytes4(data, 35113) +
                    read_bytes4(data, 35117) +
                    read_bytes4_signed(data, 35182) -
-                   read_bytes2(data, 35140),
+                   read_bytes2_signed(data, 35140),
                    "House Consumption", "W", Kind.AC),
     )
 

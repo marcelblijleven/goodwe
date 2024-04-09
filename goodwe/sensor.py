@@ -138,7 +138,7 @@ class Power(Sensor):
         super().__init__(id_, offset, name, 2, "W", kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes2(data)
+        return read_bytes2_signed(data)
 
 
 class Power4(Sensor):
@@ -169,10 +169,7 @@ class Energy(Sensor):
 
     def read_value(self, data: ProtocolResponse):
         value = read_bytes2(data)
-        if value == -1:
-            return None
-        else:
-            return float(value) / 10
+        return float(value) / 10
 
 
 class Energy4(Sensor):
@@ -182,11 +179,8 @@ class Energy4(Sensor):
         super().__init__(id_, offset, name, 4, "kWh", kind)
 
     def read_value(self, data: ProtocolResponse):
-        value = read_bytes4_signed(data)
-        if value == -1:
-            return None
-        else:
-            return float(value) / 10
+        value = read_bytes4(data)
+        return float(value) / 10
 
 
 class Apparent(Sensor):
@@ -196,7 +190,7 @@ class Apparent(Sensor):
         super().__init__(id_, offset, name, 2, "VA", kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes2(data)
+        return read_bytes2_signed(data)
 
 
 class Apparent4(Sensor):
@@ -216,7 +210,7 @@ class Reactive(Sensor):
         super().__init__(id_, offset, name, 2, "var", kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes2(data)
+        return read_bytes2_signed(data)
 
 
 class Reactive4(Sensor):
@@ -300,7 +294,7 @@ class Integer(Sensor):
         super().__init__(id_, offset, name, 2, unit, kind)
 
     def read_value(self, data: ProtocolResponse):
-        return read_bytes2(data)
+        return read_bytes2_signed(data)
 
     def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
         return int.to_bytes(int(value), length=2, byteorder="big", signed=True)
@@ -506,7 +500,7 @@ class EcoModeV1(Sensor, EcoMode):
         self.end_m = read_byte(data)
         if self.end_m < 0 or self.end_m > 59:
             raise ValueError(f"{self.id_}: end_m value {self.end_m} out of range.")
-        self.power = read_bytes2(data)  # negative=charge, positive=discharge
+        self.power = read_bytes2_signed(data)  # negative=charge, positive=discharge
         if self.power < -100 or self.power > 100:
             raise ValueError(f"{self.id_}: power value {self.power} out of range.")
         self.on_off = read_byte(data)
@@ -615,13 +609,13 @@ class Schedule(Sensor, EcoMode):
         self.days = decode_day_of_week(self.day_bits)
         if self.day_bits < 0:
             raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
-        self.power = read_bytes2(data)  # negative=charge, positive=discharge
+        self.power = read_bytes2_signed(data)  # negative=charge, positive=discharge
         if not self.schedule_type.is_in_range(self.power):
             raise ValueError(f"{self.id_}: power value {self.power} out of range.")
-        self.soc = read_bytes2(data)
+        self.soc = read_bytes2_signed(data)
         if self.soc < 0 or self.soc > 100:
             raise ValueError(f"{self.id_}: SoC value {self.soc} out of range.")
-        self.month_bits = read_bytes2(data)
+        self.month_bits = read_bytes2_signed(data)
         self.months = decode_months(self.month_bits)
         return self
 
@@ -727,6 +721,14 @@ def read_byte(buffer: ProtocolResponse, offset: int = None) -> int:
 
 
 def read_bytes2(buffer: ProtocolResponse, offset: int = None) -> int:
+    """Retrieve 2 byte (unsigned int) value from buffer"""
+    if offset is not None:
+        buffer.seek(offset)
+    value = int.from_bytes(buffer.read(2), byteorder="big", signed=False)
+    return value if value != 0xffff else 0
+
+
+def read_bytes2_signed(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 2 byte (signed int) value from buffer"""
     if offset is not None:
         buffer.seek(offset)
@@ -853,7 +855,7 @@ def encode_datetime(value: Any) -> bytes:
 
 def read_grid_mode(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 'grid mode' sign value from buffer"""
-    value = read_bytes2(buffer, offset)
+    value = read_bytes2_signed(buffer, offset)
     if value < -90:
         return 2
     elif value >= 90:

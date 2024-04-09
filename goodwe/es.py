@@ -67,7 +67,7 @@ class ES(Inverter):
         Voltage("vgrid", 34, "On-grid Voltage", Kind.AC),
         Current("igrid", 36, "On-grid Current", Kind.AC),
         Calculated("pgrid",
-                   lambda data: abs(read_bytes2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
+                   lambda data: abs(read_bytes2_signed(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
                    "On-grid Export Power", "W", Kind.AC),
         Frequency("fgrid", 40, "On-grid Frequency", Kind.AC),
         Byte("grid_mode", 42, "Work Mode code", "", Kind.GRID),
@@ -121,7 +121,7 @@ class ES(Inverter):
                    round(read_voltage(data, 5) * read_current(data, 7)) +
                    (abs(round(read_voltage(data, 10) * read_current(data, 18))) *
                     (-1 if read_byte(data, 30) == 3 else 1)) -
-                   (abs(read_bytes2(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
+                   (abs(read_bytes2_signed(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
                    "House Consumption", "W", Kind.AC),
     )
 

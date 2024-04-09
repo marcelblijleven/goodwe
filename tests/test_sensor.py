@@ -142,7 +142,7 @@ class TestUtils(TestCase):
         data = MockResponse("00020972")
         self.assertEqual(13349.0, testee.read(data))
         data = MockResponse("ffffffff")
-        self.assertIsNone(testee.read(data))
+        self.assertEqual(0.0, testee.read(data))
 
     def test_timestamp(self):
         testee = Timestamp("", 0, "", None)
