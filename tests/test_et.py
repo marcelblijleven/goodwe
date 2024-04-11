@@ -369,7 +369,7 @@ class GW10K_ET_fw1023_Test(EtMock):
         self.assertEqual('02041-23-S00', self.arm_firmware)
 
     def test_GW10K_ET_setting_fw1023(self):
-        self.assertEqual(40, len(self.settings()))
+        self.assertEqual(44, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual('PeakShavingMode', type(settings.get("peak_shaving_mode")).__name__)
 
