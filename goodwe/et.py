@@ -384,7 +384,7 @@ class ET(Inverter):
 
         Integer("load_control_mode", 47595, "Load Control Mode", "", Kind.AC),
         Integer("load_control_switch", 47596, "Load Control Switch", "", Kind.AC),
-        Integer("load_control_soc", 47596, "Load Control SoC", "", Kind.AC),
+        Integer("load_control_soc", 47597, "Load Control SoC", "", Kind.AC),
 
         Integer("fast_charging_power", 47603, "Fast Charging Power", "%", Kind.BAT),
     )
@@ -397,6 +397,10 @@ class ET(Inverter):
         PeakShavingMode("peak_shaving_mode", 47589, "Peak Shaving Mode"),
 
         Integer("dod_holding", 47602, "DoD Holding", "", Kind.BAT),
+        Integer("backup_mode_enable", 47605, "Backup Mode Switch"),
+        Integer("max_charge_power", 47606, "Max Charge Power"),
+        Integer("smart_charging_enable", 47609, "Smart Charging Mode Switch"),
+        Integer("eco_mode_enable", 47612, "Eco Mode Switch"),
     )
 
     def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
