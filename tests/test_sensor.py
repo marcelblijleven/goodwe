@@ -158,7 +158,6 @@ class TestUtils(TestCase):
         data = MockResponse("0d1e0e28ffc4ff1a")
         self.assertEqual("13:30-14:40 Mon,Wed,Thu -60% On", testee.read(data).__str__())
         self.assertEqual(bytes.fromhex("0d1e0e28ffc4ff1a"), testee.encode_value(bytes.fromhex("0d1e0e28ffc4ff1a")))
-        self.assertRaises(ValueError, lambda: testee.encode_value(bytes.fromhex("0d1e0e28ffc4ffff")))
         self.assertRaises(ValueError, lambda: testee.encode_value("some string"))
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
@@ -188,7 +187,6 @@ class TestUtils(TestCase):
         self.assertEqual(ScheduleType.ECO_MODE, testee.schedule_type)
         self.assertEqual(bytes.fromhex("0d1e0e28ff1affc4005a0000"),
                          testee.encode_value(bytes.fromhex("0d1e0e28ff1affc4005a0000")))
-        self.assertRaises(ValueError, lambda: testee.encode_value(bytes.fromhex("0d1e0e28ffffffc4005a0000")))
         self.assertRaises(ValueError, lambda: testee.encode_value("some string"))
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
@@ -208,6 +206,8 @@ class TestUtils(TestCase):
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
 
+        data = MockResponse("0300080006fefd12005fcfff")
+        self.assertEqual("3:0-8:0 Mon -75% (SoC 95%) Off", testee.read(data).__str__())
         data = MockResponse("0000173b5500001400640000")
         self.assertEqual("0:0-23:59  20% (SoC 100%) Unset", testee.read(data).__str__())
         data = MockResponse("ffffffff557f000000010001")

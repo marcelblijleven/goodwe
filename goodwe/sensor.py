@@ -21,12 +21,13 @@ class ScheduleType(IntEnum):
     PEAK_SHAVING = 3,
     BACKUP_MODE = 4,
     SMART_CHARGE_MODE = 5,
-    ECO_MODE_745 = 6
+    ECO_MODE_745 = 6,
+    NOT_SET = 85
 
     @classmethod
     def detect_schedule_type(cls, value: int) -> ScheduleType:
         """Detect schedule type from its on/off value"""
-        if value in (0, -1, 85):
+        if value in (0, -1):
             return ScheduleType.ECO_MODE
         elif value in (1, -2):
             return ScheduleType.DRY_CONTACT_LOAD
@@ -40,6 +41,8 @@ class ScheduleType(IntEnum):
             return ScheduleType.SMART_CHARGE_MODE
         elif value in (6, -7):
             return ScheduleType.ECO_MODE_745
+        elif value == 85:
+            return ScheduleType.NOT_SET
         else:
             raise ValueError(f"{value}: on_off value {value} out of range.")
 
@@ -52,12 +55,13 @@ class ScheduleType(IntEnum):
 
     def decode_power(self, value: int) -> int:
         """Decode human readable value of power parameter"""
-        if self == ScheduleType.ECO_MODE:
-            return value
-        elif self == ScheduleType.PEAK_SHAVING:
+        if self == ScheduleType.PEAK_SHAVING:
             return value * 10
-        if self == ScheduleType.ECO_MODE_745:
+        elif self == ScheduleType.ECO_MODE_745:
             return int(value / 10)
+        elif self == ScheduleType.NOT_SET:
+            # Prevent out of range values when changing mode
+            return value if -100 <= value <= 100 else int(value / 10)
         else:
             return value
 
@@ -67,7 +71,7 @@ class ScheduleType(IntEnum):
             return value
         elif self == ScheduleType.PEAK_SHAVING:
             return int(value / 10)
-        if self == ScheduleType.ECO_MODE_745:
+        elif self == ScheduleType.ECO_MODE_745:
             return value * 10
         else:
             return value
@@ -76,7 +80,7 @@ class ScheduleType(IntEnum):
         """Check if the value fits in allowed values range"""
         if self == ScheduleType.ECO_MODE:
             return -100 <= value <= 100
-        if self == ScheduleType.ECO_MODE_745:
+        elif self == ScheduleType.ECO_MODE_745:
             return -1000 <= value <= 1000
         else:
             return True
@@ -518,8 +522,6 @@ class EcoModeV1(Sensor, EcoMode):
             raise ValueError(f"{self.id_}: on_off value {self.on_off} out of range.")
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)
-        if self.day_bits < 0:
-            raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
         return self
 
     def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
@@ -617,8 +619,6 @@ class Schedule(Sensor, EcoMode):
         self.schedule_type = ScheduleType.detect_schedule_type(self.on_off)
         self.day_bits = read_byte(data)
         self.days = decode_day_of_week(self.day_bits)
-        if self.day_bits < 0:
-            raise ValueError(f"{self.id_}: day_bits value {self.day_bits} out of range.")
         self.power = read_bytes2_signed(data)  # negative=charge, positive=discharge
         if not self.schedule_type.is_in_range(self.power):
             raise ValueError(f"{self.id_}: power value {self.power} out of range.")
@@ -891,6 +891,10 @@ def decode_bitmap(value: int, bitmap: Dict[int, str]) -> str:
 
 
 def decode_day_of_week(data: int) -> str:
+    if data == -1:
+        return "Mon-Sun"
+    elif data == 0:
+        return ""
     bits = bin(data)[2:]
     daynames = list(DAY_NAMES)
     days = ""
@@ -904,7 +908,7 @@ def decode_day_of_week(data: int) -> str:
 
 
 def decode_months(data: int) -> str | None:
-    if data == 0 or data == 0x0fff:
+    if data <= 0 or data == 0x0fff:
         return None
     bits = bin(data)[2:]
     monthnames = list(MONTH_NAMES)
