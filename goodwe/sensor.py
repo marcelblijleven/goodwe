@@ -480,6 +480,14 @@ class EcoMode(ABC):
     def is_eco_discharge_mode(self) -> bool:
         """Answer if it represents the emulated 24/7 fulltime discharge mode"""
 
+    @abstractmethod
+    def get_schedule_type(self) -> ScheduleType:
+        """Answer the schedule type"""
+
+    @abstractmethod
+    def set_schedule_type(self, schedule_type: ScheduleType, is745: bool):
+        """Set the schedule type"""
+
 
 class EcoModeV1(Sensor, EcoMode):
     """Sensor representing Eco Mode Battery Power Group encoded in 8 bytes"""
@@ -562,6 +570,14 @@ class EcoModeV1(Sensor, EcoMode):
             and self.on_off != 0 \
             and self.day_bits == 127 \
             and self.power > 0
+
+    def get_schedule_type(self) -> ScheduleType:
+        """Answer the schedule type"""
+        return ScheduleType.ECO_MODE
+
+    def set_schedule_type(self, schedule_type: ScheduleType, is745: bool):
+        """Set the schedule type"""
+        pass
 
     def as_eco_mode_v2(self) -> EcoModeV2:
         """Convert V1 to V2 EcoMode"""
@@ -679,6 +695,19 @@ class Schedule(Sensor, EcoMode):
             and self.day_bits == 127 \
             and self.power > 0 \
             and (self.month_bits == 0 or self.month_bits == 0x0fff)
+
+    def get_schedule_type(self) -> ScheduleType:
+        """Answer the schedule type"""
+        return self.schedule_type
+
+    def set_schedule_type(self, schedule_type: ScheduleType, is745: bool):
+        """Set the schedule type"""
+        if schedule_type == ScheduleType.ECO_MODE:
+            # try to keep-reuse the type, use is745 only when necessary
+            if self.schedule_type not in (ScheduleType.ECO_MODE, ScheduleType.ECO_MODE_745):
+                self.schedule_type = ScheduleType.ECO_MODE_745 if is745 else ScheduleType.ECO_MODE
+        else:
+            self.schedule_type = schedule_type
 
     def as_eco_mode_v1(self) -> EcoModeV1:
         """Convert V2 to V1 EcoMode"""

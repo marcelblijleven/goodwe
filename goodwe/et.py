@@ -7,7 +7,7 @@ from .exceptions import RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .model import is_2_battery, is_4_mppt, is_single_phase
+from .model import is_2_battery, is_4_mppt, is_745_platform, is_single_phase
 from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
 from .sensor import *
 
@@ -645,8 +645,14 @@ class ET(Inverter):
                 raise ValueError()
             if eco_mode_soc < 0 or eco_mode_soc > 100:
                 raise ValueError()
+
             eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
-            await self._read_setting(eco_mode)
+            # Load the current values to try to detect schedule type
+            try:
+                await self._read_setting(eco_mode)
+            except ValueError:
+                pass
+            eco_mode.set_schedule_type(ScheduleType.ECO_MODE, is_745_platform(self))
             if operation_mode == OperationMode.ECO_CHARGE:
                 await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
             else:
@@ -656,6 +662,8 @@ class ET(Inverter):
             await self.write_setting('eco_mode_4_switch', 0)
             await self.write_setting('work_mode', 3)
             await self._set_offline(False)
+            if is_745_platform(self):
+                await self.write_setting('eco_mode_enable', 1)
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting('battery_discharge_depth')
