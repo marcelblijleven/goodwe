@@ -369,7 +369,7 @@ class GW10K_ET_fw1023_Test(EtMock):
         self.assertEqual('02041-23-S00', self.arm_firmware)
 
     def test_GW10K_ET_setting_fw1023(self):
-        self.assertEqual(44, len(self.settings()))
+        self.assertEqual(46, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual('PeakShavingMode', type(settings.get("peak_shaving_mode")).__name__)
 
@@ -449,7 +449,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('safety_country_label', 'ES-A', '', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal (On-Grid)', '', data)
-        self.assertSensor('operation_mode', -1, '', data)
+        self.assertSensor('operation_mode', 0, '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('errors', '', '', data)
         self.assertSensor("e_total", 59.4, 'kWh', data)
@@ -550,7 +550,7 @@ class GEH10_1U_10_Test(EtMock):
         self.assertSensor('safety_country_label', 'Australia A', '', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal (On-Grid)', '', data)
-        self.assertSensor('operation_mode', -1, '', data)
+        self.assertSensor('operation_mode', 0, '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('errors', '', '', data)
         self.assertSensor('e_total', 10225.8, 'kWh', data)
@@ -1085,7 +1085,7 @@ class GW29K9_ET_Test(EtMock):
         self.assertSensor('meter_apparent_power3', -3175, 'VA', data)
         self.assertSensor('meter_apparent_power_total', -5667, 'VA', data)
         self.assertSensor('meter_type', 2, '', data)
-        self.assertSensor('meter_sw_version', -1, '', data)
+        self.assertSensor('meter_sw_version', 0, '', data)
         self.assertSensor('meter2_active_power', 0, 'W', data)
         self.assertSensor('meter2_e_total_exp', 0.0, 'kWh', data)
         self.assertSensor('meter2_e_total_imp', 0.0, 'kWh', data)

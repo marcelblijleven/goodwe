@@ -302,6 +302,19 @@ class ByteL(Byte):
 
 
 class Integer(Sensor):
+    """Sensor representing unsigned int value encoded in 2 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 2, unit, kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_bytes2(data)
+
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
+        return int.to_bytes(int(value), length=2, byteorder="big", signed=False)
+
+
+class IntegerS(Sensor):
     """Sensor representing signed int value encoded in 2 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
@@ -315,6 +328,19 @@ class Integer(Sensor):
 
 
 class Long(Sensor):
+    """Sensor representing unsigned int value encoded in 4 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):
+        super().__init__(id_, offset, name, 4, unit, kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_bytes4(data)
+
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
+        return int.to_bytes(int(value), length=4, byteorder="big", signed=False)
+
+
+class LongS(Sensor):
     """Sensor representing signed int value encoded in 4 bytes"""
 
     def __init__(self, id_: str, offset: int, name: str, unit: str = "", kind: Optional[SensorKind] = None):

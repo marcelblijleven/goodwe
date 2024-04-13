@@ -95,7 +95,7 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('funbit', 0, '', data)
         self.assertSensor('vbus', 601.2, 'V', data)
         self.assertSensor('vnbus', 305.4, 'V', data)
-        self.assertSensor('derating_mode', -1, '', data)
+        self.assertSensor('derating_mode', 0, '', data)
         self.assertSensor('derating_mode_label', '', '', data)
 
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
@@ -169,7 +169,7 @@ class GW8K_DT_Test(DtMock):
         self.assertSensor('temperature', 45.3, 'C', data)
         self.assertSensor('e_day', 0.0, 'kWh', data)
         self.assertSensor('e_total', 0.0, 'kWh', data)
-        self.assertSensor('h_total', -1, 'h', data)
+        self.assertSensor('h_total', 0, 'h', data)
         self.assertSensor('safety_country', 32, '', data)
         self.assertSensor('safety_country_label', '50Hz 230Vac Default', '', data)
         self.assertSensor('funbit', 512, '', data)
@@ -229,7 +229,7 @@ class GW5000D_NS_Test(DtMock):
         self.assertSensor('funbit', 2400, '', data)
         self.assertSensor('vbus', 291.7, 'V', data)
         self.assertSensor('vnbus', 0, 'V', data)
-        self.assertSensor('derating_mode', -1, '', data)
+        self.assertSensor('derating_mode', 0, '', data)
         self.assertSensor('derating_mode_label', '', '', data)
 
     def test_get_grid_export_limit(self):
@@ -295,7 +295,7 @@ class GW5000_MS_Test(DtMock):
         self.assertSensor('funbit', 2384, '', data)
         self.assertSensor('vbus', 393.9, 'V', data)
         self.assertSensor('vnbus', 0, 'V', data)
-        self.assertSensor('derating_mode', -1, '', data)
+        self.assertSensor('derating_mode', 0, '', data)
         self.assertSensor('derating_mode_label', '', '', data)
 
 

@@ -53,6 +53,17 @@ class TestUtils(TestCase):
         self.assertEqual("0031", testee.encode_value(49).hex())
 
         data = MockResponse("ff9e")
+        self.assertEqual(65438, testee.read(data))
+        self.assertEqual("ff9e", testee.encode_value(65438).hex())
+
+    def test_integer_signed(self):
+        testee = IntegerS("", 0, "", "", None)
+
+        data = MockResponse("0031")
+        self.assertEqual(49, testee.read(data))
+        self.assertEqual("0031", testee.encode_value(49).hex())
+
+        data = MockResponse("ff9e")
         self.assertEqual(-98, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(-98).hex())
 

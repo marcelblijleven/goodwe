@@ -391,6 +391,8 @@ class ET(Inverter):
 
     # Settings added in ARM firmware 22
     __settings_arm_fw_22: Tuple[Sensor, ...] = (
+        Long("peak_shaving_power_limit", 47542, "Peak Shaving Power Limit"),
+        Integer("peak_shaving_soc", 47544, "Peak Shaving SoC"),
         # EcoModeV2("eco_modeV2_5", 47571, "Eco Mode Version 2 Power Group 5"),
         # EcoModeV2("eco_modeV2_6", 47577, "Eco Mode Version 2 Power Group 6"),
         # EcoModeV2("eco_modeV2_7", 47583, "Eco Mode Version 2 Power Group 7"),
