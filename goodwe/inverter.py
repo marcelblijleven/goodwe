@@ -76,8 +76,8 @@ class OperationMode(IntEnum):
     BACKUP = 2
     ECO = 3
     PEAK_SHAVING = 4
-    ECO_CHARGE = 5
-    ECO_DISCHARGE = 6
+    ECO_CHARGE = 10
+    ECO_DISCHARGE = 11
 
 
 class Inverter(ABC):
