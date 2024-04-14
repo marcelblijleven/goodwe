@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ET(Inverter):
-    """Class representing inverter of ET/EH/BT/BH or GE's GEH families"""
+    """Class representing inverter of ET/EH/BT/BH or GE's GEH families AKA platform 205 or 745"""
 
     # Modbus registers from offset 0x891c (35100), count 0x7d (125)
     __all_sensors: Tuple[Sensor, ...] = (
@@ -632,6 +632,7 @@ class ET(Inverter):
             await self._set_offline(True)
             await self.write_setting('backup_supply', 1)
             await self.write_setting('cold_start', 4)
+            await self._clear_battery_mode_param()
         elif operation_mode == OperationMode.BACKUP:
             await self.write_setting('work_mode', 2)
             await self._set_offline(False)
@@ -642,6 +643,7 @@ class ET(Inverter):
         elif operation_mode == OperationMode.PEAK_SHAVING:
             await self.write_setting('work_mode', 4)
             await self._set_offline(False)
+            await self._clear_battery_mode_param()
         elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
             if eco_mode_power < 0 or eco_mode_power > 100:
                 raise ValueError()
@@ -664,8 +666,6 @@ class ET(Inverter):
             await self.write_setting('eco_mode_4_switch', 0)
             await self.write_setting('work_mode', 3)
             await self._set_offline(False)
-            if is_745_platform(self):
-                await self.write_setting('eco_mode_enable', 1)
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting('battery_discharge_depth')

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ES(Inverter):
-    """Class representing inverter of ES/EM/BP family"""
+    """Class representing inverter of ES/EM/BP family AKA platform 105"""
 
     _READ_DEVICE_VERSION_INFO: ProtocolCommand = Aa55ProtocolCommand("010200", "0182")
     _READ_DEVICE_RUNNING_DATA: ProtocolCommand = Aa55ProtocolCommand("010600", "0186")

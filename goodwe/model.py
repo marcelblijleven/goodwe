@@ -1,30 +1,32 @@
+# Serial number tags to identify inverter type
 from .inverter import Inverter
 
-# Serial number tags to identify inverter type
-ET_MODEL_TAGS = ["ETU", "ETL", "ETR", "ETC", "EHU", "EHR", "EHB", "ETT",
-                 "BTU", "BTN", "BTC", "BHU", "AES", "ABP", "HHI",
-                 "HSB", "HUA", "CUA",
-                 "ESN", "EMN", "ERN", "EBN",  # ES Gen 2
-                 "HLB", "HMB", "HBB", "SPN"]  # Gen 2
-ES_MODEL_TAGS = ["ESU", "EMU", "ESA", "BPS", "BPU", "EMJ", "IJL"]
-DT_MODEL_TAGS = ["DTU", "DTS",
-                 "MSU", "MST", "MSC", "DSN", "DTN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",
-                 "PSB", "PSC"]
+PLATFORM_105_MODELS = ("ESU", "EMU", "ESA", "BPS", "BPU", "EMJ", "IJL")
+PLATFORM_205_MODELS = ("ETU", "ETL", "ETR", "BHN", "EHU", "BHU", "EHR", "BTU")
+PLATFORM_745_LV_MODELS = ("ESN", "EBN", "EMN", "SPN", "ERN", "ESC", "HLB", "HMB", "HBB", "EOA")
+PLATFORM_745_HV_MODELS = ("ETT", "HTA", "HUB", "AEB", "SPB", "CUB", "EUB", "HEB", "ERB", "BTT", "ETF", "ARB", "URB",
+                          "EBR")
+PLATFORM_753_MODELS = ("AES", "HHI", "ABP", "EHB", "HSB", "HUA", "CUA")
 
-SINGLE_PHASE_MODELS = ["DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
+ET_MODEL_TAGS = PLATFORM_205_MODELS + PLATFORM_745_LV_MODELS + PLATFORM_745_HV_MODELS + PLATFORM_753_MODELS + (
+    "ETC", "BTC", "BTN")  # Qianhai
+ES_MODEL_TAGS = PLATFORM_105_MODELS
+DT_MODEL_TAGS = ("DTU", "DTS",
+                 "MSU", "MST", "MSC", "DSN", "DTN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",
+                 "PSB", "PSC")
+
+SINGLE_PHASE_MODELS = ("DSN", "DST", "NSU", "SSN", "SST", "SSX", "SSY",  # DT
                        "MSU", "MST", "PSB", "PSC",
                        "MSC",  # Found on third gen MS
                        "EHU", "EHR", "HSB",  # ET
-                       "ESN", "EMN", "ERN", "EBN", "HLB", "HMB", "HBB", "SPN"]  # ES Gen 2
+                       "ESN", "EMN", "ERN", "EBN", "HLB", "HMB", "HBB", "SPN")  # ES Gen 2
 
-MPPT3_MODELS = ["MSU", "MST", "PSC", "MSC",
-                "25KET", "29K9ET"]
+MPPT3_MODELS = ("MSU", "MST", "PSC", "MSC",
+                "25KET", "29K9ET")
 
-MPPT4_MODELS = ["HSB"]
+MPPT4_MODELS = ("HSB",)
 
-BAT_2_MODELS = ["25KET", "29K9ET"]
-
-PLATFORM_745_MODELS = ["ETT", "ESN"]
+BAT_2_MODELS = ("25KET", "29K9ET")
 
 
 def is_single_phase(inverter: Inverter) -> bool:
@@ -44,4 +46,5 @@ def is_2_battery(inverter: Inverter) -> bool:
 
 
 def is_745_platform(inverter: Inverter) -> bool:
-    return any(model in inverter.serial_number for model in PLATFORM_745_MODELS)
+    return any(model in inverter.serial_number for model in PLATFORM_745_LV_MODELS) or any(
+        model in inverter.serial_number for model in PLATFORM_745_HV_MODELS)
