@@ -87,8 +87,9 @@ class Inverter(ABC):
     Represents the inverter state and its basic behavior
     """
 
-    def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
+    def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         self.host: str = host
+        self.port: int = port
         self.comm_addr: int = comm_addr
         self.timeout: int = timeout
         self.retries: int = retries
@@ -129,7 +130,7 @@ class Inverter(ABC):
     async def _read_from_socket(self, command: ProtocolCommand) -> ProtocolResponse:
         async with self._ensure_lock():
             try:
-                result = await command.execute(self.host, self.timeout, self.retries)
+                result = await command.execute(self.host, self.port, self.timeout, self.retries)
                 self._consecutive_failures_count = 0
                 return result
             except MaxRetriesException:

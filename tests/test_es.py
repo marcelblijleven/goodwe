@@ -14,7 +14,7 @@ class EsMock(TestCase, ES):
 
     def __init__(self, methodName='runTest'):
         TestCase.__init__(self, methodName)
-        ES.__init__(self, "localhost")
+        ES.__init__(self, "localhost", 8899)
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
         self._mock_responses = {}
 

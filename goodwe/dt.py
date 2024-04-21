@@ -122,8 +122,8 @@ class DT(Inverter):
         Integer("grid_export_limit", 40336, "Grid Export Limit", "%", Kind.GRID),
     )
 
-    def __init__(self, host: str, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        super().__init__(host, comm_addr, timeout, retries)
+    def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
+        super().__init__(host, port, comm_addr, timeout, retries)
         if not self.comm_addr:
             # Set the default inverter address
             self.comm_addr = 0x7f

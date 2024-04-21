@@ -6,7 +6,6 @@ import logging
 from asyncio.futures import Future
 from typing import Tuple, Optional, Callable
 
-from .const import GOODWE_UDP_PORT
 from .exceptions import MaxRetriesException, RequestFailedException, RequestRejectedException
 from .modbus import create_modbus_request, create_modbus_multi_request, validate_modbus_response, MODBUS_READ_CMD, \
     MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD
@@ -136,7 +135,7 @@ class ProtocolCommand:
         """Calculate relative offset to start of the response bytes"""
         return address
 
-    async def execute(self, host: str, timeout: int, retries: int) -> ProtocolResponse:
+    async def execute(self, host: str, port: int, timeout: int, retries: int) -> ProtocolResponse:
         """
         Execute the udp protocol command on the specified address/port.
         Since the UDP communication is by definition unreliable, when no (valid) response is received by specified
@@ -148,7 +147,7 @@ class ProtocolCommand:
         response_future = loop.create_future()
         transport, _ = await loop.create_datagram_endpoint(
             lambda: UdpInverterProtocol(response_future, self, timeout, retries),
-            remote_addr=(host, GOODWE_UDP_PORT),
+            remote_addr=(host, port),
         )
         try:
             await response_future

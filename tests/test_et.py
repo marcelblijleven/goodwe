@@ -13,7 +13,7 @@ class EtMock(TestCase, ET):
 
     def __init__(self, methodName='runTest'):
         TestCase.__init__(self, methodName)
-        ET.__init__(self, "localhost")
+        ET.__init__(self, "localhost", 8899)
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
         self._mock_responses = {}
         self._list_of_requests = []
