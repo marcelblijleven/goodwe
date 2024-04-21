@@ -76,6 +76,7 @@ class OperationMode(IntEnum):
     BACKUP = 2
     ECO = 3
     PEAK_SHAVING = 4
+    SELF_USE = 5
     ECO_CHARGE = 10
     ECO_DISCHARGE = 11
 

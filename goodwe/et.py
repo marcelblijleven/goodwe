@@ -604,6 +604,8 @@ class ET(Inverter):
         result = [e for e in OperationMode]
         if not self._has_peak_shaving:
             result.remove(OperationMode.PEAK_SHAVING)
+        if not is_745_platform(self):
+            result.remove(OperationMode.SELF_USE)
         if not include_emulated:
             result.remove(OperationMode.ECO_CHARGE)
             result.remove(OperationMode.ECO_DISCHARGE)
@@ -642,6 +644,10 @@ class ET(Inverter):
             await self._set_offline(False)
         elif operation_mode == OperationMode.PEAK_SHAVING:
             await self.write_setting('work_mode', 4)
+            await self._set_offline(False)
+            await self._clear_battery_mode_param()
+        elif operation_mode == OperationMode.SELF_USE:
+            await self.write_setting('work_mode', 5)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
         elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
