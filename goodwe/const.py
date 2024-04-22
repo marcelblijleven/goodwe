@@ -1,5 +1,6 @@
 from typing import Dict
 
+GOODWE_TCP_PORT = 502
 GOODWE_UDP_PORT = 8899
 
 BATTERY_MODES: Dict[int, str] = {

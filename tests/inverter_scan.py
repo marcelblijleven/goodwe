@@ -5,7 +5,7 @@ import sys
 
 import goodwe
 from goodwe.exceptions import InverterError
-from goodwe.protocol import ProtocolCommand
+from goodwe.protocol import ProtocolCommand, UdpInverterProtocol
 
 logging.basicConfig(
     format="%(asctime)-15s %(funcName)s(%(lineno)d) - %(levelname)s: %(message)s",
@@ -13,13 +13,17 @@ logging.basicConfig(
     level=getattr(logging, "DEBUG", None),
 )
 
+if sys.platform.startswith('win'):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 
 def try_command(command, ip):
     print(f"Trying command: {command}")
     try:
-        response = asyncio.run(ProtocolCommand(bytes.fromhex(command), lambda x: True).execute(result[0]))
+        response = asyncio.run(
+            ProtocolCommand(bytes.fromhex(command), lambda x: True).execute(UdpInverterProtocol(ip, 8899)))
         print(f"Response to {command} command: {response.raw_data.hex()}")
-    except InverterError as err:
+    except InverterError:
         print(f"No response to {command} command")
 
 

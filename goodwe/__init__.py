@@ -69,7 +69,7 @@ async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, ret
     # Try the common AA55C07F0102000241 command first and detect inverter type from serial_number
     try:
         logger.debug("Probing inverter at %s.", host)
-        response = await DISCOVERY_COMMAND.execute(host, port, timeout, retries)
+        response = await DISCOVERY_COMMAND.execute(UdpInverterProtocol(host, port, timeout, retries))
         response = response.response_data()
         model_name = response[5:15].decode("ascii").rstrip()
         serial_number = response[31:47].decode("ascii")
@@ -120,22 +120,12 @@ async def search_inverters() -> bytes:
     Raise InverterError if unable to contact any inverter
     """
     logger.debug("Searching inverters by broadcast to port 48899")
-    loop = asyncio.get_running_loop()
     command = ProtocolCommand("WIFIKIT-214028-READ".encode("utf-8"), lambda r: True)
-    response_future = loop.create_future()
-    transport, _ = await loop.create_datagram_endpoint(
-        lambda: UdpInverterProtocol(response_future, command, 1, 3),
-        remote_addr=("255.255.255.255", 48899),
-        allow_broadcast=True,
-    )
     try:
-        await response_future
-        result = response_future.result()
+        result = await command.execute(UdpInverterProtocol("255.255.255.255", 48899, 1, 0))
         if result is not None:
-            return result
+            return result.response_data()
         else:
             raise InverterError("No response received to broadcast request.")
     except asyncio.CancelledError:
         raise InverterError("No valid response received to broadcast request.") from None
-    finally:
-        transport.close()

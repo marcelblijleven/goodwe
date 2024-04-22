@@ -13,6 +13,9 @@ logging.basicConfig(
     level=getattr(logging, "DEBUG", None),
 )
 
+if sys.platform.startswith('win'):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 # Set the appropriate IP address
 IP_ADDRESS = "192.168.2.14"
 PORT = 8899
@@ -40,10 +43,10 @@ print(f"Identified inverter\n"
 # -----------------
 # Read runtime data
 # -----------------
-# response = asyncio.run(inverter.read_runtime_data())
-# for sensor in inverter.sensors():
-#    if sensor.id_ in response:
-#        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
+response = asyncio.run(inverter.read_runtime_data())
+for sensor in inverter.sensors():
+    if sensor.id_ in response:
+        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
 
 # -------------
 # Read settings

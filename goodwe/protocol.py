@@ -13,34 +13,43 @@ from .modbus import create_modbus_request, create_modbus_multi_request, validate
 logger = logging.getLogger(__name__)
 
 
-class UdpInverterProtocol(asyncio.DatagramProtocol):
-    def __init__(
-            self,
-            response_future: Future,
-            command: ProtocolCommand,
-            timeout: int,
-            retries: int
-    ):
-        super().__init__()
-        self.response_future: Future = response_future
-        self.command: ProtocolCommand = command
+class InverterProtocol:
+
+    def __init__(self, host: str, port: int, timeout: int, retries: int):
+        self._host: str = host
+        self._port: int = port
+        self.timeout: int = timeout
+        self.retries: int = retries
+        self.protocol: asyncio.Protocol | None = None
+        self.response_future: Future | None = None
+        self.command: ProtocolCommand | None = None
+
+    async def send_request(self, command: ProtocolCommand) -> Future:
+        raise NotImplementedError()
+
+
+class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
+    def __init__(self, host: str, port: int, timeout: int = 1, retries: int = 3):
+        super().__init__(host, port, timeout, retries)
         self._transport: asyncio.transports.DatagramTransport | None = None
-        self._retry_timeout: int = timeout
-        self._max_retries: int = retries
-        self._retries: int = 0
+        self._retry: int = 0
+
+    async def _connect(self) -> None:
+        if not self._transport or self._transport.is_closing():
+            self._transport, self.protocol = await asyncio.get_running_loop().create_datagram_endpoint(
+                lambda: self,
+                remote_addr=(self._host, self._port),
+            )
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         """On connection made"""
         self._transport = transport
-        self._send_request()
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
         if exc is not None:
             logger.debug("Socket closed with error: %s.", exc)
-        # Cancel Future on connection lost
-        if not self.response_future.done():
-            self.response_future.cancel()
+        self._close_transport()
 
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
@@ -50,35 +59,163 @@ class UdpInverterProtocol(asyncio.DatagramProtocol):
                 self.response_future.set_result(data)
             else:
                 logger.debug("Received invalid response: %s", data.hex())
-                self._retries += 1
-                self._send_request()
+                self._retry += 1
+                self._send_request(self.command, self.response_future)
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
             self.response_future.set_exception(ex)
+        self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
         logger.debug("Received error: %s", exc)
         self.response_future.set_exception(exc)
+        self._close_transport()
 
-    def _send_request(self) -> None:
+    async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
+        await self._connect()
+        response_future = asyncio.get_running_loop().create_future()
+        self._retry = 0
+        self._send_request(command, response_future)
+        await response_future
+        return response_future
+
+    def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
+        """Send message via transport"""
+        self.command = command
+        self.response_future = response_future
         logger.debug("Sending: %s%s", self.command,
-                     f' - retry #{self._retries}/{self._max_retries}' if self._retries > 0 else '')
+                     f' - retry #{self._retry}/{self.retries}' if self._retry > 0 else '')
         self._transport.sendto(self.command.request)
-        asyncio.get_event_loop().call_later(self._retry_timeout, self._retry_mechanism)
+        asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
 
     def _retry_mechanism(self) -> None:
         """Retry mechanism to prevent hanging transport"""
         if self.response_future.done():
-            self._transport.close()
-        elif self._retries < self._max_retries:
-            logger.debug("Failed to receive response to %s in time (%ds).", self.command, self._retry_timeout)
-            self._retries += 1
-            self._send_request()
+            self._close_transport()
+        elif self._retry < self.retries:
+            logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
+            self._retry += 1
+            self._send_request(self.command, self.response_future)
         else:
-            logger.debug("Max number of retries (%d) reached, request %s failed.", self._max_retries, self.command)
+            logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
             self.response_future.set_exception(MaxRetriesException)
+            self._close_transport()
+
+    def _close_transport(self) -> None:
+        if self._transport:
+            self._transport.close()
+            self._transport = None
+        # Cancel Future on connection close
+        if self.response_future and not self.response_future.done():
+            self.response_future.cancel()
+
+
+class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
+    def __init__(self, host: str, port: int, timeout: int = 1, retries: int = 0):
+        super().__init__(host, port, timeout, retries)
+        self._transport: asyncio.transports.Transport | None = None
+        self._retry: int = 0
+
+    async def _connect(self) -> None:
+        if not self._transport or self._transport.is_closing():
+            self._transport, self.protocol = await asyncio.get_running_loop().create_connection(
+                lambda: self,
+                host=self._host, port=self._port,
+            )
+
+    def connection_made(self, transport: asyncio.DatagramTransport) -> None:
+        """On connection made"""
+        logger.debug("Connection opened.")
+        pass
+
+    def eof_received(self) -> None:
+        logger.debug("Connection closed.")
+        self._close_transport()
+
+    def connection_lost(self, exc: Optional[Exception]) -> None:
+        """On connection lost"""
+        if exc is not None:
+            logger.debug("Connection closed with error: %s.", exc)
+        self._close_transport()
+
+    def data_received(self, data: bytes) -> None:
+        """On data received"""
+        try:
+            if self.command.validator(data):
+                logger.debug("Received: %s", data.hex())
+                self._retry = 0
+                self.response_future.set_result(data)
+            else:
+                logger.debug("Received invalid response: %s", data.hex())
+                self.response_future.set_exception(RequestRejectedException())
+                self._close_transport()
+        except RequestRejectedException as ex:
+            logger.debug("Received exception response: %s", data.hex())
+            self.response_future.set_exception(ex)
+            # self._close_transport()
+
+    def error_received(self, exc: Exception) -> None:
+        """On error received"""
+        logger.debug("Received error: %s", exc)
+        self.response_future.set_exception(exc)
+        self._close_transport()
+
+    async def send_request(self, command: ProtocolCommand) -> Future:
+        """Send message via transport"""
+        try:
+            await self._connect()
+            response_future = asyncio.get_running_loop().create_future()
+            self._send_request(command, response_future)
+            await response_future
+            return response_future
+        except asyncio.CancelledError:
+            if self._retry < self.retries:
+                logger.debug("Connection broken error")
+                self._retry += 1
+                self._close_transport()
+                return await self.send_request(command)
+            else:
+                return self._max_retries_reached()
+        except ConnectionRefusedError as exc:
+            if self._retry < self.retries:
+                logger.debug("Connection refused error: %s", exc)
+                self._retry += 1
+                return await self.send_request(command)
+            else:
+                return self._max_retries_reached()
+
+    def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
+        """Send message via transport"""
+        self.command = command
+        self.response_future = response_future
+        logger.debug("Sending: %s%s", self.command,
+                     f' - retry #{self._retry}/{self.retries}' if self._retry > 0 else '')
+        self._transport.write(self.command.request)
+        asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
+
+    def _timeout_mechanism(self) -> None:
+        """Retry mechanism to prevent hanging transport"""
+        if self.response_future.done():
+            self._retry = 0
+        else:
+            self._close_transport()
+
+    def _max_retries_reached(self) -> Future:
+        logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
+        self._close_transport()
+        self.response_future = asyncio.get_running_loop().create_future()
+        self.response_future.set_exception(MaxRetriesException)
+        return self.response_future
+
+    def _close_transport(self) -> None:
+        if self._transport:
+            self._transport.close()
+            self._transport = None
+        # Cancel Future on connection lost
+        if self.response_future and not self.response_future.done():
+            self.response_future.cancel()
 
 
 class ProtocolResponse:
@@ -135,22 +272,14 @@ class ProtocolCommand:
         """Calculate relative offset to start of the response bytes"""
         return address
 
-    async def execute(self, host: str, port: int, timeout: int, retries: int) -> ProtocolResponse:
+    async def execute(self, protocol: InverterProtocol) -> ProtocolResponse:
         """
-        Execute the udp protocol command on the specified address/port.
-        Since the UDP communication is by definition unreliable, when no (valid) response is received by specified
-        timeout, the command will be re-tried up to retries times.
+        Execute the protocol command on the specified connection.
 
-        Return raw response data
+        Return ProtocolResponse with raw response data
         """
-        loop = asyncio.get_running_loop()
-        response_future = loop.create_future()
-        transport, _ = await loop.create_datagram_endpoint(
-            lambda: UdpInverterProtocol(response_future, self, timeout, retries),
-            remote_addr=(host, port),
-        )
         try:
-            await response_future
+            response_future = await protocol.send_request(self)
             result = response_future.result()
             if result is not None:
                 return ProtocolResponse(result, self)
@@ -158,12 +287,10 @@ class ProtocolCommand:
                 raise RequestFailedException(
                     "No response received to '" + self.request.hex() + "' request."
                 )
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, ConnectionRefusedError):
             raise RequestFailedException(
                 "No valid response received to '" + self.request.hex() + "' request."
             ) from None
-        finally:
-            transport.close()
 
 
 class Aa55ProtocolCommand(ProtocolCommand):
