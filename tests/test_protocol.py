@@ -1,9 +1,6 @@
-from typing import Callable
 from unittest import TestCase, mock
 
-from goodwe.exceptions import MaxRetriesException
-from goodwe.protocol import Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand, ModbusReadCommand, \
-    ModbusWriteCommand, ModbusWriteMultiCommand, ProtocolCommand, UdpInverterProtocol
+from goodwe.protocol import *
 
 
 class TestUDPClientProtocol(TestCase):
@@ -98,17 +95,29 @@ class TestUDPClientProtocol(TestCase):
         self.protocol.response_future.set_exception.assert_called_once_with(MaxRetriesException)
         self.assertEqual(self.protocol._retry, 3)
 
-    def test_modbus_read_command(self):
-        command = ModbusReadCommand(0xf7, 0x88b8, 0x0021)
+    def test_modbus_rtu_read_command(self):
+        command = ModbusRtuReadCommand(0xf7, 0x88b8, 0x0021)
         self.assertEqual(bytes.fromhex('f70388b800213ac1'), command.request)
 
-    def test_modbus_write_command(self):
-        command = ModbusWriteCommand(0xf7, 0xb798, 0x0002)
+    def test_modbus_rtu_write_command(self):
+        command = ModbusRtuWriteCommand(0xf7, 0xb798, 0x0002)
         self.assertEqual(bytes.fromhex('f706b7980002bac6'), command.request)
 
-    def test_modbus_write_multi_command(self):
-        command = ModbusWriteMultiCommand(0xf7, 0xb798, bytes.fromhex('08070605'))
+    def test_modbus_rtu_write_multi_command(self):
+        command = ModbusRtuWriteMultiCommand(0xf7, 0xb798, bytes.fromhex('08070605'))
         self.assertEqual(bytes.fromhex('f710b79800020408070605851b'), command.request)
+
+    def test_modbus_tcp_read_command(self):
+        command = ModbusTcpReadCommand(180, 310, 2)
+        self.assertEqual(bytes.fromhex('000100000006b40301360002'), command.request)
+
+    def test_modbus_tcp_write_command(self):
+        command = ModbusTcpWriteCommand(180, 310, 0x4556)
+        self.assertEqual(bytes.fromhex('000100000006B40601364556'), command.request)
+
+    def test_modbus_tcp_write_multi_command(self):
+        command = ModbusTcpWriteMultiCommand(0xf7, 0xb798, bytes.fromhex('08070605'))
+        self.assertEqual(bytes.fromhex('00010000000bf710b79800020408070605'), command.request)
 
     def test_aa55_read_command(self):
         command = Aa55ReadCommand(0x0701, 16)

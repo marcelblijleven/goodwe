@@ -7,8 +7,9 @@ from asyncio.futures import Future
 from typing import Tuple, Optional, Callable
 
 from .exceptions import MaxRetriesException, RequestFailedException, RequestRejectedException
-from .modbus import create_modbus_request, create_modbus_multi_request, validate_modbus_response, MODBUS_READ_CMD, \
-    MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD
+from .modbus import create_modbus_rtu_request, create_modbus_rtu_multi_request, create_modbus_tcp_request, \
+    validate_modbus_rtu_response, create_modbus_tcp_multi_request, MODBUS_READ_CMD, MODBUS_WRITE_CMD, \
+    MODBUS_WRITE_MULTI_CMD
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +28,36 @@ class InverterProtocol:
     async def send_request(self, command: ProtocolCommand) -> Future:
         raise NotImplementedError()
 
+    def read_command(self, comm_addr: int, offset: int, count: int) -> ProtocolCommand:
+        """Create read protocol command."""
+        raise NotImplementedError()
+
+    def write_command(self, comm_addr: int, register: int, value: int) -> ProtocolCommand:
+        """Create write protocol command."""
+        raise NotImplementedError()
+
+    def write_multi_command(self, comm_addr: int, offset: int, values: bytes) -> ProtocolCommand:
+        """Create write multiple protocol command."""
+        raise NotImplementedError()
+
 
 class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
     def __init__(self, host: str, port: int, timeout: int = 1, retries: int = 3):
         super().__init__(host, port, timeout, retries)
         self._transport: asyncio.transports.DatagramTransport | None = None
         self._retry: int = 0
+
+    def read_command(self, comm_addr: int, offset: int, count: int) -> ProtocolCommand:
+        """Create read protocol command."""
+        return ModbusRtuReadCommand(comm_addr, offset, count)
+
+    def write_command(self, comm_addr: int, register: int, value: int) -> ProtocolCommand:
+        """Create write protocol command."""
+        return ModbusRtuWriteCommand(comm_addr, register, value)
+
+    def write_multi_command(self, comm_addr: int, offset: int, values: bytes) -> ProtocolCommand:
+        """Create write multiple protocol command."""
+        return ModbusRtuWriteMultiCommand(comm_addr, offset, values)
 
     async def _connect(self) -> None:
         if not self._transport or self._transport.is_closing():
@@ -117,6 +142,18 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         super().__init__(host, port, timeout, retries)
         self._transport: asyncio.transports.Transport | None = None
         self._retry: int = 0
+
+    def read_command(self, comm_addr: int, offset: int, count: int) -> ProtocolCommand:
+        """Create read protocol command."""
+        return ModbusTcpReadCommand(comm_addr, offset, count)
+
+    def write_command(self, comm_addr: int, register: int, value: int) -> ProtocolCommand:
+        """Create write protocol command."""
+        return ModbusTcpWriteCommand(comm_addr, register, value)
+
+    def write_multi_command(self, comm_addr: int, offset: int, values: bytes) -> ProtocolCommand:
+        """Create write multiple protocol command."""
+        return ModbusTcpWriteMultiCommand(comm_addr, offset, values)
 
     async def _connect(self) -> None:
         if not self._transport or self._transport.is_closing():
@@ -383,7 +420,7 @@ class Aa55WriteMultiCommand(Aa55ProtocolCommand):
                          "02B9")
 
 
-class ModbusProtocolCommand(ProtocolCommand):
+class ModbusRtuProtocolCommand(ProtocolCommand):
     """
     Inverter communication protocol seen on newer generation of inverters, based on Modbus
     protocol over UDP transport layer.
@@ -408,7 +445,7 @@ class ModbusProtocolCommand(ProtocolCommand):
     def __init__(self, request: bytes, cmd: int, offset: int, value: int):
         super().__init__(
             request,
-            lambda x: validate_modbus_response(x, cmd, offset, value),
+            lambda x: validate_modbus_rtu_response(x, cmd, offset, value),
         )
         self.first_address: int = offset
         self.value = value
@@ -422,14 +459,14 @@ class ModbusProtocolCommand(ProtocolCommand):
         return (address - self.first_address) * 2
 
 
-class ModbusReadCommand(ModbusProtocolCommand):
+class ModbusRtuReadCommand(ModbusRtuProtocolCommand):
     """
-    Inverter modbus READ command for retrieving <count> modbus registers starting at register # <offset>
+    Inverter Modbus/RTU READ command for retrieving <count> modbus registers starting at register # <offset>
     """
 
     def __init__(self, comm_addr: int, offset: int, count: int):
         super().__init__(
-            create_modbus_request(comm_addr, MODBUS_READ_CMD, offset, count),
+            create_modbus_rtu_request(comm_addr, MODBUS_READ_CMD, offset, count),
             MODBUS_READ_CMD, offset, count)
 
     def __repr__(self):
@@ -439,26 +476,90 @@ class ModbusReadCommand(ModbusProtocolCommand):
             return f'READ register {self.first_address} ({self.request.hex()})'
 
 
-class ModbusWriteCommand(ModbusProtocolCommand):
+class ModbusRtuWriteCommand(ModbusRtuProtocolCommand):
     """
-    Inverter modbus WRITE command setting single modbus register # <register> value <value>
+    Inverter Modbus/RTU WRITE command setting single modbus register # <register> value <value>
     """
 
     def __init__(self, comm_addr: int, register: int, value: int):
         super().__init__(
-            create_modbus_request(comm_addr, MODBUS_WRITE_CMD, register, value),
+            create_modbus_rtu_request(comm_addr, MODBUS_WRITE_CMD, register, value),
             MODBUS_WRITE_CMD, register, value)
 
     def __repr__(self):
         return f'WRITE {self.value} to register {self.first_address} ({self.request.hex()})'
 
 
-class ModbusWriteMultiCommand(ModbusProtocolCommand):
+class ModbusRtuWriteMultiCommand(ModbusRtuProtocolCommand):
     """
-    Inverter modbus WRITE command setting multiple modbus register # <register> value <value>
+    Inverter Modbus/RTU WRITE command setting multiple modbus register # <register> value <value>
     """
 
     def __init__(self, comm_addr: int, offset: int, values: bytes):
         super().__init__(
-            create_modbus_multi_request(comm_addr, MODBUS_WRITE_MULTI_CMD, offset, values),
+            create_modbus_rtu_multi_request(comm_addr, MODBUS_WRITE_MULTI_CMD, offset, values),
+            MODBUS_WRITE_MULTI_CMD, offset, len(values) // 2)
+
+
+class ModbusTcpProtocolCommand(ProtocolCommand):
+    """
+    Modbus/TCP inverter communication protocol.
+    """
+
+    def __init__(self, request: bytes, cmd: int, offset: int, value: int):
+        super().__init__(
+            request,
+            lambda x: validate_modbus_rtu_response(x, cmd, offset, value),
+        )
+        self.first_address: int = offset
+        self.value = value
+
+    def trim_response(self, raw_response: bytes):
+        """Trim raw response from header and checksum data"""
+        return raw_response[5:-2]
+
+    def get_offset(self, address: int):
+        """Calculate relative offset to start of the response bytes"""
+        return (address - self.first_address) * 2
+
+
+class ModbusTcpReadCommand(ModbusRtuProtocolCommand):
+    """
+    Inverter Modbus/TCP READ command for retrieving <count> modbus registers starting at register # <offset>
+    """
+
+    def __init__(self, comm_addr: int, offset: int, count: int):
+        super().__init__(
+            create_modbus_tcp_request(comm_addr, MODBUS_READ_CMD, offset, count),
+            MODBUS_READ_CMD, offset, count)
+
+    def __repr__(self):
+        if self.value > 1:
+            return f'READ {self.value} registers from {self.first_address} ({self.request.hex()})'
+        else:
+            return f'READ register {self.first_address} ({self.request.hex()})'
+
+
+class ModbusTcpWriteCommand(ModbusRtuProtocolCommand):
+    """
+    Inverter Modbus/TCP WRITE command setting single modbus register # <register> value <value>
+    """
+
+    def __init__(self, comm_addr: int, register: int, value: int):
+        super().__init__(
+            create_modbus_tcp_request(comm_addr, MODBUS_WRITE_CMD, register, value),
+            MODBUS_WRITE_CMD, register, value)
+
+    def __repr__(self):
+        return f'WRITE {self.value} to register {self.first_address} ({self.request.hex()})'
+
+
+class ModbusTcpWriteMultiCommand(ModbusRtuProtocolCommand):
+    """
+    Inverter Modbus/TCP WRITE command setting multiple modbus register # <register> value <value>
+    """
+
+    def __init__(self, comm_addr: int, offset: int, values: bytes):
+        super().__init__(
+            create_modbus_tcp_multi_request(comm_addr, MODBUS_WRITE_MULTI_CMD, offset, values),
             MODBUS_WRITE_MULTI_CMD, offset, len(values) // 2)

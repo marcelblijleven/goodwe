@@ -7,7 +7,7 @@ from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .model import is_3_mppt, is_single_phase
-from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
+from .protocol import ProtocolCommand
 from .sensor import *
 
 
@@ -127,8 +127,8 @@ class DT(Inverter):
         if not self.comm_addr:
             # Set the default inverter address
             self.comm_addr = 0x7f
-        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x7531, 0x0028)
-        self._READ_DEVICE_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x7594, 0x0049)
+        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x7531, 0x0028)
+        self._READ_DEVICE_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
         self._sensors = self.__all_sensors
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
@@ -180,7 +180,7 @@ class DT(Inverter):
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
         count = (setting.size_ + (setting.size_ % 2)) // 2
-        response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+        response = await self._read_from_socket(self._read_command(setting.offset, count))
         return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
@@ -190,9 +190,9 @@ class DT(Inverter):
         raw_value = setting.encode_value(value)
         if len(raw_value) <= 2:
             value = int.from_bytes(raw_value, byteorder="big", signed=True)
-            await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+            await self._read_from_socket(self._write_command(setting.offset, value))
         else:
-            await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
+            await self._read_from_socket(self._write_multi_command(setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}

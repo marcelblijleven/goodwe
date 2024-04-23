@@ -8,7 +8,7 @@ from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
 from .model import is_2_battery, is_4_mppt, is_745_platform, is_single_phase
-from .protocol import ProtocolCommand, ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
+from .protocol import ProtocolCommand
 from .sensor import *
 
 logger = logging.getLogger(__name__)
@@ -152,6 +152,10 @@ class ET(Inverter):
                    read_bytes4_signed(data, 35182) -
                    read_bytes2_signed(data, 35140),
                    "House Consumption", "W", Kind.AC),
+
+        # Power4S("pbattery2", 35264, "Battery2 Power", Kind.BAT),
+        # Integer("battery2_mode", 35266, "Battery2 Mode code", "", Kind.BAT),
+        # Enum2("battery2_mode_label", 35184, BATTERY_MODES, "Battery2 Mode", Kind.BAT),
     )
 
     # Modbus registers from offset 0x9088 (37000)
@@ -410,13 +414,13 @@ class ET(Inverter):
         if not self.comm_addr:
             # Set the default inverter address
             self.comm_addr = 0xf7
-        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x88b8, 0x0021)
-        self._READ_RUNNING_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x891c, 0x007d)
-        self._READ_METER_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x2d)
-        self._READ_METER_DATA_EXTENDED: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x8ca0, 0x3a)
-        self._READ_BATTERY_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9088, 0x0018)
-        self._READ_BATTERY2_INFO: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x9858, 0x0016)
-        self._READ_MPPT_DATA: ProtocolCommand = ModbusReadCommand(self.comm_addr, 0x89e5, 0x3d)
+        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x88b8, 0x0021)
+        self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x891c, 0x007d)
+        self._READ_METER_DATA: ProtocolCommand = self._read_command(0x8ca0, 0x2d)
+        self._READ_METER_DATA_EXTENDED: ProtocolCommand = self._read_command(0x8ca0, 0x3a)
+        self._READ_BATTERY_INFO: ProtocolCommand = self._read_command(0x9088, 0x0018)
+        self._READ_BATTERY2_INFO: ProtocolCommand = self._read_command(0x9858, 0x0016)
+        self._READ_MPPT_DATA: ProtocolCommand = self._read_command(0x89e5, 0x3d)
         self._has_eco_mode_v2: bool = True
         self._has_peak_shaving: bool = True
         self._has_battery: bool = True
@@ -478,7 +482,7 @@ class ET(Inverter):
 
         # Check and add EcoModeV2 settings added in (ETU fw 19)
         try:
-            await self._read_from_socket(ModbusReadCommand(self.comm_addr, 47547, 6))
+            await self._read_from_socket(self._read_command(47547, 6))
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
         except RequestRejectedException as ex:
             if ex.message == 'ILLEGAL DATA ADDRESS':
@@ -487,7 +491,7 @@ class ET(Inverter):
 
         # Check and add Peak Shaving settings added in (ETU fw 22)
         try:
-            await self._read_from_socket(ModbusReadCommand(self.comm_addr, 47589, 6))
+            await self._read_from_socket(self._read_command(47589, 6))
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
         except RequestRejectedException as ex:
             if ex.message == 'ILLEGAL DATA ADDRESS':
@@ -560,7 +564,7 @@ class ET(Inverter):
 
     async def _read_setting(self, setting: Sensor) -> Any:
         count = (setting.size_ + (setting.size_ % 2)) // 2
-        response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+        response = await self._read_from_socket(self._read_command(setting.offset, count))
         return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
@@ -572,15 +576,15 @@ class ET(Inverter):
     async def _write_setting(self, setting: Sensor, value: Any):
         if setting.size_ == 1:
             # modbus can address/store only 16 bit values, read the other 8 bytes
-            response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+            response = await self._read_from_socket(self._read_command(setting.offset, 1))
             raw_value = setting.encode_value(value, response.response_data()[0:2])
         else:
             raw_value = setting.encode_value(value)
         if len(raw_value) <= 2:
             value = int.from_bytes(raw_value, byteorder="big", signed=True)
-            await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+            await self._read_from_socket(self._write_command(setting.offset, value))
         else:
-            await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
+            await self._read_from_socket(self._write_multi_command(setting.offset, raw_value))
 
     async def read_settings_data(self) -> Dict[str, Any]:
         data = {}
@@ -694,8 +698,8 @@ class ET(Inverter):
         return tuple(self._settings.values())
 
     async def _clear_battery_mode_param(self) -> None:
-        await self._read_from_socket(ModbusWriteCommand(self.comm_addr, 0xb9ad, 1))
+        await self._read_from_socket(self._write_command(0xb9ad, 1))
 
     async def _set_offline(self, mode: bool) -> None:
         value = bytes.fromhex('00070000') if mode else bytes.fromhex('00010000')
-        await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, 0xb997, value))
+        await self._read_from_socket(self._write_multi_command(0xb997, value))

@@ -7,8 +7,7 @@ from .exceptions import InverterError
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
-from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand, \
-    ModbusReadCommand, ModbusWriteCommand, ModbusWriteMultiCommand
+from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand
 from .sensor import *
 
 logger = logging.getLogger(__name__)
@@ -228,7 +227,7 @@ class ES(Inverter):
     async def _read_setting(self, setting: Sensor) -> Any:
         count = (setting.size_ + (setting.size_ % 2)) // 2
         if self._is_modbus_setting(setting):
-            response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, count))
+            response = await self._read_from_socket(self._read_command(setting.offset, count))
             return setting.read_value(response)
         else:
             response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
@@ -249,7 +248,7 @@ class ES(Inverter):
         if setting.size_ == 1:
             # modbus can address/store only 16 bit values, read the other 8 bytes
             if self._is_modbus_setting(setting):
-                response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
+                response = await self._read_from_socket(self._read_command(setting.offset, 1))
                 raw_value = setting.encode_value(value, response.response_data()[0:2])
             else:
                 response = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
@@ -259,12 +258,12 @@ class ES(Inverter):
         if len(raw_value) <= 2:
             value = int.from_bytes(raw_value, byteorder="big", signed=True)
             if self._is_modbus_setting(setting):
-                await self._read_from_socket(ModbusWriteCommand(self.comm_addr, setting.offset, value))
+                await self._read_from_socket(self._write_command(setting.offset, value))
             else:
                 await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
         else:
             if self._is_modbus_setting(setting):
-                await self._read_from_socket(ModbusWriteMultiCommand(self.comm_addr, setting.offset, raw_value))
+                await self._read_from_socket(self._write_multi_command(setting.offset, raw_value))
             else:
                 await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
 

@@ -108,6 +108,18 @@ class Inverter(ABC):
         self.arm_version: int = 0
         self.arm_svn_version: int | None = None
 
+    def _read_command(self, offset: int, count: int) -> ProtocolCommand:
+        """Create read protocol command."""
+        return self._protocol.read_command(self.comm_addr, offset, count)
+
+    def _write_command(self, register: int, value: int) -> ProtocolCommand:
+        """Create write protocol command."""
+        return self._protocol.write_command(self.comm_addr, register, value)
+
+    def _write_multi_command(self, offset: int, values: bytes) -> ProtocolCommand:
+        """Create write multiple protocol command."""
+        return self._protocol.write_multi_command(self.comm_addr, offset, values)
+
     def _ensure_lock(self) -> asyncio.Lock:
         """Validate (or create) asyncio Lock.
 
