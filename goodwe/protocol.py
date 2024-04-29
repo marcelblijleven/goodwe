@@ -8,8 +8,8 @@ from typing import Tuple, Optional, Callable
 
 from .exceptions import MaxRetriesException, RequestFailedException, RequestRejectedException
 from .modbus import create_modbus_rtu_request, create_modbus_rtu_multi_request, create_modbus_tcp_request, \
-    validate_modbus_rtu_response, create_modbus_tcp_multi_request, MODBUS_READ_CMD, MODBUS_WRITE_CMD, \
-    MODBUS_WRITE_MULTI_CMD
+    create_modbus_tcp_multi_request, validate_modbus_rtu_response, validate_modbus_tcp_response, MODBUS_READ_CMD, \
+    MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +157,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     async def _connect(self) -> None:
         if not self._transport or self._transport.is_closing():
+            logger.debug("Opening connection.")
             self._transport, self.protocol = await asyncio.get_running_loop().create_connection(
                 lambda: self,
                 host=self._host, port=self._port,
@@ -248,7 +249,10 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     def _close_transport(self) -> None:
         if self._transport:
-            self._transport.close()
+            try:
+                self._transport.close()
+            except RuntimeError:
+                logger.debug("Failed to close transport.")
             self._transport = None
         # Cancel Future on connection lost
         if self.response_future and not self.response_future.done():
@@ -509,21 +513,21 @@ class ModbusTcpProtocolCommand(ProtocolCommand):
     def __init__(self, request: bytes, cmd: int, offset: int, value: int):
         super().__init__(
             request,
-            lambda x: validate_modbus_rtu_response(x, cmd, offset, value),
+            lambda x: validate_modbus_tcp_response(x, cmd, offset, value),
         )
         self.first_address: int = offset
         self.value = value
 
     def trim_response(self, raw_response: bytes):
         """Trim raw response from header and checksum data"""
-        return raw_response[5:-2]
+        return raw_response[9:]
 
     def get_offset(self, address: int):
         """Calculate relative offset to start of the response bytes"""
         return (address - self.first_address) * 2
 
 
-class ModbusTcpReadCommand(ModbusRtuProtocolCommand):
+class ModbusTcpReadCommand(ModbusTcpProtocolCommand):
     """
     Inverter Modbus/TCP READ command for retrieving <count> modbus registers starting at register # <offset>
     """
@@ -540,7 +544,7 @@ class ModbusTcpReadCommand(ModbusRtuProtocolCommand):
             return f'READ register {self.first_address} ({self.request.hex()})'
 
 
-class ModbusTcpWriteCommand(ModbusRtuProtocolCommand):
+class ModbusTcpWriteCommand(ModbusTcpProtocolCommand):
     """
     Inverter Modbus/TCP WRITE command setting single modbus register # <register> value <value>
     """
@@ -554,7 +558,7 @@ class ModbusTcpWriteCommand(ModbusRtuProtocolCommand):
         return f'WRITE {self.value} to register {self.first_address} ({self.request.hex()})'
 
 
-class ModbusTcpWriteMultiCommand(ModbusRtuProtocolCommand):
+class ModbusTcpWriteMultiCommand(ModbusTcpProtocolCommand):
     """
     Inverter Modbus/TCP WRITE command setting multiple modbus register # <register> value <value>
     """
