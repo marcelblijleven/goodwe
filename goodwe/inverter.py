@@ -146,10 +146,10 @@ class Inverter(ABC):
             except MaxRetriesException:
                 self._consecutive_failures_count += 1
                 raise RequestFailedException(f'No valid response received even after {self._protocol.retries} retries',
-                                             self._consecutive_failures_count)
+                                             self._consecutive_failures_count) from None
             except RequestFailedException as ex:
                 self._consecutive_failures_count += 1
-                raise RequestFailedException(ex.message, self._consecutive_failures_count)
+                raise RequestFailedException(ex.message, self._consecutive_failures_count) from None
 
     @abstractmethod
     async def read_device_info(self):

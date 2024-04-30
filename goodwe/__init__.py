@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Type
 
 from .const import GOODWE_TCP_PORT, GOODWE_UDP_PORT
 from .dt import DT
@@ -74,22 +73,27 @@ async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, ret
         model_name = response[5:15].decode("ascii").rstrip()
         serial_number = response[31:47].decode("ascii")
 
-        inverter_class: Type[Inverter] | None = None
+        i: Inverter | None = None
         for model_tag in ET_MODEL_TAGS:
             if model_tag in serial_number:
                 logger.debug("Detected ET/EH/BT/BH/GEH inverter %s, S/N:%s.", model_name, serial_number)
-                inverter_class = ET
-        for model_tag in ES_MODEL_TAGS:
-            if model_tag in serial_number:
-                logger.debug("Detected ES/EM/BP inverter %s, S/N:%s.", model_name, serial_number)
-                inverter_class = ES
-        for model_tag in DT_MODEL_TAGS:
-            if model_tag in serial_number:
-                logger.debug("Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.", model_name, serial_number)
-                inverter_class = DT
-        if inverter_class:
-            i = inverter_class(host, port, 0, timeout, retries)
+                i = ET(host, port, 0, timeout, retries)
+                break
+        if not i:
+            for model_tag in ES_MODEL_TAGS:
+                if model_tag in serial_number:
+                    logger.debug("Detected ES/EM/BP inverter %s, S/N:%s.", model_name, serial_number)
+                    i = ES(host, port, 0, timeout, retries)
+                    break
+        if not i:
+            for model_tag in DT_MODEL_TAGS:
+                if model_tag in serial_number:
+                    logger.debug("Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.", model_name, serial_number)
+                    i = DT(host, port, 0, timeout, retries)
+                    break
+        if i:
             await i.read_device_info()
+            logger.debug("Connected to inverter %s, S/N:%s.", i.model_name, i.serial_number)
             return i
 
     except InverterError as ex:

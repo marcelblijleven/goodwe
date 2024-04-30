@@ -19,6 +19,7 @@ class InverterProtocol:
     def __init__(self, host: str, port: int, timeout: int, retries: int):
         self._host: str = host
         self._port: int = port
+        self._timer: asyncio.TimerHandle | None = None
         self.timeout: int = timeout
         self.retries: int = retries
         self.protocol: asyncio.Protocol | None = None
@@ -78,6 +79,8 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
+        if self._timer:
+            self._timer.cancel()
         try:
             if self.command.validator(data):
                 logger.debug("Received: %s", data.hex())
@@ -89,7 +92,8 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
             self.response_future.set_exception(ex)
-        self._close_transport()
+        finally:
+            self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
@@ -113,7 +117,7 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         logger.debug("Sending: %s%s", self.command,
                      f' - retry #{self._retry}/{self.retries}' if self._retry > 0 else '')
         self._transport.sendto(self.command.request)
-        asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
+        self._timer = asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
 
     def _retry_mechanism(self) -> None:
         """Retry mechanism to prevent hanging transport"""
@@ -130,7 +134,10 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     def _close_transport(self) -> None:
         if self._transport:
-            self._transport.close()
+            try:
+                self._transport.close()
+            except RuntimeError:
+                logger.debug("Failed to close transport.")
             self._transport = None
         # Cancel Future on connection close
         if self.response_future and not self.response_future.done():
@@ -180,6 +187,8 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     def data_received(self, data: bytes) -> None:
         """On data received"""
+        if self._timer:
+            self._timer.cancel()
         try:
             if self.command.validator(data):
                 logger.debug("Received: %s", data.hex())
@@ -231,7 +240,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         logger.debug("Sending: %s%s", self.command,
                      f' - retry #{self._retry}/{self.retries}' if self._retry > 0 else '')
         self._transport.write(self.command.request)
-        asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
+        self._timer = asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
 
     def _timeout_mechanism(self) -> None:
         """Retry mechanism to prevent hanging transport"""
