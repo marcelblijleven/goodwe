@@ -19,12 +19,35 @@ class InverterProtocol:
     def __init__(self, host: str, port: int, timeout: int, retries: int):
         self._host: str = host
         self._port: int = port
+        self._running_loop: asyncio.AbstractEventLoop | None = None
+        self._lock: asyncio.Lock | None = None
         self._timer: asyncio.TimerHandle | None = None
         self.timeout: int = timeout
         self.retries: int = retries
         self.protocol: asyncio.Protocol | None = None
         self.response_future: Future | None = None
         self.command: ProtocolCommand | None = None
+
+    def _ensure_lock(self) -> asyncio.Lock:
+        """Validate (or create) asyncio Lock.
+
+           The asyncio.Lock must always be created from within's asyncio loop,
+           so it cannot be eagerly created in constructor.
+           Additionally, since asyncio.run() creates and closes its own loop,
+           the lock's scope (its creating loop) mus be verified to support proper
+           behavior in subsequent asyncio.run() invocations.
+        """
+        if self._lock and self._running_loop == asyncio.get_event_loop():
+            return self._lock
+        else:
+            logger.debug("Creating lock instance for current event loop.")
+            self._lock = asyncio.Lock()
+            self._running_loop = asyncio.get_event_loop()
+            self._close_transport()
+            return self._lock
+
+    def _close_transport(self) -> None:
+        raise NotImplementedError()
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         raise NotImplementedError()
@@ -88,7 +111,6 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             if self.command.validator(data):
                 logger.debug("Received: %s", data.hex())
                 self.response_future.set_result(data)
-                self._close_transport()
             else:
                 logger.debug("Received invalid response: %s", data.hex())
                 asyncio.get_running_loop().call_soon(self._retry_mechanism)
@@ -105,12 +127,13 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
-        await self._connect()
-        response_future = asyncio.get_running_loop().create_future()
-        self._retry = 0
-        self._send_request(command, response_future)
-        await response_future
-        return response_future
+        async with self._ensure_lock():
+            await self._connect()
+            response_future = asyncio.get_running_loop().create_future()
+            self._retry = 0
+            self._send_request(command, response_future)
+            await response_future
+            return response_future
 
     def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
         """Send message via transport"""
@@ -217,27 +240,28 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
-        try:
-            await self._connect()
-            response_future = asyncio.get_running_loop().create_future()
-            self._send_request(command, response_future)
-            await response_future
-            return response_future
-        except asyncio.CancelledError:
-            if self._retry < self.retries:
-                logger.debug("Connection broken error")
-                self._retry += 1
-                self._close_transport()
-                return await self.send_request(command)
-            else:
-                return self._max_retries_reached()
-        except ConnectionRefusedError as exc:
-            if self._retry < self.retries:
-                logger.debug("Connection refused error: %s", exc)
-                self._retry += 1
-                return await self.send_request(command)
-            else:
-                return self._max_retries_reached()
+        async with self._ensure_lock():
+            try:
+                await self._connect()
+                response_future = asyncio.get_running_loop().create_future()
+                self._send_request(command, response_future)
+                await response_future
+                return response_future
+            except asyncio.CancelledError:
+                if self._retry < self.retries:
+                    logger.debug("Connection broken error")
+                    self._retry += 1
+                    self._close_transport()
+                    return await self.send_request(command)
+                else:
+                    return self._max_retries_reached()
+            except ConnectionRefusedError as exc:
+                if self._retry < self.retries:
+                    logger.debug("Connection refused error: %s", exc)
+                    self._retry += 1
+                    return await self.send_request(command)
+                else:
+                    return self._max_retries_reached()
 
     def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
         """Send message via transport"""

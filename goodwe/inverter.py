@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -89,8 +88,6 @@ class Inverter(ABC):
 
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         self._protocol: InverterProtocol = self._create_protocol(host, port, timeout, retries)
-        self._running_loop: asyncio.AbstractEventLoop | None = None
-        self._lock: asyncio.Lock | None = None
         self._consecutive_failures_count: int = 0
 
         self.comm_addr: int = comm_addr
@@ -120,36 +117,18 @@ class Inverter(ABC):
         """Create write multiple protocol command."""
         return self._protocol.write_multi_command(self.comm_addr, offset, values)
 
-    def _ensure_lock(self) -> asyncio.Lock:
-        """Validate (or create) asyncio Lock.
-
-           The asyncio.Lock must always be created from within's asyncio loop,
-           so it cannot be eagerly created in constructor.
-           Additionally, since asyncio.run() creates and closes its own loop,
-           the lock's scope (its creating loop) mus be verified to support proper
-           behavior in subsequent asyncio.run() invocations.
-        """
-        if self._lock and self._running_loop == asyncio.get_event_loop():
-            return self._lock
-        else:
-            logger.debug("Creating lock instance for current event loop.")
-            self._lock = asyncio.Lock()
-            self._running_loop = asyncio.get_event_loop()
-            return self._lock
-
     async def _read_from_socket(self, command: ProtocolCommand) -> ProtocolResponse:
-        async with self._ensure_lock():
-            try:
-                result = await command.execute(self._protocol)
-                self._consecutive_failures_count = 0
-                return result
-            except MaxRetriesException:
-                self._consecutive_failures_count += 1
-                raise RequestFailedException(f'No valid response received even after {self._protocol.retries} retries',
-                                             self._consecutive_failures_count) from None
-            except RequestFailedException as ex:
-                self._consecutive_failures_count += 1
-                raise RequestFailedException(ex.message, self._consecutive_failures_count) from None
+        try:
+            result = await command.execute(self._protocol)
+            self._consecutive_failures_count = 0
+            return result
+        except MaxRetriesException:
+            self._consecutive_failures_count += 1
+            raise RequestFailedException(f'No valid response received even after {self._protocol.retries} retries',
+                                         self._consecutive_failures_count) from None
+        except RequestFailedException as ex:
+            self._consecutive_failures_count += 1
+            raise RequestFailedException(ex.message, self._consecutive_failures_count) from None
 
     @abstractmethod
     async def read_device_info(self):
