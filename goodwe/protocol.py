@@ -73,26 +73,28 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
-        if exc is not None:
+        if exc:
             logger.debug("Socket closed with error: %s.", exc)
+        else:
+            logger.debug("Socket closed.")
         self._close_transport()
 
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
         if self._timer:
             self._timer.cancel()
+            self._timer = None
         try:
             if self.command.validator(data):
                 logger.debug("Received: %s", data.hex())
                 self.response_future.set_result(data)
+                self._close_transport()
             else:
                 logger.debug("Received invalid response: %s", data.hex())
-                self._retry += 1
-                self._send_request(self.command, self.response_future)
+                asyncio.get_running_loop().call_soon(self._retry_mechanism)
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
             self.response_future.set_exception(ex)
-        finally:
             self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
@@ -122,9 +124,11 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
     def _retry_mechanism(self) -> None:
         """Retry mechanism to prevent hanging transport"""
         if self.response_future.done():
-            self._close_transport()
+            logger.debug("Response already received.")
+            self._retry = 0
         elif self._retry < self.retries:
-            logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
+            if self._timer:
+                logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
             self._retry += 1
             self._send_request(self.command, self.response_future)
         else:
@@ -176,13 +180,15 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         pass
 
     def eof_received(self) -> None:
-        logger.debug("Connection closed.")
+        logger.debug("EOF received.")
         self._close_transport()
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
-        if exc is not None:
+        if exc:
             logger.debug("Connection closed with error: %s.", exc)
+        else:
+            logger.debug("Connection closed.")
         self._close_transport()
 
     def data_received(self, data: bytes) -> None:
