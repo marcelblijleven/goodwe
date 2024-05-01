@@ -148,7 +148,6 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         """Retry mechanism to prevent hanging transport"""
         if self.response_future.done():
             logger.debug("Response already received.")
-            self._retry = 0
         elif self._retry < self.retries:
             if self._timer:
                 logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
