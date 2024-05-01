@@ -8,15 +8,21 @@
 Library for connecting to GoodWe inverter over local network and retrieving runtime sensor values and configuration
 parameters.
 
-It has been reported to work on GoodWe ET, EH, BT, BH, ES, EM, BP, DT, MS, D-NS, and XS families of inverters. It may
-work on other inverters as well, as long as they listen on UDP port 8899 and respond to one of supported communication
-protocols.
+It has been reported to work with GoodWe ET, EH, BT, BH, ES, EM, BP, DT, MS, D-NS, and XS families of inverters. It
+should work with other inverters as well, as long as they listen on UDP port 8899 and respond to one of supported
+communication protocols.
+In general, if you can connect to your inverter with the official mobile app (SolarGo/PvMaster) over Wi-Fi (not
+bluetooth), this library should work.
 
 (If you can't communicate with the inverter despite your model is listed above, it is possible you have old ARM firmware
 version. You should ask manufacturer support to upgrade your ARM firmware (not just inverter firmware) to be able to
-communicate with the inveter via UDP.)
+communicate with the inverter via UDP.)
 
-White-label (GoodWe manufactured) inverters may work as well, e.g. General Electric GEP (PSB, PSC) and GEH models.
+White-label (GoodWe manufactured) inverters may work as well, e.g. General Electric GEP (PSB, PSC) and GEH models are
+know to work properly.
+
+Since v0.4.x the library also supports standard Modbus/TCP over port 502.
+This protocol is supported by the V2.0 version of LAN+WiFi communication dongle (model WLA0000-01-00P).
 
 ## Usage
 
@@ -48,4 +54,3 @@ asyncio.run(get_runtime_data())
 - https://github.com/mletenay/home-assistant-goodwe-inverter
 - https://github.com/yasko-pv/modbus-log
 - https://github.com/tkubec/GoodWe
-- https://github.com/OpenEMS/openems
