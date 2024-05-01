@@ -291,13 +291,18 @@ class ES(Inverter):
         return tuple(result)
 
     async def get_operation_mode(self) -> OperationMode:
-        mode = OperationMode(await self.read_setting('work_mode'))
+        mode_id = await self.read_setting('work_mode')
+        try:
+            mode = OperationMode(mode_id)
+        except ValueError:
+            logger.debug("Unknown work_mode value %d", mode_id)
+            return None
         if OperationMode.ECO != mode:
             return mode
-        ecomode = await self.read_setting('eco_mode_1')
-        if ecomode.is_eco_charge_mode():
+        eco_mode = await self.read_setting('eco_mode_1')
+        if eco_mode.is_eco_charge_mode():
             return OperationMode.ECO_CHARGE
-        elif ecomode.is_eco_discharge_mode():
+        elif eco_mode.is_eco_discharge_mode():
             return OperationMode.ECO_DISCHARGE
         else:
             return OperationMode.ECO
