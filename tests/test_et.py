@@ -434,7 +434,7 @@ class GW6000_EH_Test(EtMock):
         self.assertSensor('backup_ptotal', 0, 'W', data)
         self.assertSensor('ups_load', 0, '%', data)
         self.assertSensor('temperature_air', 60.4, 'C', data)
-        self.assertSensor('temperature_module', 3276.7, 'C', data)
+        self.assertSensor('temperature_module', None, 'C', data)
         self.assertSensor('temperature', 38.6, 'C', data)
         self.assertSensor('function_bit', 256, '', data)
         self.assertSensor('bus_voltage', 380.6, 'V', data)

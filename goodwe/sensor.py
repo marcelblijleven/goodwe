@@ -885,7 +885,10 @@ def read_temp(buffer: ProtocolResponse, offset: int = None) -> float:
     if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
-    return float(value) / 10
+    if (value == 32767):
+        return None
+    else:
+        return float(value) / 10
 
 
 def read_datetime(buffer: ProtocolResponse, offset: int = None) -> datetime:
