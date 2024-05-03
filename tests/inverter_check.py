@@ -85,17 +85,25 @@ for sensor in inverter.sensors():
 # print(asyncio.run(inverter.read_setting('grid_export_limit')))
 
 # -------------------------------
-# Execute modbus protocol command
+# Execute modbus RTU protocol command
 # -------------------------------
-# response = asyncio.run(goodwe.protocol.ModbusReadCommand(COMM_ADDR, 0x88b8, 0x21).execute(IP_ADDRESS, TIMEOUT, RETRIES))
+# response = asyncio.run(goodwe.protocol.ModbusRtuReadCommand(COMM_ADDR, 0x88b8, 0x21).execute(
+#    goodwe.protocol.UdpInverterProtocol(IP_ADDRESS, PORT, TIMEOUT, RETRIES)))
 # print(response)
+
+# -------------------------------
+# Execute modbus TCP protocol command
+# -------------------------------
+# response = asyncio.run(goodwe.protocol.ModbusTcpReadCommand(180, 301, 3).execute(
+#    goodwe.protocol.TcpInverterProtocol('192.168.1.13', 502, TIMEOUT, RETRIES)))
+# print(response.response_data().hex())
 
 # -------------------------------
 # Execute AA55 protocol command
 # -------------------------------
-# response = asyncio.run(goodwe.protocol.Aa55ProtocolCommand("010200", "0182").execute(IP_ADDRESS, TIMEOUT, RETRIES))
+# response = asyncio.run(goodwe.protocol.Aa55ProtocolCommand("010200", "0182").execute(
+#    goodwe.protocol.UdpInverterProtocol(IP_ADDRESS, PORT, TIMEOUT, RETRIES)))
 # print(response)
-
 
 # -----------------
 # Test parallel requests

@@ -239,28 +239,36 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
-        async with self._ensure_lock():
-            try:
-                await self._connect()
-                response_future = asyncio.get_running_loop().create_future()
-                self._send_request(command, response_future)
-                await response_future
-                return response_future
-            except asyncio.CancelledError:
-                if self._retry < self.retries:
+        await self._ensure_lock().acquire()
+        try:
+            await self._connect()
+            response_future = asyncio.get_running_loop().create_future()
+            self._send_request(command, response_future)
+            await response_future
+            return response_future
+        except asyncio.CancelledError:
+            if self._retry < self.retries:
+                if self._timer:
                     logger.debug("Connection broken error")
-                    self._retry += 1
-                    self._close_transport()
-                    return await self.send_request(command)
-                else:
-                    return self._max_retries_reached()
-            except ConnectionRefusedError as exc:
-                if self._retry < self.retries:
-                    logger.debug("Connection refused error: %s", exc)
-                    self._retry += 1
-                    return await self.send_request(command)
-                else:
-                    return self._max_retries_reached()
+                self._retry += 1
+                if self._lock and self._lock.locked():
+                    self._lock.release()
+                self._close_transport()
+                return await self.send_request(command)
+            else:
+                return self._max_retries_reached()
+        except ConnectionRefusedError as exc:
+            if self._retry < self.retries:
+                logger.debug("Connection refused error: %s", exc)
+                self._retry += 1
+                if self._lock and self._lock.locked():
+                    self._lock.release()
+                return await self.send_request(command)
+            else:
+                return self._max_retries_reached()
+        finally:
+            if self._lock and self._lock.locked():
+                self._lock.release()
 
     def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
         """Send message via transport"""
@@ -276,6 +284,9 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         if self.response_future.done():
             self._retry = 0
         else:
+            if self._timer:
+                logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
+                self._timer = None
             self._close_transport()
 
     def _max_retries_reached(self) -> Future:
