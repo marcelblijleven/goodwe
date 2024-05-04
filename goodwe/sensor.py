@@ -880,12 +880,12 @@ def read_freq(buffer: ProtocolResponse, offset: int = None) -> float:
     return float(value) / 100
 
 
-def read_temp(buffer: ProtocolResponse, offset: int = None) -> float:
+def read_temp(buffer: ProtocolResponse, offset: int = None) -> float | None:
     """Retrieve temperature [C] value (2 bytes) from buffer"""
     if offset is not None:
         buffer.seek(offset)
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
-    if (value == 32767):
+    if value == 32767:
         return None
     else:
         return float(value) / 10
