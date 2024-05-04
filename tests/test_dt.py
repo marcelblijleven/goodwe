@@ -167,8 +167,8 @@ class GW8K_DT_Test(DtMock):
         self.assertSensor("apparent_power", 0, "VA", data),
         self.assertSensor("reactive_power", 0, "var", data),
         self.assertSensor('temperature', 45.3, 'C', data)
-        self.assertSensor('e_day', 0.0, 'kWh', data)
-        self.assertSensor('e_total', 0.0, 'kWh', data)
+        self.assertSensor('e_day', None, 'kWh', data)
+        self.assertSensor('e_total', None, 'kWh', data)
         self.assertSensor('h_total', 0, 'h', data)
         self.assertSensor('safety_country', 32, '', data)
         self.assertSensor('safety_country_label', '50Hz 230Vac Default', '', data)
@@ -221,7 +221,7 @@ class GW5000D_NS_Test(DtMock):
         self.assertSensor("apparent_power", -1, "VA", data),
         self.assertSensor("reactive_power", -1, "var", data),
         self.assertSensor('temperature', 1.4, 'C', data)
-        self.assertSensor('e_day', 0.0, 'kWh', data)
+        self.assertSensor('e_day', None, 'kWh', data)
         self.assertSensor('e_total', 881.7, 'kWh', data)
         self.assertSensor('h_total', 955, 'h', data)
         self.assertSensor('safety_country', 73, '', data)

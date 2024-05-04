@@ -95,7 +95,7 @@ class ES(Inverter):
         Power("pback_up", 81, "Back-up Power", Kind.UPS),
         # pload + pback_up
         Calculated("plant_power",
-                   lambda data: round(read_bytes2(data, 47) + read_bytes2(data, 81)),
+                   lambda data: round(read_bytes2(data, 47, 0) + read_bytes2(data, 81, 0)),
                    "Plant Power", "W", Kind.AC),
         Decimal("meter_power_factor", 83, 1000, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
         # Integer("xx85", 85, "Unknown sensor@85"),
@@ -135,7 +135,7 @@ class ES(Inverter):
         Integer("charge_i", 26, "Charge Current", "A", ),
         Integer("discharge_i", 28, "Discharge Current", "A", ),
         Decimal("discharge_v", 30, 10, "Discharge Voltage", "V"),
-        Calculated("dod", lambda data: 100 - read_bytes2(data, 32), "Depth of Discharge", "%"),
+        Calculated("dod", lambda data: 100 - read_bytes2(data, 32, 0), "Depth of Discharge", "%"),
         Integer("battery_activated", 34, "Battery Activated"),
         Integer("bp_off_grid_charge", 36, "BP Off-grid Charge"),
         Integer("bp_pv_discharge", 38, "BP PV Discharge"),

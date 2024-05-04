@@ -35,10 +35,10 @@ class ET(Inverter):
         # ppv1 + ppv2 + ppv3 + ppv4
         Calculated("ppv",
                    lambda data:
-                   max(0, read_bytes4(data, 35105)) +
-                   max(0, read_bytes4(data, 35109)) +
-                   max(0, read_bytes4(data, 35113)) +
-                   max(0, read_bytes4(data, 35117)),
+                   max(0, read_bytes4(data, 35105, 0)) +
+                   max(0, read_bytes4(data, 35109, 0)) +
+                   max(0, read_bytes4(data, 35113, 0)) +
+                   max(0, read_bytes4(data, 35117, 0)),
                    "PV Power", "W", Kind.PV),
         ByteH("pv4_mode", 35119, "PV4 Mode code", "", Kind.PV),
         EnumH("pv4_mode_label", 35119, PV_MODES, "PV4 Mode", Kind.PV),
@@ -145,10 +145,10 @@ class ET(Inverter):
         # ppv1 + ppv2 + ppv3 + ppv4 + pbattery1 - active_power
         Calculated("house_consumption",
                    lambda data:
-                   read_bytes4(data, 35105) +
-                   read_bytes4(data, 35109) +
-                   read_bytes4(data, 35113) +
-                   read_bytes4(data, 35117) +
+                   read_bytes4(data, 35105, 0) +
+                   read_bytes4(data, 35109, 0) +
+                   read_bytes4(data, 35113, 0) +
+                   read_bytes4(data, 35117, 0) +
                    read_bytes4_signed(data, 35182) -
                    read_bytes2_signed(data, 35140),
                    "House Consumption", "W", Kind.AC),
