@@ -130,7 +130,7 @@ class TestUtils(TestCase):
         self.assertEqual(4294967293, testee.read(data))
 
         data = MockResponse("ffffffff")
-        self.assertEqual(0, testee.read(data))
+        self.assertIsNone(testee.read(data))
 
     def test_power4_signed(self):
         testee = Power4S("", 0, "", None)
@@ -153,7 +153,7 @@ class TestUtils(TestCase):
         data = MockResponse("00020972")
         self.assertEqual(13349.0, testee.read(data))
         data = MockResponse("ffffffff")
-        self.assertEqual(0.0, testee.read(data))
+        self.assertIsNone(testee.read(data))
 
     def test_timestamp(self):
         testee = Timestamp("", 0, "", None)
