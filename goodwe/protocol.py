@@ -257,7 +257,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 return await self.send_request(command)
             else:
                 return self._max_retries_reached()
-        except ConnectionRefusedError as exc:
+        except (ConnectionRefusedError, TimeoutError) as exc:
             if self._retry < self.retries:
                 logger.debug("Connection refused error: %s", exc)
                 self._retry += 1
