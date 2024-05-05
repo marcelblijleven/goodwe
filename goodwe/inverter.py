@@ -22,6 +22,7 @@ class SensorKind(Enum):
     UPS - inverter ups/eps/backup output (e.g. ac voltage of backup/off-grid connected output)
     BAT - battery (e.g. dc voltage of connected battery pack)
     GRID - power grid/smart meter (e.g. active power exported to grid)
+    BMS - BMS direct data (e.g. dc voltage of)
     """
 
     PV = 1
@@ -29,6 +30,7 @@ class SensorKind(Enum):
     UPS = 3
     BAT = 4
     GRID = 5
+    BMS = 6
 
 
 @dataclass
