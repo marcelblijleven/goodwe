@@ -241,7 +241,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         """Send message via transport"""
         await self._ensure_lock().acquire()
         try:
-            await self._connect()
+            await asyncio.wait_for(self._connect(), timeout=5)
             response_future = asyncio.get_running_loop().create_future()
             self._send_request(command, response_future)
             await response_future
@@ -249,7 +249,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         except asyncio.CancelledError:
             if self._retry < self.retries:
                 if self._timer:
-                    logger.debug("Connection broken error")
+                    logger.debug("Connection broken error.")
                 self._retry += 1
                 if self._lock and self._lock.locked():
                     self._lock.release()
@@ -257,9 +257,9 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 return await self.send_request(command)
             else:
                 return self._max_retries_reached()
-        except (ConnectionRefusedError, TimeoutError) as exc:
+        except (ConnectionRefusedError, TimeoutError, OSError, asyncio.TimeoutError) as exc:
             if self._retry < self.retries:
-                logger.debug("Connection refused error: %s", exc)
+                logger.debug("Connection refused error.")
                 self._retry += 1
                 if self._lock and self._lock.locked():
                     self._lock.release()
