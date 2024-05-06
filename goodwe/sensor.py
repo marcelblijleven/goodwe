@@ -515,6 +515,14 @@ class EcoMode(ABC):
     def set_schedule_type(self, schedule_type: ScheduleType, is745: bool):
         """Set the schedule type"""
 
+    @abstractmethod
+    def get_power(self) -> int:
+        """Answer the power value"""
+
+    @abstractmethod
+    def get_power_unit(self) -> str:
+        """Answer the power unit"""
+
 
 class EcoModeV1(Sensor, EcoMode):
     """Sensor representing Eco Mode Battery Power Group encoded in 8 bytes"""
@@ -606,6 +614,14 @@ class EcoModeV1(Sensor, EcoMode):
         """Set the schedule type"""
         pass
 
+    def get_power(self) -> int:
+        """Answer the power value"""
+        return self.power
+
+    def get_power_unit(self) -> str:
+        """Answer the power unit"""
+        return "%"
+
     def as_eco_mode_v2(self) -> EcoModeV2:
         """Convert V1 to V2 EcoMode"""
         result = EcoModeV2(self.id_, self.offset, self.name)
@@ -642,7 +658,7 @@ class Schedule(Sensor, EcoMode):
     def __str__(self):
         return f"{self.start_h}:{self.start_m}-{self.end_h}:{self.end_m} {self.days} " \
                f"{self.months + ' ' if self.months else ''}" \
-               f"{self.schedule_type.decode_power(self.power)}{self.schedule_type.power_unit()} (SoC {self.soc}%) " \
+               f"{self.get_power()}{self.get_power_unit()} (SoC {self.soc}%) " \
                f"{'On' if -10 < self.on_off < 0 else 'Off' if 10 > self.on_off >= 0 else 'Unset'}"
 
     def read_value(self, data: ProtocolResponse):
@@ -735,6 +751,14 @@ class Schedule(Sensor, EcoMode):
                 self.schedule_type = ScheduleType.ECO_MODE_745 if is745 else ScheduleType.ECO_MODE
         else:
             self.schedule_type = schedule_type
+
+    def get_power(self) -> int:
+        """Answer the power value"""
+        return self.schedule_type.decode_power(self.power)
+
+    def get_power_unit(self) -> str:
+        """Answer the power unit"""
+        return self.schedule_type.power_unit()
 
     def as_eco_mode_v1(self) -> EcoModeV1:
         """Convert V2 to V1 EcoMode"""

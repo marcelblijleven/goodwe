@@ -252,6 +252,9 @@ class TestUtils(TestCase):
         self.assertFalse(testee.read(data).is_eco_charge_mode())
         self.assertFalse(testee.read(data).is_eco_discharge_mode())
         self.assertEqual(ScheduleType.ECO_MODE_745, testee.schedule_type)
+        self.assertEqual(1000, testee.power)
+        self.assertEqual(100, testee.get_power())
+        self.assertEqual("%", testee.get_power_unit())
 
         data = MockResponse("10001600f97f00c800000fff")
         self.assertEqual("16:0-22:0 Sun,Mon,Tue,Wed,Thu,Fri,Sat 20% (SoC 0%) On", testee.read(data).__str__())
