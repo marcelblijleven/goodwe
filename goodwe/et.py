@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Tuple
 
-from .exceptions import RequestRejectedException
+from .exceptions import RequestFailedException, RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
@@ -482,8 +482,11 @@ class ET(Inverter):
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
         except RequestRejectedException as ex:
             if ex.message == 'ILLEGAL DATA ADDRESS':
-                logger.debug("Cannot read EcoModeV2 settings, using to EcoModeV1.")
+                logger.debug("EcoModeV2 settings not supported, switching to EcoModeV1.")
                 self._has_eco_mode_v2 = False
+        except RequestFailedException as ex:
+            logger.debug("Cannot read EcoModeV2 settings, switching to EcoModeV1.")
+            self._has_eco_mode_v2 = False
 
         # Check and add Peak Shaving settings added in (ETU fw 22)
         try:
@@ -491,8 +494,11 @@ class ET(Inverter):
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_22})
         except RequestRejectedException as ex:
             if ex.message == 'ILLEGAL DATA ADDRESS':
-                logger.debug("Cannot read PeakShaving setting, disabling it.")
+                logger.debug("PeakShaving setting not supported, disabling it.")
                 self._has_peak_shaving = False
+        except RequestFailedException as ex:
+            logger.debug("Cannot read _has_peak_shaving settings, disabling it.")
+            self._has_peak_shaving = False
 
     async def read_runtime_data(self) -> Dict[str, Any]:
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -505,7 +511,7 @@ class ET(Inverter):
                 data.update(self._map_response(response, self._sensors_battery))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
-                    logger.warning("Cannot read battery values, disabling further attempts.")
+                    logger.warning("Battery values not supported, disabling further attempts.")
                     self._has_battery = False
                 else:
                     raise ex
@@ -516,7 +522,7 @@ class ET(Inverter):
                     self._map_response(response, self._sensors_battery2))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
-                    logger.warning("Cannot read battery 2 values, disabling further attempts.")
+                    logger.warning("Battery 2 values not supported, disabling further attempts.")
                     self._has_battery2 = False
                 else:
                     raise ex
@@ -527,7 +533,7 @@ class ET(Inverter):
                 data.update(self._map_response(response, self._sensors_meter))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
-                    logger.warning("Cannot read extended meter values, disabling further attempts.")
+                    logger.warning("Extended meter values not supported, disabling further attempts.")
                     self._has_meter_extended = False
                     self._sensors_meter = tuple(filter(self._not_extended_meter, self._sensors_meter))
                     response = await self._read_from_socket(self._READ_METER_DATA)
@@ -545,7 +551,7 @@ class ET(Inverter):
                 data.update(self._map_response(response, self._sensors_mppt))
             except RequestRejectedException as ex:
                 if ex.message == 'ILLEGAL DATA ADDRESS':
-                    logger.warning("Cannot read MPPT values, disabling further attempts.")
+                    logger.warning("MPPT values not supported, disabling further attempts.")
                     self._has_mppt = False
                 else:
                     raise ex
