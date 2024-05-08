@@ -29,6 +29,8 @@ class EtMock(TestCase, ET):
         if filename is not None:
             if ILLEGAL_DATA_ADDRESS == filename:
                 raise RequestRejectedException(ILLEGAL_DATA_ADDRESS)
+            if 'NO RESPONSE' == filename:
+                raise RequestFailedException()
             with open(root_dir + '/sample/et/' + filename, 'r') as f:
                 response = bytes.fromhex(f.read())
                 if not command.validator(response):
@@ -1197,3 +1199,26 @@ class GW29K9_ET_Test(EtMock):
         self.assertSensor('apparent_power3', 0, 'VA', data)
 
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
+
+
+class GW5K_BT_Test(EtMock):
+
+    def __init__(self, methodName='runTest'):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW5K-BT_device_info.hex')
+        self.mock_response(ModbusRtuReadCommand(self.comm_addr, 47547, 6), 'NO RESPONSE')
+
+    def test_GW5K_BT_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual('GW5K-BT', self.model_name)
+        self.assertEqual('95000BTU203W0000', self.serial_number)
+        self.assertEqual(5000, self.rated_power)
+        self.assertEqual(0, self.modbus_version)
+        self.assertEqual(254, self.ac_output_type)
+        self.assertEqual(3, self.dsp1_version)
+        self.assertEqual(3, self.dsp2_version)
+        self.assertEqual(124, self.dsp_svn_version)
+        self.assertEqual(11, self.arm_version)
+        self.assertEqual(147, self.arm_svn_version)
+        self.assertEqual('04029-03-S10', self.firmware)
+        self.assertEqual('02041-11-S00', self.arm_firmware)
