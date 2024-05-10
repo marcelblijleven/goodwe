@@ -255,6 +255,9 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.read_setting('time'))
         self.assertEqual('f703b090000337b0', self.request.hex())
 
+        self.loop.run_until_complete(self.read_setting('modbus_47000'))
+        self.assertEqual('f703b798000136c7', self.request.hex())
+
     def test_GW10K_ET_write_setting(self):
         self.loop.run_until_complete(self.write_setting('grid_export_limit', 100))
         self.assertEqual('f706b996006459c7', self.request.hex())

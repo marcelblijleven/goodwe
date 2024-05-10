@@ -220,6 +220,9 @@ class ES(Inverter):
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
             return await self._read_setting(setting)
+        elif setting_id.startswith("modbus"):
+            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+            return int.from_bytes(response.read(2), byteorder="big", signed=True)
         else:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)

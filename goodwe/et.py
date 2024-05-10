@@ -610,6 +610,9 @@ class ET(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
+        if setting_id.startswith("modbus"):
+            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+            return int.from_bytes(response.read(2), byteorder="big", signed=True)
         setting = self._settings.get(setting_id)
         if not setting:
             raise ValueError(f'Unknown setting "{setting_id}"')
