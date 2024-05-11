@@ -155,6 +155,14 @@ class TestUtils(TestCase):
         data = MockResponse("ffffffff")
         self.assertIsNone(testee.read(data))
 
+    def test_temp(self):
+        testee = Temp("", 0, "", None)
+
+        data = MockResponse("0177")
+        self.assertEqual(37.5, testee.read(data))
+        data = MockResponse("ffff")
+        self.assertIsNone(testee.read(data))
+
     def test_timestamp(self):
         testee = Timestamp("", 0, "", None)
 

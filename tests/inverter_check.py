@@ -100,6 +100,11 @@ for sensor in inverter.sensors():
 # asyncio.run(inverter.write_setting('grid_export_limit', 4000))
 # print(asyncio.run(inverter.read_setting('grid_export_limit')))
 
+# --------------------
+# Get inverter modbus setting
+# --------------------
+# print(asyncio.run(inverter.read_setting('modbus-47000')))
+
 # -------------------------------
 # Execute modbus RTU protocol command
 # -------------------------------
