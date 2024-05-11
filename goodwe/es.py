@@ -241,6 +241,8 @@ class ES(Inverter):
             await self._read_from_socket(
                 Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
             )
+        elif setting_id.startswith("modbus"):
+            await self._read_from_socket(self._write_command(int(setting_id[7:]), int(value)))
         else:
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:

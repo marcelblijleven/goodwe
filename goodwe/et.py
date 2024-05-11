@@ -610,30 +610,36 @@ class ET(Inverter):
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
-        if setting_id.startswith("modbus"):
-            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
-            return int.from_bytes(response.read(2), byteorder="big", signed=True)
         setting = self._settings.get(setting_id)
-        if not setting:
-            raise ValueError(f'Unknown setting "{setting_id}"')
-        try:
+        if setting:
             return await self._read_setting(setting)
+        else:
+            if setting_id.startswith("modbus"):
+                response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+                return int.from_bytes(response.read(2), byteorder="big", signed=True)
+            else:
+                raise ValueError(f'Unknown setting "{setting_id}"')
+
+    async def _read_setting(self, setting: Sensor) -> Any:
+        try:
+            count = (setting.size_ + (setting.size_ % 2)) // 2
+            response = await self._read_from_socket(self._read_command(setting.offset, count))
+            return setting.read_value(response)
         except RequestRejectedException as ex:
             if ex.message == ILLEGAL_DATA_ADDRESS:
                 logger.debug("Unsupported setting %s", setting.id_)
-                self._settings.pop(setting_id, None)
+                self._settings.pop(setting.id_, None)
             return None
-
-    async def _read_setting(self, setting: Sensor) -> Any:
-        count = (setting.size_ + (setting.size_ % 2)) // 2
-        response = await self._read_from_socket(self._read_command(setting.offset, count))
-        return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
         setting = self._settings.get(setting_id)
-        if not setting:
-            raise ValueError(f'Unknown setting "{setting_id}"')
-        await self._write_setting(setting, value)
+        if setting:
+            await self._write_setting(setting, value)
+        else:
+            if setting_id.startswith("modbus"):
+                await self._read_from_socket(self._write_command(int(setting_id[7:]), int(value)))
+            else:
+                raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _write_setting(self, setting: Sensor, value: Any):
         if setting.size_ == 1:
