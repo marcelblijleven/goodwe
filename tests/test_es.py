@@ -7,7 +7,7 @@ from goodwe import DISCOVERY_COMMAND
 from goodwe.es import ES
 from goodwe.exceptions import RequestFailedException
 from goodwe.inverter import OperationMode
-from goodwe.protocol import ProtocolCommand, ProtocolResponse
+from goodwe.protocol import Aa55ReadCommand, ProtocolCommand, ProtocolResponse
 
 
 class EsMock(TestCase, ES):
@@ -26,6 +26,8 @@ class EsMock(TestCase, ES):
         root_dir = os.path.dirname(os.path.abspath(__file__))
         filename = self._mock_responses.get(command)
         if filename is not None:
+            if filename.startswith('aa55'):
+                return ProtocolResponse(bytes.fromhex(filename), command)
             with open(root_dir + '/sample/es/' + filename, 'r') as f:
                 response = bytes.fromhex(f.read())
                 if not command.validator(response):
@@ -52,6 +54,8 @@ class GW5048D_ES_Test(EsMock):
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW5048D-ES_device_info.hex')
         self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5048D-ES_running_data.hex')
         self.mock_response(self._READ_DEVICE_SETTINGS_DATA, 'GW5048D-ES_settings_data.hex')
+        self.mock_response(Aa55ReadCommand(1793, 1), 'aa557fc0019a08000000000000007f0360')
+        self.mock_response(Aa55ReadCommand(1800, 1), 'aa557fc0019a02007f035a')
 
     def test_GW5048D_ES_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -162,6 +166,16 @@ class GW5048D_ES_Test(EsMock):
         self.assertEqual(0, data)
         data = self.loop.run_until_complete(self.read_setting('grid_export_limit'))
         self.assertEqual(10000, data)
+
+        data = self.loop.run_until_complete(self.read_setting('eco_mode_1'))
+        self.assertEqual(
+            "EcoModeV1(id_='eco_mode_1', offset=1793, name='Eco Mode Group 1', size_=8, unit='', kind=<SensorKind.BAT: 4>)",
+            repr(data))
+        data = self.loop.run_until_complete(self.read_setting('eco_mode_2_switch'))
+        self.assertEqual(0, data)
+
+    def test_write_setting(self):
+        self.loop.run_until_complete(self.write_setting('eco_mode_2_switch', 0))
 
 
 class GW5048_EM_Test(EsMock):

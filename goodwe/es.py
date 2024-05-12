@@ -250,10 +250,9 @@ class ES(Inverter):
             # modbus can address/store only 16 bit values, read the other 8 bytes
             if self._is_modbus_setting(setting):
                 response = await self._read_from_socket(ModbusReadCommand(self.comm_addr, setting.offset, 1))
-                raw_value = setting.encode_value(value, response.response_data()[0:2])
             else:
                 response = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
-                raw_value = setting.encode_value(value, response.response_data()[2:4])
+            raw_value = setting.encode_value(value, response.response_data()[0:2])
         else:
             raw_value = setting.encode_value(value)
         if len(raw_value) <= 2:
