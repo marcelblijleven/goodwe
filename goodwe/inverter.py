@@ -91,6 +91,7 @@ class Inverter(ABC):
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         self._protocol: InverterProtocol = self._create_protocol(host, port, comm_addr, timeout, retries)
         self._consecutive_failures_count: int = 0
+        self.keep_alive: bool = True
 
         self.model_name: str | None = None
         self.serial_number: str | None = None
@@ -129,6 +130,9 @@ class Inverter(ABC):
         except RequestFailedException as ex:
             self._consecutive_failures_count += 1
             raise RequestFailedException(ex.message, self._consecutive_failures_count) from None
+        finally:
+            if not self.keep_alive:
+                self._protocol.close_transport()
 
     @abstractmethod
     async def read_device_info(self):

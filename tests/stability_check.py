@@ -30,9 +30,10 @@ except ModuleNotFoundError:
 
 
 async def get_runtime_data():
-    i = 1
-    inverter = await goodwe.connect('127.0.0.1', 502)
+    inverter = await goodwe.connect(host='127.0.0.1', port=502, timeout=1, retries=3)
+    # inverter.keep_alive = False
 
+    i = 1
     while True:
         logger.info("################################")
         logger.info("          Request %d", i)
