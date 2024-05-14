@@ -183,7 +183,7 @@ class Energy(Sensor):
 
     def read_value(self, data: ProtocolResponse):
         value = read_bytes2(data)
-        return float(value) / 10 if value else None
+        return float(value) / 10 if value is not None else None
 
 
 class Energy4(Sensor):
@@ -194,7 +194,7 @@ class Energy4(Sensor):
 
     def read_value(self, data: ProtocolResponse):
         value = read_bytes4(data)
-        return float(value) / 10 if value else None
+        return float(value) / 10 if value is not None else None
 
 
 class Apparent(Sensor):
