@@ -13,6 +13,16 @@ from .modbus import create_modbus_rtu_request, create_modbus_rtu_multi_request, 
 
 logger = logging.getLogger(__name__)
 
+_modbus_tcp_tx = 0
+
+
+def _next_tx() -> bytes:
+    global _modbus_tcp_tx
+    _modbus_tcp_tx += 1
+    if _modbus_tcp_tx == 0xFFFF:
+        _modbus_tcp_tx = 1
+    return int.to_bytes(_modbus_tcp_tx, length=2, byteorder="big", signed=False)
+
 
 class InverterProtocol:
 
@@ -142,9 +152,12 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         """Send message via transport"""
         self.command = command
         self.response_future = response_future
-        logger.debug("Sending: %s%s", self.command,
-                     f' - retry #{self._retry}/{self.retries}' if self._retry > 0 else '')
-        self._transport.sendto(self.command.request)
+        payload = command.request_bytes()
+        if self._retry > 0:
+            logger.debug("Sending: %s - retry #%s/%s", self.command, self._retry, self.retries)
+        else:
+            logger.debug("Sending: %s", self.command)
+        self._transport.sendto(payload)
         self._timer = asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
 
     def _retry_mechanism(self) -> None:
@@ -279,9 +292,12 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         """Send message via transport"""
         self.command = command
         self.response_future = response_future
-        logger.debug("Sending: %s%s", self.command,
-                     f' - retry #{self._retry}/{self.retries}' if self._retry > 0 else '')
-        self._transport.write(self.command.request)
+        payload = command.request_bytes()
+        if self._retry > 0:
+            logger.debug("Sending: %s - retry #%s/%s", self.command, self._retry, self.retries)
+        else:
+            logger.debug("Sending: %s", self.command)
+        self._transport.write(payload)
         self._timer = asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
 
     def _timeout_mechanism(self) -> None:
@@ -358,6 +374,10 @@ class ProtocolCommand:
 
     def __repr__(self):
         return self.request.hex()
+
+    def request_bytes(self) -> bytes:
+        """Return raw bytes payload, optionally pre-processed"""
+        return self.request
 
     def trim_response(self, raw_response: bytes):
         """Trim raw response from header and checksum data"""
@@ -571,6 +591,12 @@ class ModbusTcpProtocolCommand(ProtocolCommand):
         )
         self.first_address: int = offset
         self.value = value
+
+    def request_bytes(self) -> bytes:
+        """Return raw bytes payload, optionally pre-processed"""
+        # Apply sequential Modbus/TCP transaction identifier
+        self.request = _next_tx() + self.request[2:]
+        return self.request
 
     def trim_response(self, raw_response: bytes):
         """Trim raw response from header and checksum data"""
