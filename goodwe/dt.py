@@ -127,10 +127,7 @@ class DT(Inverter):
     )
 
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        super().__init__(host, port, comm_addr, timeout, retries)
-        if not self.comm_addr:
-            # Set the default inverter address
-            self.comm_addr = 0x7f
+        super().__init__(host, port, comm_addr if comm_addr else 0x7f, timeout, retries)
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x7531, 0x0028)
         self._READ_DEVICE_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
         self._sensors = self.__all_sensors

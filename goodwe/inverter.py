@@ -89,10 +89,8 @@ class Inverter(ABC):
     """
 
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        self._protocol: InverterProtocol = self._create_protocol(host, port, timeout, retries)
+        self._protocol: InverterProtocol = self._create_protocol(host, port, comm_addr, timeout, retries)
         self._consecutive_failures_count: int = 0
-
-        self.comm_addr: int = comm_addr
 
         self.model_name: str | None = None
         self.serial_number: str | None = None
@@ -109,15 +107,15 @@ class Inverter(ABC):
 
     def _read_command(self, offset: int, count: int) -> ProtocolCommand:
         """Create read protocol command."""
-        return self._protocol.read_command(self.comm_addr, offset, count)
+        return self._protocol.read_command(offset, count)
 
     def _write_command(self, register: int, value: int) -> ProtocolCommand:
         """Create write protocol command."""
-        return self._protocol.write_command(self.comm_addr, register, value)
+        return self._protocol.write_command(register, value)
 
     def _write_multi_command(self, offset: int, values: bytes) -> ProtocolCommand:
         """Create write multiple protocol command."""
-        return self._protocol.write_multi_command(self.comm_addr, offset, values)
+        return self._protocol.write_multi_command(offset, values)
 
     async def _read_from_socket(self, command: ProtocolCommand) -> ProtocolResponse:
         try:
@@ -270,11 +268,11 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @staticmethod
-    def _create_protocol(host: str, port: int, timeout: int, retries: int) -> InverterProtocol:
+    def _create_protocol(host: str, port: int, comm_addr: int, timeout: int, retries: int) -> InverterProtocol:
         if port == 502:
-            return TcpInverterProtocol(host, port, timeout, retries)
+            return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
         else:
-            return UdpInverterProtocol(host, port, timeout, retries)
+            return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
 
     @staticmethod
     def _map_response(response: ProtocolResponse, sensors: Tuple[Sensor, ...]) -> Dict[str, Any]:

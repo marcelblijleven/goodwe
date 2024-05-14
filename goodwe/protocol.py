@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 
 class InverterProtocol:
 
-    def __init__(self, host: str, port: int, timeout: int, retries: int):
+    def __init__(self, host: str, port: int, comm_addr: int, timeout: int, retries: int):
         self._host: str = host
         self._port: int = port
+        self._comm_addr: int = comm_addr
         self._running_loop: asyncio.AbstractEventLoop | None = None
         self._lock: asyncio.Lock | None = None
         self._timer: asyncio.TimerHandle | None = None
@@ -52,36 +53,36 @@ class InverterProtocol:
     async def send_request(self, command: ProtocolCommand) -> Future:
         raise NotImplementedError()
 
-    def read_command(self, comm_addr: int, offset: int, count: int) -> ProtocolCommand:
+    def read_command(self, offset: int, count: int) -> ProtocolCommand:
         """Create read protocol command."""
         raise NotImplementedError()
 
-    def write_command(self, comm_addr: int, register: int, value: int) -> ProtocolCommand:
+    def write_command(self, register: int, value: int) -> ProtocolCommand:
         """Create write protocol command."""
         raise NotImplementedError()
 
-    def write_multi_command(self, comm_addr: int, offset: int, values: bytes) -> ProtocolCommand:
+    def write_multi_command(self, offset: int, values: bytes) -> ProtocolCommand:
         """Create write multiple protocol command."""
         raise NotImplementedError()
 
 
 class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
-    def __init__(self, host: str, port: int, timeout: int = 1, retries: int = 3):
-        super().__init__(host, port, timeout, retries)
+    def __init__(self, host: str, port: int, comm_addr: int, timeout: int = 1, retries: int = 3):
+        super().__init__(host, port, comm_addr, timeout, retries)
         self._transport: asyncio.transports.DatagramTransport | None = None
         self._retry: int = 0
 
-    def read_command(self, comm_addr: int, offset: int, count: int) -> ProtocolCommand:
+    def read_command(self, offset: int, count: int) -> ProtocolCommand:
         """Create read protocol command."""
-        return ModbusRtuReadCommand(comm_addr, offset, count)
+        return ModbusRtuReadCommand(self._comm_addr, offset, count)
 
-    def write_command(self, comm_addr: int, register: int, value: int) -> ProtocolCommand:
+    def write_command(self, register: int, value: int) -> ProtocolCommand:
         """Create write protocol command."""
-        return ModbusRtuWriteCommand(comm_addr, register, value)
+        return ModbusRtuWriteCommand(self._comm_addr, register, value)
 
-    def write_multi_command(self, comm_addr: int, offset: int, values: bytes) -> ProtocolCommand:
+    def write_multi_command(self, offset: int, values: bytes) -> ProtocolCommand:
         """Create write multiple protocol command."""
-        return ModbusRtuWriteMultiCommand(comm_addr, offset, values)
+        return ModbusRtuWriteMultiCommand(self._comm_addr, offset, values)
 
     async def _connect(self) -> None:
         if not self._transport or self._transport.is_closing():
@@ -173,22 +174,22 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
 
 class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
-    def __init__(self, host: str, port: int, timeout: int = 1, retries: int = 0):
-        super().__init__(host, port, timeout, retries)
+    def __init__(self, host: str, port: int, comm_addr: int, timeout: int = 1, retries: int = 0):
+        super().__init__(host, port, comm_addr, timeout, retries)
         self._transport: asyncio.transports.Transport | None = None
         self._retry: int = 0
 
-    def read_command(self, comm_addr: int, offset: int, count: int) -> ProtocolCommand:
+    def read_command(self, offset: int, count: int) -> ProtocolCommand:
         """Create read protocol command."""
-        return ModbusTcpReadCommand(comm_addr, offset, count)
+        return ModbusTcpReadCommand(self._comm_addr, offset, count)
 
-    def write_command(self, comm_addr: int, register: int, value: int) -> ProtocolCommand:
+    def write_command(self, register: int, value: int) -> ProtocolCommand:
         """Create write protocol command."""
-        return ModbusTcpWriteCommand(comm_addr, register, value)
+        return ModbusTcpWriteCommand(self._comm_addr, register, value)
 
-    def write_multi_command(self, comm_addr: int, offset: int, values: bytes) -> ProtocolCommand:
+    def write_multi_command(self, offset: int, values: bytes) -> ProtocolCommand:
         """Create write multiple protocol command."""
-        return ModbusTcpWriteMultiCommand(comm_addr, offset, values)
+        return ModbusTcpWriteMultiCommand(self._comm_addr, offset, values)
 
     async def _connect(self) -> None:
         if not self._transport or self._transport.is_closing():
@@ -261,7 +262,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 return await self.send_request(command)
             else:
                 return self._max_retries_reached()
-        except (ConnectionRefusedError, TimeoutError, OSError, asyncio.TimeoutError) as exc:
+        except (ConnectionRefusedError, TimeoutError, OSError, asyncio.TimeoutError):
             if self._retry < self.retries:
                 logger.debug("Connection refused error.")
                 self._retry += 1

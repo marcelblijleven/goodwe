@@ -457,10 +457,7 @@ class ET(Inverter):
     )
 
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        super().__init__(host, port, comm_addr, timeout, retries)
-        if not self.comm_addr:
-            # Set the default inverter address
-            self.comm_addr = 0xf7
+        super().__init__(host, port, comm_addr if comm_addr else 0xf7, timeout, retries)
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x88b8, 0x0021)
         self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x891c, 0x007d)
         self._READ_METER_DATA: ProtocolCommand = self._read_command(0x8ca0, 0x2d)

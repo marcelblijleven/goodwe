@@ -5,7 +5,7 @@ from goodwe.protocol import *
 
 class TestUDPClientProtocol(TestCase):
     def setUp(self) -> None:
-        self.protocol = UdpInverterProtocol('127.0.0.1', 1337, 1, 3)
+        self.protocol = UdpInverterProtocol('127.0.0.1', 1337, 0xf7, 1, 3)
         self.protocol.command = ProtocolCommand(bytes.fromhex('636f666665650d0a'), lambda x: True)
         self.protocol.response_future = mock.Mock()
 
