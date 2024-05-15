@@ -1,7 +1,7 @@
 import logging
 from typing import Union
 
-from .exceptions import RequestRejectedException
+from .exceptions import PartialResponseException, RequestRejectedException
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +178,7 @@ def validate_modbus_rtu_response(data: bytes, cmd: int, offset: int, value: int)
             return False
         expected_length = data[4] + 7
         if len(data) < expected_length:
-            logger.debug("Response is too short: %d, expected %d.", len(data), expected_length)
-            return False
+            raise PartialResponseException(len(data), expected_length)
     elif data[3] in (MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD):
         if len(data) < 10:
             logger.debug("Response has unexpected length: %d, expected %d.", len(data), 10)
@@ -222,18 +221,18 @@ def validate_modbus_tcp_response(data: bytes, cmd: int, offset: int, value: int)
     if len(data) <= 8:
         logger.debug("Response is too short.")
         return False
+    expected_length = int.from_bytes(data[4:6], byteorder='big', signed=False) + 6
+    if len(data) < expected_length:
+        raise PartialResponseException(len(data), expected_length)
+
     if data[7] == MODBUS_READ_CMD:
         if data[8] != value * 2:
             logger.debug("Response has unexpected length: %d, expected %d.", data[8], value * 2)
             return False
-        expected_length = data[8] + 9
-        if len(data) < expected_length:
-            logger.debug("Response is too short: %d, expected %d.", len(data), expected_length)
-            return False
     elif data[7] in (MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD):
         if len(data) < 12:
             logger.debug("Response has unexpected length: %d, expected %d.", len(data), 14)
-            return False
+            raise PartialResponseException(len(data), expected_length)
         response_offset = int.from_bytes(data[8:10], byteorder='big', signed=False)
         if response_offset != offset:
             logger.debug("Response has wrong offset: %X, expected %X.", response_offset, offset)

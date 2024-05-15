@@ -11,6 +11,10 @@ class TestModbus(TestCase):
     def assert_rtu_response_fail(self, response: str, cmd: int, offset: int, value: int):
         self.assertFalse(validate_modbus_rtu_response(bytes.fromhex(response), cmd, offset, value))
 
+    def assert_rtu_response_partial(self, response: str, cmd: int, offset: int, value: int):
+        self.assertRaises(PartialResponseException,
+                          lambda: validate_modbus_rtu_response(bytes.fromhex(response), cmd, offset, value))
+
     def assert_rtu_response_rejected(self, response: str, cmd: int, offset: int, value: int):
         self.assertRaises(RequestRejectedException,
                           lambda: validate_modbus_rtu_response(bytes.fromhex(response), cmd, offset, value))
@@ -35,7 +39,7 @@ class TestModbus(TestCase):
         # some garbage after response end
         self.assert_rtu_response_ok('aa55f7030401020304cd33ffffff', 0x03, 0x0401, 2)
         # length too short
-        self.assert_rtu_response_fail('aa55f7030401020304', 0x03, 0x0401, 2)
+        self.assert_rtu_response_partial('aa55f7030401020304', 0x03, 0x0401, 2)
         # wrong checksum
         self.assert_rtu_response_fail('aa55f70304010203043346', 0x03, 0x0401, 2)
         # failure code
@@ -72,6 +76,10 @@ class TestModbus(TestCase):
     def assert_tcp_response_fail(self, response: str, cmd: int, offset: int, value: int):
         self.assertFalse(validate_modbus_tcp_response(bytes.fromhex(response), cmd, offset, value))
 
+    def assert_tcp_response_partial(self, response: str, cmd: int, offset: int, value: int):
+        self.assertRaises(PartialResponseException,
+                          lambda: validate_modbus_tcp_response(bytes.fromhex(response), cmd, offset, value))
+
     def assert_tcp_response_rejected(self, response: str, cmd: int, offset: int, value: int):
         self.assertRaises(RequestRejectedException,
                           lambda: validate_modbus_tcp_response(bytes.fromhex(response), cmd, offset, value))
@@ -93,11 +101,11 @@ class TestModbus(TestCase):
         request = create_modbus_tcp_multi_request(0xf7, 0x10, 0x88b8, b'\x01\x02\x03\x04\x05\x06')
         self.assertEqual('00010000000df71088b8000306010203040506', request.hex())
 
-    def test_validate_modbus_rtu_read_response(self):
+    def test_validate_modbus_tcp_read_response(self):
         self.assert_tcp_response_ok('000100000007b4030445565345', 0x3, 310, 2)
         self.assert_tcp_response_ok('000100000007b4030400000002', 0x3, 331, 2)
         # length too short
-        self.assert_tcp_response_fail('000100000007b403040000', 0x03, 331, 2)
+        self.assert_tcp_response_partial('000100000007b403040000', 0x03, 331, 2)
         # failure code
         self.assert_tcp_response_rejected('000100000007b4830400000002', 0x03, 331, 2)
 
@@ -106,6 +114,6 @@ class TestModbus(TestCase):
         self.assert_tcp_response_ok('000100000006f70688b80021', 0x06, 0x88b8, 0x0021)
         #        self.assert_tcp_response_ok('000100000006f70688b800ff', 0x06, 0xb12c, -1)
         # length too short
-        self.assert_tcp_response_fail('000100000006f70388b8', 0x6, 0x88b8, 0x0021)
+        self.assert_tcp_response_partial('000100000006f70388b8', 0x6, 0x88b8, 0x0021)
         # wrong value written
         self.assert_rtu_response_fail('aa55f706b12c0012fba4', 0x06, 0xb12c, 0x14)

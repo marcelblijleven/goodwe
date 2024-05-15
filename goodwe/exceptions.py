@@ -29,5 +29,19 @@ class RequestRejectedException(InverterError):
         self.message: str = message
 
 
+class PartialResponseException(InverterError):
+    """
+    Indicates the received response data are incomplete and is probably fragmented to multiple packets.
+
+    Attributes:
+        length -- received data length
+        expected -- expected data lenght
+    """
+
+    def __init__(self, lenght: int, expected: int):
+        self.length: int = lenght
+        self.expected: int = expected
+
+
 class MaxRetriesException(InverterError):
     """Indicates the maximum number of retries has been reached"""

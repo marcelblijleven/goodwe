@@ -45,14 +45,16 @@ async def pymodbus(ip):
         logger.info("          Request %d", i)
         logger.info("################################")
         await client.read_holding_registers(35100, 125, slave=0xf7)
-        await client.read_holding_registers(36000, 58, slave=0xf7)
-        await client.read_holding_registers(35301, 61, slave=0xf7)
-        await asyncio.sleep(5)
+        await client.read_holding_registers(37000, 24, slave=0xf7)
+        await client.read_holding_registers(36000, 45, slave=0xf7)
+        # await client.read_holding_registers(36000, 58, slave=0xf7)
+        # await client.read_holding_registers(35301, 61, slave=0xf7)
+        await asyncio.sleep(10)
         i += 1
 
 
-async def get_runtime_data(ip):
-    inverter = await goodwe.connect(host=ip, port=502, timeout=1, retries=3)
+async def get_runtime_data(ip, port):
+    inverter = await goodwe.connect(host=ip, port=port, family="ET", timeout=1, retries=3)
     # inverter.keep_alive = False
 
     i = 1
@@ -66,4 +68,4 @@ async def get_runtime_data(ip):
 
 
 # asyncio.run(pymodbus('127.0.0.1'))
-asyncio.run(get_runtime_data('127.0.0.1'))
+asyncio.run(get_runtime_data('127.0.0.1', 8899))

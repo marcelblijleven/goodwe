@@ -8,7 +8,7 @@ import socket
 from asyncio.futures import Future
 from typing import Tuple, Optional, Callable
 
-from .exceptions import MaxRetriesException, RequestFailedException, RequestRejectedException
+from .exceptions import MaxRetriesException, PartialResponseException, RequestFailedException, RequestRejectedException
 from .modbus import create_modbus_rtu_request, create_modbus_rtu_multi_request, create_modbus_tcp_request, \
     create_modbus_tcp_multi_request, validate_modbus_rtu_response, validate_modbus_tcp_response, MODBUS_READ_CMD, \
     MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD
@@ -40,6 +40,7 @@ class InverterProtocol:
         self.protocol: asyncio.Protocol | None = None
         self.response_future: Future | None = None
         self.command: ProtocolCommand | None = None
+        self._partial_data: bytes | None = None
 
     def _ensure_lock(self) -> asyncio.Lock:
         """Validate (or create) asyncio Lock.
@@ -123,12 +124,23 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             self._timer.cancel()
             self._timer = None
         try:
+            if self._partial_data:
+                logger.debug("Received another response fragment: %s.", data.hex())
+                data = self._partial_data + data
             if self.command.validator(data):
-                logger.debug("Received: %s", data.hex())
+                if self._partial_data:
+                    logger.debug("Composed fragmented response: %s", data.hex())
+                else:
+                    logger.debug("Received: %s", data.hex())
+                self._partial_data = None
                 self.response_future.set_result(data)
             else:
                 logger.debug("Received invalid response: %s", data.hex())
                 asyncio.get_running_loop().call_soon(self._retry_mechanism)
+        except PartialResponseException:
+            logger.debug("Received response fragment: %s", data.hex())
+            self._partial_data = data
+            return
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
@@ -246,14 +258,25 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         if self._timer:
             self._timer.cancel()
         try:
+            if self._partial_data:
+                logger.debug("Received another response fragment: %s.", data.hex())
+                data = self._partial_data + data
             if self.command.validator(data):
-                logger.debug("Received: %s", data.hex())
+                if self._partial_data:
+                    logger.debug("Composed fragmented response: %s", data.hex())
+                else:
+                    logger.debug("Received: %s", data.hex())
                 self._retry = 0
+                self._partial_data = None
                 self.response_future.set_result(data)
             else:
                 logger.debug("Received invalid response: %s", data.hex())
                 self.response_future.set_exception(RequestRejectedException())
                 self.close_transport()
+        except PartialResponseException:
+            logger.debug("Received response fragment: %s", data.hex())
+            self._partial_data = data
+            return
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
