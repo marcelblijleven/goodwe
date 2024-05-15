@@ -3,6 +3,8 @@ import logging
 import sys
 from importlib.metadata import version
 
+from pymodbus.client import AsyncModbusTcpClient
+
 # Force the local files, not pip installed lib
 sys.path.insert(0, '..')
 sys.path.insert(0, '../../../GoodWe')
@@ -29,8 +31,28 @@ except ModuleNotFoundError:
     pass
 
 
-async def get_runtime_data():
-    inverter = await goodwe.connect(host='127.0.0.1', port=502, timeout=1, retries=3)
+async def pymodbus(ip):
+    client = AsyncModbusTcpClient(host=ip)  # Create client object
+    await client.connect()  # connect to device, reconnect automatically
+
+    await client.read_holding_registers(35000, 33, slave=0xf7)
+    await client.read_holding_registers(47547, 6, slave=0xf7)
+    await client.read_holding_registers(47589, 6, slave=0xf7)
+
+    i = 4
+    while True:
+        logger.info("################################")
+        logger.info("          Request %d", i)
+        logger.info("################################")
+        await client.read_holding_registers(35100, 125, slave=0xf7)
+        await client.read_holding_registers(36000, 58, slave=0xf7)
+        await client.read_holding_registers(35301, 61, slave=0xf7)
+        await asyncio.sleep(5)
+        i += 1
+
+
+async def get_runtime_data(ip):
+    inverter = await goodwe.connect(host=ip, port=502, timeout=1, retries=3)
     # inverter.keep_alive = False
 
     i = 1
@@ -43,4 +65,5 @@ async def get_runtime_data():
         i += 1
 
 
-asyncio.run(get_runtime_data())
+# asyncio.run(pymodbus('127.0.0.1'))
+asyncio.run(get_runtime_data('127.0.0.1'))
