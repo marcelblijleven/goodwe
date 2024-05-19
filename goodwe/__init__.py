@@ -22,9 +22,6 @@ DT_FAMILY = ["DT", "MS", "NS", "XS"]
 # Initial discovery command
 DISCOVERY_COMMAND = Aa55ProtocolCommand("010200", "0182")
 
-# supported inverter protocols
-_SUPPORTED_PROTOCOLS = [ET, DT, ES]
-
 
 async def connect(host: str, port: int = GOODWE_UDP_PORT, family: str = None, comm_addr: int = 0, timeout: int = 1,
                   retries: int = 3, do_discover: bool = True) -> Inverter:
@@ -41,7 +38,7 @@ async def connect(host: str, port: int = GOODWE_UDP_PORT, family: str = None, co
 
     Raise InverterError if unable to contact or recognise supported inverter.
     """
-    if family in ET_FAMILY or port == GOODWE_TCP_PORT:
+    if family in ET_FAMILY:
         inv = ET(host, port, comm_addr, timeout, retries)
     elif family in ES_FAMILY:
         inv = ES(host, port, comm_addr, timeout, retries)
@@ -65,42 +62,43 @@ async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, ret
     """
     failures = []
 
-    # Try the common AA55C07F0102000241 command first and detect inverter type from serial_number
-    try:
-        logger.debug("Probing inverter at %s:%s.", host, port)
-        response = await DISCOVERY_COMMAND.execute(UdpInverterProtocol(host, port, timeout, retries))
-        response = response.response_data()
-        model_name = response[5:15].decode("ascii").rstrip()
-        serial_number = response[31:47].decode("ascii")
+    if port == GOODWE_UDP_PORT:
+        # Try the common AA55C07F0102000241 command first and detect inverter type from serial_number
+        try:
+            logger.debug("Probing inverter at %s:%s.", host, port)
+            response = await DISCOVERY_COMMAND.execute(UdpInverterProtocol(host, port, timeout, retries))
+            response = response.response_data()
+            model_name = response[5:15].decode("ascii").rstrip()
+            serial_number = response[31:47].decode("ascii")
 
-        i: Inverter | None = None
-        for model_tag in ET_MODEL_TAGS:
-            if model_tag in serial_number:
-                logger.debug("Detected ET/EH/BT/BH/GEH inverter %s, S/N:%s.", model_name, serial_number)
-                i = ET(host, port, 0, timeout, retries)
-                break
-        if not i:
-            for model_tag in ES_MODEL_TAGS:
+            i: Inverter | None = None
+            for model_tag in ET_MODEL_TAGS:
                 if model_tag in serial_number:
-                    logger.debug("Detected ES/EM/BP inverter %s, S/N:%s.", model_name, serial_number)
-                    i = ES(host, port, 0, timeout, retries)
+                    logger.debug("Detected ET/EH/BT/BH/GEH inverter %s, S/N:%s.", model_name, serial_number)
+                    i = ET(host, port, 0, timeout, retries)
                     break
-        if not i:
-            for model_tag in DT_MODEL_TAGS:
-                if model_tag in serial_number:
-                    logger.debug("Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.", model_name, serial_number)
-                    i = DT(host, port, 0, timeout, retries)
-                    break
-        if i:
-            await i.read_device_info()
-            logger.debug("Connected to inverter %s, S/N:%s.", i.model_name, i.serial_number)
-            return i
+            if not i:
+                for model_tag in ES_MODEL_TAGS:
+                    if model_tag in serial_number:
+                        logger.debug("Detected ES/EM/BP inverter %s, S/N:%s.", model_name, serial_number)
+                        i = ES(host, port, 0, timeout, retries)
+                        break
+            if not i:
+                for model_tag in DT_MODEL_TAGS:
+                    if model_tag in serial_number:
+                        logger.debug("Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.", model_name, serial_number)
+                        i = DT(host, port, 0, timeout, retries)
+                        break
+            if i:
+                await i.read_device_info()
+                logger.debug("Connected to inverter %s, S/N:%s.", i.model_name, i.serial_number)
+                return i
 
-    except InverterError as ex:
-        failures.append(ex)
+        except InverterError as ex:
+            failures.append(ex)
 
     # Probe inverter specific protocols
-    for inv in _SUPPORTED_PROTOCOLS:
+    for inv in [ET, DT, ES]:
         i = inv(host, port, 0, timeout, retries)
         try:
             logger.debug("Probing %s inverter at %s.", inv.__name__, host)
