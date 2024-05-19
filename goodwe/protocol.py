@@ -504,8 +504,7 @@ class Aa55ProtocolCommand(ProtocolCommand):
         data[-2:] is checksum (plain sum of response data incl. header)
         """
         if len(data) <= 8 or len(data) != data[6] + 9:
-            logger.debug("Response has unexpected length: %d, expected %d.", len(data), data[6] + 9)
-            return False
+            raise PartialResponseException(len(data), data[6] + 9)
         elif response_type:
             data_rt_int = int.from_bytes(data[4:6], byteorder="big", signed=True)
             if int(response_type, 16) != data_rt_int:
