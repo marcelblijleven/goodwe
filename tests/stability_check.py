@@ -55,7 +55,7 @@ async def pymodbus(ip):
 
 async def get_runtime_data(ip, port):
     inverter = await goodwe.connect(host=ip, port=port, family="ET", timeout=1, retries=3)
-    # inverter.keep_alive = False
+    # inverter.set_keep_alive(False)
 
     i = 1
     while True:
@@ -68,4 +68,4 @@ async def get_runtime_data(ip, port):
 
 
 # asyncio.run(pymodbus('127.0.0.1'))
-asyncio.run(get_runtime_data('127.0.0.1', 8899))
+asyncio.run(get_runtime_data('127.0.0.1', 502))

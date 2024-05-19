@@ -37,6 +37,7 @@ class InverterProtocol:
         self._timer: asyncio.TimerHandle | None = None
         self.timeout: int = timeout
         self.retries: int = retries
+        self.keep_alive: bool = True
         self.protocol: asyncio.Protocol | None = None
         self.response_future: Future | None = None
         self.command: ProtocolCommand | None = None
@@ -57,10 +58,10 @@ class InverterProtocol:
             logger.debug("Creating lock instance for current event loop.")
             self._lock = asyncio.Lock()
             self._running_loop = asyncio.get_event_loop()
-            self.close_transport()
+            self._close_transport()
             return self._lock
 
-    def close_transport(self) -> None:
+    async def close(self) -> None:
         """Close the underlying transport/connection."""
         raise NotImplementedError()
 
@@ -116,7 +117,7 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             logger.debug("Socket closed with error: %s.", exc)
         else:
             logger.debug("Socket closed.")
-        self.close_transport()
+        self._close_transport()
 
     def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
         """On datagram received"""
@@ -146,13 +147,13 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
             self.response_future.set_exception(ex)
-            self.close_transport()
+            self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
         logger.debug("Received error: %s", exc)
         self.response_future.set_exception(exc)
-        self.close_transport()
+        self._close_transport()
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
@@ -188,9 +189,9 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         else:
             logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
             self.response_future.set_exception(MaxRetriesException)
-            self.close_transport()
+            self._close_transport()
 
-    def close_transport(self) -> None:
+    def _close_transport(self) -> None:
         if self._transport:
             try:
                 self._transport.close()
@@ -200,6 +201,9 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         # Cancel Future on connection close
         if self.response_future and not self.response_future.done():
             self.response_future.cancel()
+
+    async def close(self):
+        self._close_transport()
 
 
 class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
@@ -227,14 +231,18 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 lambda: self,
                 host=self._host, port=self._port,
             )
-            sock = self._transport.get_extra_info('socket')
-            if sock is not None:
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 10)
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
-                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
-                if platform.system() == 'Windows':
-                    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 10000, 10000))
+            if self.keep_alive:
+                try:
+                    sock = self._transport.get_extra_info('socket')
+                    if sock is not None:
+                        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 10)
+                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+                        if platform.system() == 'Windows':
+                            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 10000, 10000))
+                except AttributeError as ex:
+                    logger.debug("Failed to apply KEEPALIVE: %s", ex)
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         """On connection made"""
@@ -243,7 +251,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     def eof_received(self) -> None:
         logger.debug("EOF received.")
-        self.close_transport()
+        self._close_transport()
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
         """On connection lost"""
@@ -251,7 +259,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             logger.debug("Connection closed with error: %s.", exc)
         else:
             logger.debug("Connection closed.")
-        self.close_transport()
+        self._close_transport()
 
     def data_received(self, data: bytes) -> None:
         """On data received"""
@@ -272,7 +280,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             else:
                 logger.debug("Received invalid response: %s", data.hex())
                 self.response_future.set_exception(RequestRejectedException())
-                self.close_transport()
+                self._close_transport()
         except PartialResponseException:
             logger.debug("Received response fragment: %s", data.hex())
             self._partial_data = data
@@ -282,13 +290,13 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
             self.response_future.set_exception(ex)
-            # self.close_transport()
+            # self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
         """On error received"""
         logger.debug("Received error: %s", exc)
         self.response_future.set_exception(exc)
-        self.close_transport()
+        self._close_transport()
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
@@ -306,7 +314,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 self._retry += 1
                 if self._lock and self._lock.locked():
                     self._lock.release()
-                self.close_transport()
+                self._close_transport()
                 return await self.send_request(command)
             else:
                 return self._max_retries_reached()
@@ -343,16 +351,16 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             if self._timer:
                 logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
                 self._timer = None
-            self.close_transport()
+            self._close_transport()
 
     def _max_retries_reached(self) -> Future:
         logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
-        self.close_transport()
+        self._close_transport()
         self.response_future = asyncio.get_running_loop().create_future()
         self.response_future.set_exception(MaxRetriesException)
         return self.response_future
 
-    def close_transport(self) -> None:
+    def _close_transport(self) -> None:
         if self._transport:
             try:
                 self._transport.close()
@@ -362,6 +370,14 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         # Cancel Future on connection lost
         if self.response_future and not self.response_future.done():
             self.response_future.cancel()
+
+    async def close(self):
+        await self._ensure_lock().acquire()
+        try:
+            self._close_transport()
+        finally:
+            if self._lock and self._lock.locked():
+                self._lock.release()
 
 
 class ProtocolResponse:
@@ -441,6 +457,9 @@ class ProtocolCommand:
             raise RequestFailedException(
                 "No valid response received to '" + self.request.hex() + "' request."
             ) from None
+        finally:
+            if not protocol.keep_alive:
+                await protocol.close()
 
 
 class Aa55ProtocolCommand(ProtocolCommand):
