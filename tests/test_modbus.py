@@ -104,6 +104,8 @@ class TestModbus(TestCase):
     def test_validate_modbus_tcp_read_response(self):
         self.assert_tcp_response_ok('000100000007b4030445565345', 0x3, 310, 2)
         self.assert_tcp_response_ok('000100000007b4030400000002', 0x3, 331, 2)
+        # technically illegal, but work around Goodwe bug
+        self.assert_tcp_response_ok('000100000006f703020000', 0x3, 47510, 1)
         # length too short
         self.assert_tcp_response_partial('000100000007b403040000', 0x03, 331, 2)
         # failure code
