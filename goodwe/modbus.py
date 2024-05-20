@@ -221,10 +221,11 @@ def validate_modbus_tcp_response(data: bytes, cmd: int, offset: int, value: int)
     if len(data) <= 8:
         logger.debug("Response is too short.")
         return False
-    expected_length = int.from_bytes(data[4:6], byteorder='big', signed=False) + 6
-    # The weird expected_length != 12 is work around Goodwe bug answering wrong (hardcoded 6) length.
-    if len(data) < expected_length and expected_length != 12:
-        raise PartialResponseException(len(data), expected_length)
+
+    # The Modbus/TCP message length check is completely ignore due to Goodwe bugs
+    # expected_length = int.from_bytes(data[4:6], byteorder='big', signed=False) + 6
+    # if len(data) < expected_length:
+    #    raise PartialResponseException(len(data), expected_length)
 
     if data[7] == MODBUS_READ_CMD:
         expected_length = data[8] + 9
@@ -235,8 +236,8 @@ def validate_modbus_tcp_response(data: bytes, cmd: int, offset: int, value: int)
             return False
     elif data[7] in (MODBUS_WRITE_CMD, MODBUS_WRITE_MULTI_CMD):
         if len(data) < 12:
-            logger.debug("Response has unexpected length: %d, expected %d.", len(data), 14)
-            raise PartialResponseException(len(data), expected_length)
+            logger.debug("Response has unexpected length: %d, expected %d.", len(data), 12)
+            return False
         response_offset = int.from_bytes(data[8:10], byteorder='big', signed=False)
         if response_offset != offset:
             logger.debug("Response has wrong offset: %X, expected %X.", response_offset, offset)
