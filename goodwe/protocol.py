@@ -127,7 +127,7 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             self._timer = None
         try:
             if self._partial_data and self._partial_missing == len(data):
-                logger.debug("Composed fragmented response: %s", data.hex())
+                logger.debug("Composed fragmented response: %s + %s", self._partial_data.hex(), data.hex())
                 data = self._partial_data + data
                 self._partial_data = None
                 self._partial_missing = 0
@@ -141,7 +141,6 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             logger.debug("Received response fragment (%d of %d): %s", ex.length, ex.expected, data.hex())
             self._partial_data = data
             self._partial_missing = ex.expected - ex.length
-            return
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
@@ -161,7 +160,6 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             await self._connect()
             response_future = asyncio.get_running_loop().create_future()
             self._retry = 0
-            self._partial_data = None
             self._send_request(command, response_future)
             await response_future
             return response_future
@@ -170,6 +168,8 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         """Send message via transport"""
         self.command = command
         self.response_future = response_future
+        self._partial_data = None
+        self._partial_missing = 0
         payload = command.request_bytes()
         if self._retry > 0:
             logger.debug("Sending: %s - retry #%s/%s", self.command, self._retry, self.retries)
@@ -268,7 +268,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             self._timer.cancel()
         try:
             if self._partial_data and self._partial_missing == len(data):
-                logger.debug("Composed fragmented response: %s", data.hex())
+                logger.debug("Composed fragmented response: %s + %s", self._partial_data.hex(), data.hex())
                 data = self._partial_data + data
                 self._partial_data = None
                 self._partial_missing = 0
@@ -284,7 +284,6 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             logger.debug("Received response fragment (%d of %d): %s", ex.length, ex.expected, data.hex())
             self._partial_data = data
             self._partial_missing = ex.expected - ex.length
-            return
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
@@ -304,7 +303,6 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         try:
             await asyncio.wait_for(self._connect(), timeout=5)
             response_future = asyncio.get_running_loop().create_future()
-            self._partial_data = None
             self._send_request(command, response_future)
             await response_future
             return response_future
@@ -336,6 +334,8 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
         """Send message via transport"""
         self.command = command
         self.response_future = response_future
+        self._partial_data = None
+        self._partial_missing = 0
         payload = command.request_bytes()
         if self._retry > 0:
             logger.debug("Sending: %s - retry #%s/%s", self.command, self._retry, self.retries)
