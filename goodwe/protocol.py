@@ -146,7 +146,8 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
-            self.response_future.set_exception(ex)
+            if self.response_future and not self.response_future.done():
+                self.response_future.set_exception(ex)
             self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
@@ -290,7 +291,8 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
             logger.debug("Received exception response: %s", data.hex())
-            self.response_future.set_exception(ex)
+            if self.response_future and not self.response_future.done():
+                self.response_future.set_exception(ex)
             # self._close_transport()
 
     def error_received(self, exc: Exception) -> None:
