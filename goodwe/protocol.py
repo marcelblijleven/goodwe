@@ -141,6 +141,7 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             logger.debug("Received response fragment (%d of %d): %s", ex.length, ex.expected, data.hex())
             self._partial_data = data
             self._partial_missing = ex.expected - ex.length
+            self._timer = asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
@@ -284,6 +285,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
             logger.debug("Received response fragment (%d of %d): %s", ex.length, ex.expected, data.hex())
             self._partial_data = data
             self._partial_missing = ex.expected - ex.length
+            self._timer = asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
@@ -469,7 +471,7 @@ class Aa55ProtocolCommand(ProtocolCommand):
     Quite probably it is some variation of the protocol used on RS-485 serial link,
     extended/adapted to UDP transport layer.
 
-    Each request starts with header of 0xAA, 0x55, then 0xC0, 0x7F (probably some sort of address/command)
+    Each request starts with header of 0xAA, 0x55, then 0xC0, 0x7F (client addr, inverter addr)
     followed by actual payload data.
     It is suffixed with 2 bytes of plain checksum of header+payload.
 
@@ -485,7 +487,7 @@ class Aa55ProtocolCommand(ProtocolCommand):
                 + payload
                 + self._checksum(bytes.fromhex("AA55C07F" + payload)).hex()
             ),
-            lambda x: self._validate_response(x, response_type),
+            lambda x: self._validate_aa55_response(x, response_type),
         )
 
     @staticmethod
@@ -496,7 +498,7 @@ class Aa55ProtocolCommand(ProtocolCommand):
         return checksum.to_bytes(2, byteorder="big", signed=False)
 
     @staticmethod
-    def _validate_response(data: bytes, response_type: str) -> bool:
+    def _validate_aa55_response(data: bytes, response_type: str) -> bool:
         """
         Validate the response.
         data[0:3] is header
@@ -504,13 +506,20 @@ class Aa55ProtocolCommand(ProtocolCommand):
         data[6] is response payload length
         data[-2:] is checksum (plain sum of response data incl. header)
         """
-        if len(data) <= 8 or len(data) != data[6] + 9:
+        if len(data) <= 8:
+            logger.debug("Response too short.")
+            return False
+        elif len(data) < data[6] + 9:
             raise PartialResponseException(len(data), data[6] + 9)
+        elif len(data) > data[6] + 9:
+            logger.debug("Response invalid - too long (%d).", len(data))
+            return False
         elif response_type:
             data_rt_int = int.from_bytes(data[4:6], byteorder="big", signed=True)
             if int(response_type, 16) != data_rt_int:
                 logger.debug("Response type unexpected: %04x, expected %s.", data_rt_int, response_type)
                 return False
+
         checksum = 0
         for each in data[:-2]:
             checksum += each
