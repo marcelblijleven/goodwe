@@ -357,6 +357,8 @@ class ET(Inverter):
         Integer("work_mode", 47000, "Work Mode", "", Kind.AC),
         Integer("dred", 47010, "DRED/Remote Shutdown", "", Kind.AC),
 
+        Integer("meter_target_power_offset", 47120, "Meter Target Power Offset", "W", Kind.AC),
+
         Integer("battery_soc_protection", 47500, "Battery SoC Protection", "", Kind.BAT),
 
         Integer("grid_export", 47509, "Grid Export Enabled", "", Kind.GRID),
