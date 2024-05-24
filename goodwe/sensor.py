@@ -364,7 +364,7 @@ class Decimal(Sensor):
         return read_decimal2(data, self.scale)
 
     def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
-        return int.to_bytes(int(value * self.scale), length=2, byteorder="big", signed=True)
+        return int.to_bytes(int(float(value) * self.scale), length=2, byteorder="big", signed=True)
 
 
 class Float(Sensor):
@@ -868,7 +868,7 @@ def read_voltage(buffer: ProtocolResponse, offset: int = None) -> float:
 
 def encode_voltage(value: Any) -> bytes:
     """Encode voltage value to raw (2 unsigned bytes) payload"""
-    return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=False)
+    return int.to_bytes(int(float(value) * 10), length=2, byteorder="big", signed=False)
 
 
 def read_current(buffer: ProtocolResponse, offset: int = None) -> float:
@@ -889,12 +889,12 @@ def read_current_signed(buffer: ProtocolResponse, offset: int = None) -> float:
 
 def encode_current(value: Any) -> bytes:
     """Encode current value to raw (2 unsigned bytes) payload"""
-    return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=False)
+    return int.to_bytes(int(float(value) * 10), length=2, byteorder="big", signed=False)
 
 
 def encode_current_signed(value: Any) -> bytes:
     """Encode current value to raw (2 signed bytes) payload"""
-    return int.to_bytes(int(value * 10), length=2, byteorder="big", signed=True)
+    return int.to_bytes(int(float(value) * 10), length=2, byteorder="big", signed=True)
 
 
 def read_freq(buffer: ProtocolResponse, offset: int = None) -> float:

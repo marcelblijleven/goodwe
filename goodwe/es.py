@@ -296,7 +296,7 @@ class ES(Inverter):
         try:
             mode = OperationMode(mode_id)
         except ValueError:
-            logger.debug("Unknown work_mode value %d", mode_id)
+            logger.debug("Unknown work_mode value %s", mode_id)
             return None
         if OperationMode.ECO != mode:
             return mode

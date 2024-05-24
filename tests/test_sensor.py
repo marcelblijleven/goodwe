@@ -30,6 +30,7 @@ class TestUtils(TestCase):
         self.assertEqual(32, testee.read(data))
 
         self.assertEqual("2039", testee.encode_value(32, bytes.fromhex("3039")).hex())
+        self.assertEqual("2039", testee.encode_value("32", bytes.fromhex("3039")).hex())
         self.assertEqual("ff39", testee.encode_value(-1, bytes.fromhex("3039")).hex())
         self.assertEqual("7f39", testee.encode_value(127, bytes.fromhex("3039")).hex())
         self.assertEqual("20ff", testee.encode_value(32, bytes.fromhex("ffff")).hex())
@@ -41,6 +42,7 @@ class TestUtils(TestCase):
         self.assertEqual(127, testee.read(data))
 
         self.assertEqual("3020", testee.encode_value(32, bytes.fromhex("3039")).hex())
+        self.assertEqual("3020", testee.encode_value("32", bytes.fromhex("3039")).hex())
         self.assertEqual("30ff", testee.encode_value(-1, bytes.fromhex("3039")).hex())
         self.assertEqual("307f", testee.encode_value(127, bytes.fromhex("3039")).hex())
         self.assertEqual("ff20", testee.encode_value(32, bytes.fromhex("ffff")).hex())
@@ -51,10 +53,12 @@ class TestUtils(TestCase):
         data = MockResponse("0031")
         self.assertEqual(49, testee.read(data))
         self.assertEqual("0031", testee.encode_value(49).hex())
+        self.assertEqual("0031", testee.encode_value("49").hex())
 
         data = MockResponse("ff9e")
         self.assertEqual(65438, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(65438).hex())
+        self.assertEqual("ff9e", testee.encode_value("65438").hex())
 
     def test_integer_signed(self):
         testee = IntegerS("", 0, "", "", None)
@@ -62,10 +66,12 @@ class TestUtils(TestCase):
         data = MockResponse("0031")
         self.assertEqual(49, testee.read(data))
         self.assertEqual("0031", testee.encode_value(49).hex())
+        self.assertEqual("0031", testee.encode_value("49").hex())
 
         data = MockResponse("ff9e")
         self.assertEqual(-98, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(-98).hex())
+        self.assertEqual("ff9e", testee.encode_value("-98").hex())
 
     def test_decimal(self):
         testee = Decimal("", 0, 10, "", "", None)
@@ -73,10 +79,12 @@ class TestUtils(TestCase):
         data = MockResponse("0031")
         self.assertEqual(4.9, testee.read(data))
         self.assertEqual("0031", testee.encode_value(4.9).hex())
+        self.assertEqual("0031", testee.encode_value("4.9").hex())
 
         data = MockResponse("ff9e")
         self.assertEqual(-9.8, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(-9.8).hex())
+        self.assertEqual("ff9e", testee.encode_value("-9.8").hex())
 
     def test_voltage(self):
         testee = Voltage("", 0, "", None)
@@ -84,10 +92,12 @@ class TestUtils(TestCase):
         data = MockResponse("0cfe")
         self.assertEqual(332.6, testee.read(data))
         self.assertEqual("0cfe", testee.encode_value(332.6).hex())
+        self.assertEqual("0cfe", testee.encode_value("332.6").hex())
 
         data = MockResponse("1f64")
         self.assertEqual(803.6, testee.read(data))
         self.assertEqual("1f64", testee.encode_value(803.6).hex())
+        self.assertEqual("1f64", testee.encode_value("803.6").hex())
 
         data = MockResponse("a000")
         self.assertEqual(4096.0, testee.read(data))
@@ -101,10 +111,12 @@ class TestUtils(TestCase):
         data = MockResponse("0031")
         self.assertEqual(4.9, testee.read(data))
         self.assertEqual("0031", testee.encode_value(4.9).hex())
+        self.assertEqual("0031", testee.encode_value("4.9").hex())
 
         data = MockResponse("ff9e")
         self.assertEqual(6543.8, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(6543.8).hex())
+        self.assertEqual("ff9e", testee.encode_value("6543.8").hex())
 
         data = MockResponse("ffff")
         self.assertEqual(0, testee.read(data))
@@ -115,10 +127,12 @@ class TestUtils(TestCase):
         data = MockResponse("0031")
         self.assertEqual(4.9, testee.read(data))
         self.assertEqual("0031", testee.encode_value(4.9).hex())
+        self.assertEqual("0031", testee.encode_value("4.9").hex())
 
         data = MockResponse("ff9e")
         self.assertEqual(-9.8, testee.read(data))
         self.assertEqual("ff9e", testee.encode_value(-9.8).hex())
+        self.assertEqual("ff9e", testee.encode_value("-9.8").hex())
 
     def test_power4(self):
         testee = Power4("", 0, "", None)
