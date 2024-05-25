@@ -220,9 +220,11 @@ class ES(Inverter):
         elif setting_id.startswith("modbus"):
             response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
-        else:
+        elif setting_id in self._settings:
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
+        else:
+            raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _read_setting(self, setting: Sensor) -> Any:
         count = (setting.size_ + (setting.size_ % 2)) // 2

@@ -628,6 +628,7 @@ class ET(Inverter):
             if ex.message == ILLEGAL_DATA_ADDRESS:
                 logger.debug("Unsupported setting %s", setting.id_)
                 self._settings.pop(setting.id_, None)
+                raise ValueError(f'Unknown setting "{setting.id_}"')
             return None
 
     async def write_setting(self, setting_id: str, value: Any):

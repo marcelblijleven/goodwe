@@ -53,6 +53,21 @@ async def pymodbus(ip):
         i += 1
 
 
+async def read_modbus_range(ip, port, register, length):
+    inverter = await goodwe.connect(host=ip, port=port, family="ET", timeout=1, retries=3)
+    # inverter.set_keep_alive(False)
+
+    i = 1
+    while True:
+        logger.info("################################")
+        logger.info("          Request %d", i)
+        logger.info("################################")
+        await goodwe.protocol.ModbusRtuReadCommand(0xf7, register, length).execute(
+            goodwe.protocol.UdpInverterProtocol(ip, port, 1, 3))
+        await asyncio.sleep(5)
+        i += 1
+
+
 async def get_runtime_data(ip, port):
     inverter = await goodwe.connect(host=ip, port=port, family="ET", timeout=1, retries=3)
     # inverter.set_keep_alive(False)
@@ -68,4 +83,5 @@ async def get_runtime_data(ip, port):
 
 
 # asyncio.run(pymodbus('127.0.0.1'))
+# asyncio.run(read_modbus_range('192.168.2.14', 8899, 35100, 125))
 asyncio.run(get_runtime_data('127.0.0.1', 502))
