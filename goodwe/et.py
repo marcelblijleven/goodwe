@@ -332,7 +332,7 @@ class ET(Inverter):
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
         Integer("comm_address", 45127, "Communication Address", ""),
-        Integer("modbus_baud_rate", 45132, "Modbus Baud rate", ""),
+        Long("modbus_baud_rate", 45132, "Modbus Baud rate", ""),
         Timestamp("time", 45200, "Inverter time"),
 
         Integer("sensitivity_check", 45246, "Sensitivity Check Mode", "", Kind.AC),
