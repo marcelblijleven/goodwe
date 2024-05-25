@@ -101,7 +101,7 @@ class GW6000_DT_Test(DtMock):
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
 
     def test_GW6000_DT_setting(self):
-        self.assertEqual(4, len(self.settings()))
+        self.assertEqual(8, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual('Timestamp', type(settings.get("time")).__name__)
         self.assertEqual('Integer', type(settings.get("grid_export")).__name__)

@@ -110,6 +110,10 @@ class DT(Inverter):
         Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
         Integer("grid_export", 40327, "Grid Export Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 40328, "Grid Export Limit", "%", Kind.GRID),
+        Integer("start", 40330, "Start / Power On", "", Kind.GRID),
+        Integer("stop", 40331, "Stop / Power Off", "", Kind.GRID),
+        Integer("restart", 40332, "Restart", "", Kind.GRID),
+        Integer("grid_export_hw", 40345, "Grid Export Enabled (HW)", "", Kind.GRID),
     )
 
     # Settings for single phase inverters
