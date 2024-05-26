@@ -221,6 +221,7 @@ class ES(Inverter):
             response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
         elif setting_id in self._settings:
+            logger.debug("Reading setting %s", setting_id)
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
         else:

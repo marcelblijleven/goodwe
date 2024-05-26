@@ -482,7 +482,7 @@ class Aa55ProtocolCommand(ProtocolCommand):
     The last 2 bytes are again plain checksum of header+payload.
     """
 
-    def __init__(self, payload: str, response_type: str):
+    def __init__(self, payload: str, response_type: str, offset: int = 0, value: int = 0):
         super().__init__(
             bytes.fromhex(
                 "AA55C07F"
@@ -491,6 +491,8 @@ class Aa55ProtocolCommand(ProtocolCommand):
             ),
             lambda x: self._validate_aa55_response(x, response_type),
         )
+        self.first_address: int = offset
+        self.value = value
 
     @staticmethod
     def _checksum(data: bytes) -> bytes:
@@ -534,6 +536,17 @@ class Aa55ProtocolCommand(ProtocolCommand):
         """Trim raw response from header and checksum data"""
         return raw_response[7:-2]
 
+    def __repr__(self):
+        if self.request[4] == 1:
+            if self.request[5] == 2:
+                return f'READ device info ({self.request.hex()})'
+            elif self.request[5] == 6:
+                return f'READ runtime data ({self.request.hex()})'
+            elif self.request[5] == 9:
+                return f'READ settings ({self.request.hex()})'
+        else:
+            return self.request.hex()
+
 
 class Aa55ReadCommand(Aa55ProtocolCommand):
     """
@@ -541,7 +554,13 @@ class Aa55ReadCommand(Aa55ProtocolCommand):
     """
 
     def __init__(self, offset: int, count: int):
-        super().__init__("011A03" + "{:04x}".format(offset) + "{:02x}".format(count), "019A")
+        super().__init__("011A03" + "{:04x}".format(offset) + "{:02x}".format(count), "019A", offset, count)
+
+    def __repr__(self):
+        if self.value > 1:
+            return f'READ {self.value} registers from {self.first_address} ({self.request.hex()})'
+        else:
+            return f'READ register {self.first_address} ({self.request.hex()})'
 
 
 class Aa55WriteCommand(Aa55ProtocolCommand):
@@ -550,7 +569,10 @@ class Aa55WriteCommand(Aa55ProtocolCommand):
     """
 
     def __init__(self, register: int, value: int):
-        super().__init__("023905" + "{:04x}".format(register) + "01" + "{:04x}".format(value), "02B9")
+        super().__init__("023905" + "{:04x}".format(register) + "01" + "{:04x}".format(value), "02B9", register, value)
+
+    def __repr__(self):
+        return f'WRITE {self.value} to register {self.first_address} ({self.request.hex()})'
 
 
 class Aa55WriteMultiCommand(Aa55ProtocolCommand):
@@ -560,7 +582,7 @@ class Aa55WriteMultiCommand(Aa55ProtocolCommand):
 
     def __init__(self, offset: int, values: bytes):
         super().__init__("02390B" + "{:04x}".format(offset) + "{:02x}".format(len(values)) + values.hex(),
-                         "02B9")
+                         "02B9", offset, len(values) // 2)
 
 
 class ModbusRtuProtocolCommand(ProtocolCommand):
