@@ -178,11 +178,11 @@ class ES(Inverter):
     def _supports_eco_mode_v2(self) -> bool:
         if self.arm_version < 14:
             return False
-        if "EMU" in self.serial_number:
+        if "EMU" in self.serial_number or "EMJ" in self.serial_number:
             return self.dsp1_version >= 11
-        if "ESU" in self.serial_number:
+        if "ESU" in self.serial_number or "ESA" in self.serial_number:
             return self.dsp1_version >= 22
-        if "BPS" in self.serial_number:
+        if "BPS" in self.serial_number or "BPU" in self.serial_number:
             return self.dsp1_version >= 10
         return False
 
@@ -192,7 +192,7 @@ class ES(Inverter):
         self.firmware = self._decode(response[0:5]).rstrip()
         self.model_name = self._decode(response[5:15]).rstrip()
         self.serial_number = self._decode(response[31:47])
-        self.software_version = self._decode(response[51:63])
+        self.arm_firmware = self._decode(response[51:63])  # AKA software_version
         try:
             if len(self.firmware) >= 2:
                 self.dsp1_version = int(self.firmware[0:2])
