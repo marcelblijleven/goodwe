@@ -10,9 +10,9 @@ from goodwe.protocol import ProtocolCommand, ProtocolResponse
 
 class DtMock(TestCase, DT):
 
-    def __init__(self, methodName='runTest'):
+    def __init__(self, methodName='runTest', port=8899):
         TestCase.__init__(self, methodName)
-        DT.__init__(self, "localhost", 8899)
+        DT.__init__(self, "localhost", port)
         self.sensor_map = {s.id_: s.unit for s in self.sensors()}
         self._mock_responses = {}
 
@@ -52,7 +52,7 @@ class GW6000_DT_Test(DtMock):
     def test_GW6000_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(40, len(data))
+        self.assertEqual(41, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-31 12:03:02', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 320.8, 'V', data)
@@ -64,6 +64,7 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('vpv3', None, 'V', data)
         self.assertSensor('ipv3', None, 'A', data)
         self.assertSensor('ppv3', None, 'W', data)
+        self.assertSensor('ppv', 2031, 'W', data)
         self.assertSensor('vline1', 0, 'V', data)
         self.assertSensor('vline2', 0, 'V', data)
         self.assertSensor('vline3', 0, 'V', data)
@@ -79,7 +80,7 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('pgrid1', 609, 'W', data)
         self.assertSensor('pgrid2', 597, 'W', data)
         self.assertSensor('pgrid3', 624, 'W', data)
-        self.assertSensor('ppv', 1835, 'W', data)
+        self.assertSensor('active_power', 1835, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
@@ -135,7 +136,7 @@ class GW8K_DT_Test(DtMock):
     def test_GW8K_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(40, len(data))
+        self.assertEqual(41, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-24 16:43:27', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 275.5, 'V', data)
@@ -144,6 +145,7 @@ class GW8K_DT_Test(DtMock):
         self.assertSensor('vpv2', 510.8, 'V', data)
         self.assertSensor('ipv2', 0.8, 'A', data)
         self.assertSensor('ppv2', 409, 'W', data)
+        self.assertSensor('ppv', 574, 'W', data)
         self.assertSensor('vline1', 413.7, 'V', data)
         self.assertSensor('vline2', 413.0, 'V', data)
         self.assertSensor('vline3', 408.0, 'V', data)
@@ -159,7 +161,7 @@ class GW8K_DT_Test(DtMock):
         self.assertSensor('pgrid1', 237, 'W', data)
         self.assertSensor('pgrid2', 240, 'W', data)
         self.assertSensor('pgrid3', 235, 'W', data)
-        self.assertSensor('ppv', 643, 'W', data)
+        self.assertSensor('active_power', 643, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
@@ -199,7 +201,7 @@ class GW5000D_NS_Test(DtMock):
     def test_GW5000D_NS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(30, len(data))
+        self.assertEqual(31, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-09-06 06:56:01', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 224.4, 'V', data)
@@ -208,12 +210,13 @@ class GW5000D_NS_Test(DtMock):
         self.assertSensor('vpv2', 291.8, 'V', data)
         self.assertSensor('ipv2', 0, 'A', data)
         self.assertSensor('ppv2', 0, 'W', data)
+        self.assertSensor('ppv', 0, 'W', data)
         self.assertSensor('vline1', 0, 'V', data)
         self.assertSensor('vgrid1', 240.5, 'V', data)
         self.assertSensor('igrid1', 0.0, 'A', data)
         self.assertSensor('fgrid1', 49.97, 'Hz', data)
         self.assertSensor('pgrid1', 0, 'W', data)
-        self.assertSensor('ppv', 0, 'W', data)
+        self.assertSensor('active_power', 0, 'W', data)
         self.assertSensor('work_mode', 0, '', data)
         self.assertSensor('work_mode_label', 'Wait Mode', '', data)
         self.assertSensor('error_codes', 0, '', data)
@@ -262,7 +265,7 @@ class GW5000_MS_Test(DtMock):
     def test_GW5000_MS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(33, len(data))
+        self.assertEqual(34, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-10-15 09:03:12', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 319.6, 'V', data)
@@ -274,12 +277,13 @@ class GW5000_MS_Test(DtMock):
         self.assertSensor('vpv3', 143.2, 'V', data)
         self.assertSensor('ipv3', 0.4, 'A', data)
         self.assertSensor('ppv3', 57, 'W', data)
+        self.assertSensor('ppv', 165, 'W', data)
         self.assertSensor('vline1', 0, 'V', data)
         self.assertSensor('vgrid1', 240.1, 'V', data)
         self.assertSensor('igrid1', 0.9, 'A', data)
         self.assertSensor('fgrid1', 49.98, 'Hz', data)
         self.assertSensor('pgrid1', 216, 'W', data)
-        self.assertSensor('ppv', 295, 'W', data)
+        self.assertSensor('active_power', 295, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
@@ -318,7 +322,7 @@ class GW10K_MS_30_Test(DtMock):
     def test_GW10K_MS_30_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(33, len(data))
+        self.assertEqual(34, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2024-01-09 22:08:20', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 0.0, 'V', data)
@@ -330,12 +334,13 @@ class GW10K_MS_30_Test(DtMock):
         self.assertSensor('vpv3', 0.0, 'V', data)
         self.assertSensor('ipv3', 0.0, 'A', data)
         self.assertSensor('ppv3', 0, 'W', data)
+        self.assertSensor('ppv', 0, 'W', data)
         self.assertSensor('vline1', 0.0, 'V', data)
         self.assertSensor('vgrid1', 236.2, 'V', data)
         self.assertSensor('igrid1', 0.0, 'A', data)
         self.assertSensor('fgrid1', 50.0, 'Hz', data)
         self.assertSensor('pgrid1', 0, 'W', data)
-        self.assertSensor('ppv', 0, 'W', data)
+        self.assertSensor('active_power', 0, 'W', data)
         self.assertSensor('work_mode', 0, '', data)
         self.assertSensor('work_mode_label', 'Wait Mode', '', data)
         self.assertSensor('error_codes', 0, '', data)
@@ -351,6 +356,60 @@ class GW10K_MS_30_Test(DtMock):
         self.assertSensor('funbit', 0, '', data)
         self.assertSensor('vbus', 5.1, 'V', data)
         self.assertSensor('vnbus', 0.0, 'V', data)
+        self.assertSensor('derating_mode', 0, '', data)
+        self.assertSensor('derating_mode_label', '', '', data)
+
+
+class GW10K_MS_TCP_Test(DtMock):
+
+    def __init__(self, methodName='runTest'):
+        DtMock.__init__(self, methodName, 502)
+        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW10K-MS-30_tcp_running_data.hex')
+
+    def test_GW10K_MS_TCP_runtime_data(self):
+        self.loop.run_until_complete(self.read_device_info())
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(41, len(data))
+
+        self.assertSensor('timestamp', datetime.strptime('2024-06-02 09:07:17', '%Y-%m-%d %H:%M:%S'), '', data)
+        self.assertSensor('vpv1', 400.6, 'V', data)
+        self.assertSensor('ipv1', 6.9, 'A', data)
+        self.assertSensor('ppv1', 2764, 'W', data)
+        self.assertSensor('vpv2', 364.0, 'V', data)
+        self.assertSensor('ipv2', 3.6, 'A', data)
+        self.assertSensor('ppv2', 1310, 'W', data)
+        self.assertSensor('ppv', 6143, 'W', data)
+        self.assertSensor('vline1', 0, 'V', data)
+        self.assertSensor('vline2', 0, 'V', data)
+        self.assertSensor('vline3', 0, 'V', data)
+        self.assertSensor('vgrid1', 241.1, 'V', data)
+        self.assertSensor('vgrid2', 0, 'V', data)
+        self.assertSensor('vgrid3', 0, 'V', data)
+        self.assertSensor('igrid1', 24.7, 'A', data)
+        self.assertSensor('igrid2', 0, 'A', data)
+        self.assertSensor('igrid3', 0, 'A', data)
+        self.assertSensor('fgrid1', 49.98, 'Hz', data)
+        self.assertSensor('fgrid2', -0.01, 'Hz', data)
+        self.assertSensor('fgrid3', -0.01, 'Hz', data)
+        self.assertSensor('pgrid1', 5955, 'W', data)
+        self.assertSensor('pgrid2', 0, 'W', data)
+        self.assertSensor('pgrid3', 0, 'W', data)
+        self.assertSensor('active_power', 5914, 'W', data)
+        self.assertSensor('work_mode', 1, '', data)
+        self.assertSensor('work_mode_label', 'Normal', '', data)
+        self.assertSensor('error_codes', 0, '', data)
+        self.assertSensor('warning_code', 0, '', data)
+        self.assertSensor('apparent_power', 5957, 'VA', data)
+        self.assertSensor('reactive_power', -6, 'var', data)
+        self.assertSensor('temperature', 36.0, 'C', data)
+        self.assertSensor('e_day', 4.3, 'kWh', data)
+        self.assertSensor('e_total', 998.2, 'kWh', data)
+        self.assertSensor('h_total', 246, 'h', data)
+        self.assertSensor('safety_country', 32, '', data)
+        self.assertSensor('safety_country_label', '50Hz 230Vac Default', '', data)
+        self.assertSensor('funbit', 0, '', data)
+        self.assertSensor('vbus', 397.3, 'V', data)
+        self.assertSensor('vnbus', 0, 'V', data)
         self.assertSensor('derating_mode', 0, '', data)
         self.assertSensor('derating_mode_label', '', '', data)
 
@@ -374,7 +433,7 @@ class GW20KAU_DT_Test(DtMock):
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(40, len(data))
+        self.assertEqual(41, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2022-10-21 19:23:42', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 390.5, 'V', data)
@@ -383,6 +442,7 @@ class GW20KAU_DT_Test(DtMock):
         self.assertSensor('vpv2', 351.6, 'V', data)
         self.assertSensor('ipv2', 7.1, 'A', data)
         self.assertSensor('ppv2', 2496, 'W', data)
+        self.assertSensor('ppv', 5151, 'W', data)
         self.assertSensor('vline1', 388.5, 'V', data)
         self.assertSensor('vline2', 391.7, 'V', data)
         self.assertSensor('vline3', 394.5, 'V', data)
@@ -398,7 +458,7 @@ class GW20KAU_DT_Test(DtMock):
         self.assertSensor('pgrid1', 1628, 'W', data)
         self.assertSensor('pgrid2', 1655, 'W', data)
         self.assertSensor('pgrid3', 1621, 'W', data)
-        self.assertSensor('ppv', 4957, 'W', data)
+        self.assertSensor('active_power', 4957, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
@@ -437,7 +497,7 @@ class GW17K_DT_Test(DtMock):
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(40, len(data))
+        self.assertEqual(41, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2024-05-20 10:35:55', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 540.0, 'V', data)
@@ -446,6 +506,7 @@ class GW17K_DT_Test(DtMock):
         self.assertSensor('vpv2', 475.5, 'V', data)
         self.assertSensor('ipv2', 14.8, 'A', data)
         self.assertSensor('ppv2', 7037, 'W', data)
+        self.assertSensor('ppv', 12707, 'W', data)
         self.assertSensor('vline1', 413.0, 'V', data)
         self.assertSensor('vline2', 411.5, 'V', data)
         self.assertSensor('vline3', 409.5, 'V', data)
@@ -461,7 +522,7 @@ class GW17K_DT_Test(DtMock):
         self.assertSensor('pgrid1', 4166, 'W', data)
         self.assertSensor('pgrid2', 4170, 'W', data)
         self.assertSensor('pgrid3', 4153, 'W', data)
-        self.assertSensor('ppv', 12470, 'W', data)
+        self.assertSensor('active_power', 12470, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)

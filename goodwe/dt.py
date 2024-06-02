@@ -35,6 +35,12 @@ class DT(Inverter):
         Calculated("ppv3",
                    lambda data: round(read_voltage(data, 30107) * read_current(data, 30108)),
                    "PV3 Power", "W", Kind.PV),
+        # ppv1 + ppv2 + ppv3
+        Calculated("ppv",
+                   lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104))) + (round(
+                       read_voltage(data, 30105) * read_current(data, 30106))) + (round(
+                       read_voltage(data, 30107) * read_current(data, 30108))),
+                   "PV Power", "W", Kind.PV),
         # Voltage("vpv4", 14, "PV4 Voltage", Kind.PV),
         # Current("ipv4", 16, "PV4 Current", Kind.PV),
         # Voltage("vpv5", 14, "PV5 Voltage", Kind.PV),
@@ -63,7 +69,7 @@ class DT(Inverter):
                    lambda data: round(read_voltage(data, 30120) * read_current(data, 30123)),
                    "On-grid L3 Power", "W", Kind.AC),
         # 30127 reserved
-        Power("ppv", 30128, "PV Power", Kind.PV),
+        PowerS("active_power", 30128, "Active Power", Kind.AC),
         Integer("work_mode", 30129, "Work Mode code"),
         Enum2("work_mode_label", 30129, WORK_MODES, "Work Mode"),
         Long("error_codes", 30130, "Error Codes"),
