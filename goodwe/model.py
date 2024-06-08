@@ -48,3 +48,7 @@ def is_2_battery(inverter: Inverter) -> bool:
 def is_745_platform(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in PLATFORM_745_LV_MODELS) or any(
         model in inverter.serial_number for model in PLATFORM_745_HV_MODELS)
+
+
+def is_753_platform(inverter: Inverter) -> bool:
+    return any(model in inverter.serial_number for model in PLATFORM_753_MODELS)

@@ -197,6 +197,17 @@ class Energy4(Sensor):
         return float(value) / 10 if value is not None else None
 
 
+class Energy8(Sensor):
+    """Sensor representing energy [kWh] value encoded in 8 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 8, "kWh", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        value = read_bytes8(data)
+        return float(value) / 100 if value is not None else None
+
+
 class Apparent(Sensor):
     """Sensor representing apparent power [VA] value encoded in 2 bytes"""
 
@@ -814,6 +825,14 @@ def read_bytes4_signed(buffer: ProtocolResponse, offset: int = None) -> int:
     if offset is not None:
         buffer.seek(offset)
     return int.from_bytes(buffer.read(4), byteorder="big", signed=True)
+
+
+def read_bytes8(buffer: ProtocolResponse, offset: int = None, undef: int = None) -> int:
+    """Retrieve 8 byte (unsigned int) value from buffer"""
+    if offset is not None:
+        buffer.seek(offset)
+    value = int.from_bytes(buffer.read(8), byteorder="big", signed=False)
+    return undef if value == 0xffffffffffffffff else value
 
 
 def read_decimal2(buffer: ProtocolResponse, scale: int, offset: int = None) -> float:
