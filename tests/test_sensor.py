@@ -169,6 +169,16 @@ class TestUtils(TestCase):
         data = MockResponse("ffffffff")
         self.assertIsNone(testee.read(data))
 
+    def test_energy8(self):
+        testee = Energy8("", 0, "", None)
+
+        data = MockResponse("0000000000015b41")
+        self.assertEqual(888.97, testee.read(data))
+        data = MockResponse("0000000000038E6C")
+        self.assertEqual(2330.68, testee.read(data))
+        data = MockResponse("ffffffffffffffff")
+        self.assertIsNone(testee.read(data))
+
     def test_temp(self):
         testee = Temp("", 0, "", None)
 

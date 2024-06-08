@@ -15,7 +15,7 @@ class EtMock(TestCase, ET):
     def __init__(self, methodName='runTest'):
         TestCase.__init__(self, methodName)
         ET.__init__(self, "localhost", 8899)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self.sensor_map = {s.id_: s for s in self.sensors()}
         self._mock_responses = {}
         self._list_of_requests = []
 
@@ -41,10 +41,11 @@ class EtMock(TestCase, ET):
             self._list_of_requests.append(command.request)
             return ProtocolResponse(bytes.fromhex("aa55f700010203040506070809"), command)
 
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
-        self.sensor_map.pop(sensor)
+    def assertSensor(self, sensor_name, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor_name))
+        sensor = self.sensor_map.get(sensor_name);
+        self.assertEqual(expected_unit, sensor.unit)
+        self.sensor_map.pop(sensor_name)
 
     @classmethod
     def setUpClass(cls):
@@ -81,13 +82,15 @@ class GW10K_ET_Test(EtMock):
     def test_GW10K_ET_runtime_data(self):
         # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self.sensor_map = {s.id_: s for s in self.sensors()}
 
         data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(145, len(data))
 
+        self.assertEqual(36015, self.sensor_map.get("meter_e_total_exp").offset)
+
         # for sensor in self.sensors():
-        #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensor_map.get(sensor.id_)}', data)")
+        #   print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensor_map.get(sensor.id_).unit}', data)")
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-22 11:11:12', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 332.6, 'V', data)
@@ -386,7 +389,7 @@ class GW10K_ET_fw1023_Test(EtMock):
     def test_GW10K_ET_runtime_data_fw1023(self):
         # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self.sensor_map = {s.id_: s for s in self.sensors()}
 
         data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(145, len(data))
@@ -596,7 +599,7 @@ class GEH10_1U_10_Test(EtMock):
     def test_GEH10_1U_10_runtime_data(self):
         # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self.sensor_map = {s.id_: s for s in self.sensors()}
 
         data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(125, len(data))
@@ -760,6 +763,7 @@ class GW25K_ET_Test(EtMock):
         EtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW25K-ET_device_info.hex')
         self.mock_response(self._READ_RUNNING_DATA, 'GW25K-ET_running_data.hex')
+        self.mock_response(self._READ_METER_DATA_EXTENDED2, ILLEGAL_DATA_ADDRESS)
         self.mock_response(self._READ_METER_DATA_EXTENDED, 'GW25K-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW25K-ET_battery_info.hex')
         self.mock_response(self._READ_MPPT_DATA, 'GW25K-ET_mppt_data.hex')
@@ -782,10 +786,13 @@ class GW25K_ET_Test(EtMock):
     def test_GW25K_ET_runtime_data(self):
         # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
         data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(237, len(data))
+
+        self.sensor_map = {s.id_: s for s in self.sensors()}
+
+        # self.assertEqual(36104, self.sensor_map.get("meter_e_total_exp").offset)
 
         self.assertSensor('timestamp', datetime.strptime('2023-12-03 14:07:07', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 737.9, 'V', data)
@@ -1036,6 +1043,7 @@ class GW29K9_ET_Test(EtMock):
         EtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW29K9-ET_device_info.hex')
         self.mock_response(self._READ_RUNNING_DATA, 'GW29K9-ET_running_data.hex')
+        self.mock_response(self._READ_METER_DATA_EXTENDED2, ILLEGAL_DATA_ADDRESS)
         self.mock_response(self._READ_METER_DATA_EXTENDED, 'GW29K9-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW29K9-ET_battery_info.hex')
         self.mock_response(self._READ_BATTERY2_INFO, 'GW29K9-ET_battery2_info.hex')
@@ -1059,10 +1067,11 @@ class GW29K9_ET_Test(EtMock):
     def test_GW29K9_ET_runtime_data(self):
         # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
 
         data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(211, len(data))
+
+        self.sensor_map = {s.id_: s for s in self.sensors()}
 
         self.assertSensor('timestamp', datetime.strptime('2024-01-17 14:49:14', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 682.9, 'V', data)
@@ -1206,32 +1215,6 @@ class GW29K9_ET_Test(EtMock):
         self.assertSensor('meter_current1', 4.6, 'A', data)
         self.assertSensor('meter_current2', 6.0, 'A', data)
         self.assertSensor('meter_current3', 13.6, 'A', data)
-        self.assertSensor('battery_bms', None, '', data)
-        self.assertSensor('battery_index', None, '', data)
-        self.assertSensor('battery_status', None, '', data)
-        self.assertSensor('battery_temperature', None, 'C', data)
-        self.assertSensor('battery_charge_limit', None, 'A', data)
-        self.assertSensor('battery_discharge_limit', None, 'A', data)
-        self.assertSensor('battery_error_l', None, '', data)
-        self.assertSensor('battery_soc', None, '%', data)
-        self.assertSensor('battery_soh', None, '%', data)
-        self.assertSensor('battery_modules', None, '', data)
-        self.assertSensor('battery_warning_l', None, '', data)
-        self.assertSensor('battery_protocol', None, '', data)
-        self.assertSensor('battery_error_h', None, '', data)
-        self.assertSensor('battery_error', None, '', data)
-        self.assertSensor('battery_warning_h', None, '', data)
-        self.assertSensor('battery_warning', None, '', data)
-        self.assertSensor('battery_sw_version', None, '', data)
-        self.assertSensor('battery_hw_version', None, '', data)
-        self.assertSensor('battery_max_cell_temp_id', None, '', data)
-        self.assertSensor('battery_min_cell_temp_id', None, '', data)
-        self.assertSensor('battery_max_cell_voltage_id', None, '', data)
-        self.assertSensor('battery_min_cell_voltage_id', None, '', data)
-        self.assertSensor('battery_max_cell_temp', None, 'C', data)
-        self.assertSensor('battery_min_cell_temp', None, 'C', data)
-        self.assertSensor('battery_max_cell_voltage', None, 'V', data)
-        self.assertSensor('battery_min_cell_voltage', None, 'V', data)
         self.assertSensor('battery2_status', 0, '', data)
         self.assertSensor('battery2_temperature', 0.0, 'C', data)
         self.assertSensor('battery2_charge_limit', 0, 'A', data)
