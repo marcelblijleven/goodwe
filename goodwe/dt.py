@@ -69,7 +69,7 @@ class DT(Inverter):
                    lambda data: round(read_voltage(data, 30120) * read_current(data, 30123)),
                    "On-grid L3 Power", "W", Kind.AC),
         # 30127 reserved
-        PowerS("active_power", 30128, "Active Power", Kind.AC),
+        PowerS("total_inverter_power", 30128, "Total Power", Kind.AC),
         Integer("work_mode", 30129, "Work Mode code"),
         Enum2("work_mode_label", 30129, WORK_MODES, "Work Mode"),
         Long("error_codes", 30130, "Error Codes"),
@@ -78,7 +78,7 @@ class DT(Inverter):
         Reactive4("reactive_power", 30135, "Reactive Power", Kind.AC),
         # 30137 reserved
         # 30138 reserved
-        # 30139 reserved
+        Decimal("power_factor", 30139, 1000, "Power Factor", "", Kind.GRID),
         # 30140 reserved
         Temp("temperature", 30141, "Inverter Temperature", Kind.AC),
         # 30142 reserved
@@ -160,10 +160,13 @@ class DT(Inverter):
             self.model_name = response[22:32].decode("ascii").rstrip()
         except:
             print("No model name sent from the inverter.")
-        self.serial_number = self._decode(response[6:22])
-        self.dsp1_version = read_unsigned_int(response, 66)
-        self.dsp2_version = read_unsigned_int(response, 68)
-        self.arm_version = read_unsigned_int(response, 70)
+        # Modbus registers from 30001 - 30040
+        self.serial_number = self._decode(response[6:22])  # 30004 - 30012
+        self.dsp1_version = read_unsigned_int(response, 66)  # 30034
+        self.dsp2_version = read_unsigned_int(response, 68)  # 30035
+        self.arm_version = read_unsigned_int(response, 70)  # 30036
+        self.dsp_svn_version = read_unsigned_int(response, 72)  # 35037
+        self.arm_svn_version = read_unsigned_int(response, 74)  # 35038
         self.firmware = "{}.{}.{:02x}".format(self.dsp1_version, self.dsp2_version, self.arm_version)
 
         if is_single_phase(self):

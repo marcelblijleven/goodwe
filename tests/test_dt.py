@@ -52,7 +52,7 @@ class GW6000_DT_Test(DtMock):
     def test_GW6000_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(41, len(data))
+        self.assertEqual(42, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-31 12:03:02', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 320.8, 'V', data)
@@ -80,13 +80,14 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('pgrid1', 609, 'W', data)
         self.assertSensor('pgrid2', 597, 'W', data)
         self.assertSensor('pgrid3', 624, 'W', data)
-        self.assertSensor('active_power', 1835, 'W', data)
+        self.assertSensor('total_inverter_power', 1835, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor("apparent_power", -1, "VA", data),
         self.assertSensor("reactive_power", -1, "var", data),
+        self.assertSensor("power_factor", 0.0, "", data),
         self.assertSensor('temperature', 41.3, 'C', data)
         self.assertSensor('e_day', 6.0, 'kWh', data)
         self.assertSensor('e_total', 13350.2, 'kWh', data)
@@ -130,13 +131,15 @@ class GW8K_DT_Test(DtMock):
         self.assertEqual('00000DTS00000000', self.serial_number)
         self.assertEqual(1010, self.dsp1_version)
         self.assertEqual(1010, self.dsp2_version)
+        self.assertEqual(728, self.dsp_svn_version)
         self.assertEqual(8, self.arm_version)
+        self.assertEqual(49, self.arm_svn_version)
         self.assertEqual('1010.1010.08', self.firmware)
 
     def test_GW8K_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(41, len(data))
+        self.assertEqual(42, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-24 16:43:27', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 275.5, 'V', data)
@@ -161,13 +164,14 @@ class GW8K_DT_Test(DtMock):
         self.assertSensor('pgrid1', 237, 'W', data)
         self.assertSensor('pgrid2', 240, 'W', data)
         self.assertSensor('pgrid3', 235, 'W', data)
-        self.assertSensor('active_power', 643, 'W', data)
+        self.assertSensor('total_inverter_power', 643, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor("apparent_power", 0, "VA", data),
         self.assertSensor("reactive_power", 0, "var", data),
+        self.assertSensor("power_factor", 0.0, "", data),
         self.assertSensor('temperature', 45.3, 'C', data)
         self.assertSensor('e_day', None, 'kWh', data)
         self.assertSensor('e_total', None, 'kWh', data)
@@ -201,7 +205,7 @@ class GW5000D_NS_Test(DtMock):
     def test_GW5000D_NS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(31, len(data))
+        self.assertEqual(32, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-09-06 06:56:01', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 224.4, 'V', data)
@@ -216,13 +220,14 @@ class GW5000D_NS_Test(DtMock):
         self.assertSensor('igrid1', 0.0, 'A', data)
         self.assertSensor('fgrid1', 49.97, 'Hz', data)
         self.assertSensor('pgrid1', 0, 'W', data)
-        self.assertSensor('active_power', 0, 'W', data)
+        self.assertSensor('total_inverter_power', 0, 'W', data)
         self.assertSensor('work_mode', 0, '', data)
         self.assertSensor('work_mode_label', 'Wait Mode', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor("apparent_power", -1, "VA", data),
         self.assertSensor("reactive_power", -1, "var", data),
+        self.assertSensor("power_factor", -0.001, "", data),
         self.assertSensor('temperature', 1.4, 'C', data)
         self.assertSensor('e_day', 0, 'kWh', data)
         self.assertSensor('e_total', 881.7, 'kWh', data)
@@ -259,13 +264,15 @@ class GW5000_MS_Test(DtMock):
         self.assertEqual('00000MSU00000000', self.serial_number)
         self.assertEqual(12, self.dsp1_version)
         self.assertEqual(12, self.dsp2_version)
+        self.assertEqual(65535, self.dsp_svn_version)
         self.assertEqual(16, self.arm_version)
+        self.assertEqual(271, self.arm_svn_version)
         self.assertEqual('12.12.10', self.firmware)
 
     def test_GW5000_MS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(34, len(data))
+        self.assertEqual(35, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2021-10-15 09:03:12', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 319.6, 'V', data)
@@ -283,13 +290,14 @@ class GW5000_MS_Test(DtMock):
         self.assertSensor('igrid1', 0.9, 'A', data)
         self.assertSensor('fgrid1', 49.98, 'Hz', data)
         self.assertSensor('pgrid1', 216, 'W', data)
-        self.assertSensor('active_power', 295, 'W', data)
+        self.assertSensor('total_inverter_power', 295, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor("apparent_power", -1, "VA", data),
         self.assertSensor("reactive_power", -1, "var", data),
+        self.assertSensor("power_factor", -0.001, "", data),
         self.assertSensor('temperature', 10.7, 'C', data)
         self.assertSensor('e_day', 0.4, 'kWh', data)
         self.assertSensor('e_total', 6.8, 'kWh', data)
@@ -316,13 +324,15 @@ class GW10K_MS_30_Test(DtMock):
         self.assertEqual('5010KMSC000W0000', self.serial_number)
         self.assertEqual(0, self.dsp1_version)
         self.assertEqual(0, self.dsp2_version)
+        self.assertEqual(504, self.dsp_svn_version)
         self.assertEqual(2, self.arm_version)
+        self.assertEqual(13, self.arm_svn_version)
         self.assertEqual('0.0.02', self.firmware)
 
     def test_GW10K_MS_30_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(34, len(data))
+        self.assertEqual(35, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2024-01-09 22:08:20', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 0.0, 'V', data)
@@ -340,13 +350,14 @@ class GW10K_MS_30_Test(DtMock):
         self.assertSensor('igrid1', 0.0, 'A', data)
         self.assertSensor('fgrid1', 50.0, 'Hz', data)
         self.assertSensor('pgrid1', 0, 'W', data)
-        self.assertSensor('active_power', 0, 'W', data)
+        self.assertSensor('total_inverter_power', 0, 'W', data)
         self.assertSensor('work_mode', 0, '', data)
         self.assertSensor('work_mode_label', 'Wait Mode', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor("apparent_power", 0, "VA", data),
         self.assertSensor("reactive_power", 0, "var", data),
+        self.assertSensor("power_factor", 0.0, "", data),
         self.assertSensor('temperature', 24.3, 'C', data)
         self.assertSensor('e_day', 71.8, 'kWh', data)
         self.assertSensor('e_total', 3433.4, 'kWh', data)
@@ -369,7 +380,7 @@ class GW10K_MS_TCP_Test(DtMock):
     def test_GW10K_MS_TCP_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(41, len(data))
+        self.assertEqual(42, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2024-06-02 09:07:17', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 400.6, 'V', data)
@@ -394,13 +405,14 @@ class GW10K_MS_TCP_Test(DtMock):
         self.assertSensor('pgrid1', 5955, 'W', data)
         self.assertSensor('pgrid2', 0, 'W', data)
         self.assertSensor('pgrid3', 0, 'W', data)
-        self.assertSensor('active_power', 5914, 'W', data)
+        self.assertSensor('total_inverter_power', 5914, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor('apparent_power', 5957, 'VA', data)
         self.assertSensor('reactive_power', -6, 'var', data)
+        self.assertSensor("power_factor", 0.999, "", data),
         self.assertSensor('temperature', 36.0, 'C', data)
         self.assertSensor('e_day', 4.3, 'kWh', data)
         self.assertSensor('e_total', 998.2, 'kWh', data)
@@ -427,13 +439,15 @@ class GW20KAU_DT_Test(DtMock):
         self.assertEqual('0000KDTA00000000', self.serial_number)
         self.assertEqual(15, self.dsp1_version)
         self.assertEqual(15, self.dsp2_version)
+        self.assertEqual(1099, self.dsp_svn_version)
         self.assertEqual(16, self.arm_version)
+        self.assertEqual(187, self.arm_svn_version)
         self.assertEqual('15.15.10', self.firmware)
 
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(41, len(data))
+        self.assertEqual(42, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2022-10-21 19:23:42', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 390.5, 'V', data)
@@ -458,13 +472,14 @@ class GW20KAU_DT_Test(DtMock):
         self.assertSensor('pgrid1', 1628, 'W', data)
         self.assertSensor('pgrid2', 1655, 'W', data)
         self.assertSensor('pgrid3', 1621, 'W', data)
-        self.assertSensor('active_power', 4957, 'W', data)
+        self.assertSensor('total_inverter_power', 4957, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor("apparent_power", 0, "VA", data),
         self.assertSensor("reactive_power", 205, "var", data),
+        self.assertSensor("power_factor", 0.999, "", data),
         self.assertSensor('temperature', 36.4, 'C', data)
         self.assertSensor('e_day', 19.8, 'kWh', data)
         self.assertSensor('e_total', 4304.8, 'kWh', data)
@@ -491,13 +506,15 @@ class GW17K_DT_Test(DtMock):
         self.assertEqual('5017KDTT00BW0000', self.serial_number)
         self.assertEqual(12, self.dsp1_version)
         self.assertEqual(12, self.dsp2_version)
+        self.assertEqual(931, self.dsp_svn_version)
         self.assertEqual(13, self.arm_version)
+        self.assertEqual(130, self.arm_svn_version)
         self.assertEqual('12.12.0d', self.firmware)
 
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(41, len(data))
+        self.assertEqual(42, len(data))
 
         self.assertSensor('timestamp', datetime.strptime('2024-05-20 10:35:55', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 540.0, 'V', data)
@@ -522,13 +539,14 @@ class GW17K_DT_Test(DtMock):
         self.assertSensor('pgrid1', 4166, 'W', data)
         self.assertSensor('pgrid2', 4170, 'W', data)
         self.assertSensor('pgrid3', 4153, 'W', data)
-        self.assertSensor('active_power', 12470, 'W', data)
+        self.assertSensor('total_inverter_power', 12470, 'W', data)
         self.assertSensor('work_mode', 1, '', data)
         self.assertSensor('work_mode_label', 'Normal', '', data)
         self.assertSensor('error_codes', 0, '', data)
         self.assertSensor('warning_code', 0, '', data)
         self.assertSensor('apparent_power', 0, 'VA', data)
         self.assertSensor('reactive_power', 0, 'var', data)
+        self.assertSensor("power_factor", 0.0, "", data),
         self.assertSensor('temperature', 45.7, 'C', data)
         self.assertSensor('e_day', 29.3, 'kWh', data)
         self.assertSensor('e_total', 29984.4, 'kWh', data)
