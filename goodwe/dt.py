@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Tuple
 
-from .exceptions import InverterError, RequestRejectedException
+from .exceptions import InverterError, RequestFailedException, RequestRejectedException
 from .inverter import Inverter
 from .inverter import OperationMode
 from .inverter import SensorKind as Kind
@@ -113,6 +113,12 @@ class DT(Inverter):
         # 30172 reserved
     )
 
+    # Inverter's meter data
+    # Modbus registers from offset 0x75f4 (30196)
+    __all_sensors_meter: Tuple[Sensor, ...] = (
+        PowerS("active_power", 30196, "Active Power", Kind.GRID),
+    )
+
     # Modbus registers of inverter settings, offsets are modbus register addresses
     __all_settings: Tuple[Sensor, ...] = (
         Timestamp("time", 40313, "Inverter time"),
@@ -139,9 +145,12 @@ class DT(Inverter):
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         super().__init__(host, port, comm_addr if comm_addr else 0x7f, timeout, retries)
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x7531, 0x0028)
-        self._READ_DEVICE_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
+        self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
+        self._READ_METER_DATA: ProtocolCommand = self._read_command(0x75f4, 0x01)
         self._sensors = self.__all_sensors
+        self._sensors_meter = self.__all_sensors_meter
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
+        self._has_meter: bool = True
 
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
@@ -185,8 +194,17 @@ class DT(Inverter):
         pass
 
     async def read_runtime_data(self) -> Dict[str, Any]:
-        response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
+        response = await self._read_from_socket(self._READ_RUNNING_DATA)
         data = self._map_response(response, self._sensors)
+
+        if self._has_meter:
+            try:
+                response = await self._read_from_socket(self._READ_METER_DATA)
+                data.update(self._map_response(response, self._sensors_meter))
+            except (RequestRejectedException, RequestFailedException):
+                logger.info("Meter values not supported, disabling further attempts.")
+                self._has_meter = False
+
         return data
 
     async def read_setting(self, setting_id: str) -> Any:
@@ -266,7 +284,10 @@ class DT(Inverter):
         raise InverterError("Operation not supported, inverter has no batteries.")
 
     def sensors(self) -> Tuple[Sensor, ...]:
-        return self._sensors
+        result = self._sensors
+        if self._has_meter:
+            result = result + self._sensors_meter
+        return result
 
     def settings(self) -> Tuple[Sensor, ...]:
         return tuple(self._settings.values())

@@ -4,7 +4,8 @@ from datetime import datetime
 from unittest import TestCase
 
 from goodwe.dt import DT
-from goodwe.exceptions import RequestFailedException
+from goodwe.exceptions import RequestFailedException, RequestRejectedException
+from goodwe.modbus import ILLEGAL_DATA_ADDRESS
 from goodwe.protocol import ProtocolCommand, ProtocolResponse
 
 
@@ -13,7 +14,7 @@ class DtMock(TestCase, DT):
     def __init__(self, methodName='runTest', port=8899):
         TestCase.__init__(self, methodName)
         DT.__init__(self, "localhost", port)
-        self.sensor_map = {s.id_: s.unit for s in self.sensors()}
+        self.sensor_map = {s.id_: s for s in self.sensors()}
         self._mock_responses = {}
 
     def mock_response(self, command: ProtocolCommand, filename: str):
@@ -24,6 +25,10 @@ class DtMock(TestCase, DT):
         root_dir = os.path.dirname(os.path.abspath(__file__))
         filename = self._mock_responses.get(command)
         if filename is not None:
+            if ILLEGAL_DATA_ADDRESS == filename:
+                raise RequestRejectedException(ILLEGAL_DATA_ADDRESS)
+            if 'NO RESPONSE' == filename:
+                raise RequestFailedException()
             with open(root_dir + '/sample/dt/' + filename, 'r') as f:
                 response = bytes.fromhex(f.read())
                 if not command.validator(response):
@@ -33,10 +38,11 @@ class DtMock(TestCase, DT):
             self.request = command.request
             return ProtocolResponse(bytes.fromhex("aa557f00010203040506070809"), command)
 
-    def assertSensor(self, sensor, expected_value, expected_unit, data):
-        self.assertEqual(expected_value, data.get(sensor))
-        self.assertEqual(expected_unit, self.sensor_map.get(sensor))
-        self.sensor_map.pop(sensor)
+    def assertSensor(self, sensor_name, expected_value, expected_unit, data):
+        self.assertEqual(expected_value, data.get(sensor_name))
+        sensor = self.sensor_map.get(sensor_name);
+        self.assertEqual(expected_unit, sensor.unit)
+        self.sensor_map.pop(sensor_name)
 
     @classmethod
     def setUpClass(cls):
@@ -47,12 +53,15 @@ class GW6000_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW6000-DT_running_data.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW6000-DT_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW6000_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
         self.assertEqual(42, len(data))
+
+        self.sensor_map = {s.id_: s for s in self.sensors()}
 
         self.assertSensor('timestamp', datetime.strptime('2021-08-31 12:03:02', '%Y-%m-%d %H:%M:%S'), '', data)
         self.assertSensor('vpv1', 320.8, 'V', data)
@@ -61,9 +70,6 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor('vpv2', 324.1, 'V', data)
         self.assertSensor('ipv2', 3.2, 'A', data)
         self.assertSensor('ppv2', 1037, 'W', data)
-        self.assertSensor('vpv3', None, 'V', data)
-        self.assertSensor('ipv3', None, 'A', data)
-        self.assertSensor('ppv3', None, 'W', data)
         self.assertSensor('ppv', 2031, 'W', data)
         self.assertSensor('vline1', 0, 'V', data)
         self.assertSensor('vline2', 0, 'V', data)
@@ -122,8 +128,9 @@ class GW8K_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW8K-DT_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW8K-DT_device_info.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW8K-DT_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW8K_DT_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -199,8 +206,9 @@ class GW5000D_NS_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5000D-NS_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'Mock_device_info.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW5000D-NS_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW5000D_NS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -255,8 +263,9 @@ class GW5000_MS_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW5000-MS_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW5000-MS_device_info.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW5000-MS_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW6000_MS_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -316,7 +325,8 @@ class GW10K_MS_30_Test(DtMock):
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW10K-MS-30_device_info.hex')
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW10K-MS-30_running_data.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW10K-MS-30_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW10K_MS_30_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -375,7 +385,8 @@ class GW10K_MS_TCP_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName, 502)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW10K-MS-30_tcp_running_data.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW10K-MS-30_tcp_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW10K_MS_TCP_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -430,8 +441,9 @@ class GW20KAU_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW20KAU-DT_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW20KAU-DT_device_info.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW20KAU-DT_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW20KAU_DT_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -497,8 +509,9 @@ class GW17K_DT_Test(DtMock):
 
     def __init__(self, methodName='runTest'):
         DtMock.__init__(self, methodName)
-        self.mock_response(self._READ_DEVICE_RUNNING_DATA, 'GW17K-DT_running_data.hex')
         self.mock_response(self._READ_DEVICE_VERSION_INFO, 'GW17K-DT_device_info.hex')
+        self.mock_response(self._READ_RUNNING_DATA, 'GW17K-DT_running_data.hex')
+        self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
 
     def test_GW20KAU_DT_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
