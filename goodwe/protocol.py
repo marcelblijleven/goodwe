@@ -37,7 +37,7 @@ class InverterProtocol:
         self._timer: asyncio.TimerHandle | None = None
         self.timeout: int = timeout
         self.retries: int = retries
-        self.keep_alive: bool = True
+        self.keep_alive: bool = False
         self.protocol: asyncio.Protocol | None = None
         self.response_future: Future | None = None
         self.command: ProtocolCommand | None = None
@@ -61,6 +61,24 @@ class InverterProtocol:
             self._running_loop = asyncio.get_event_loop()
             self._close_transport()
             return self._lock
+
+    def _max_retries_reached(self) -> Future:
+        logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
+        self._close_transport()
+        self.response_future = asyncio.get_running_loop().create_future()
+        self.response_future.set_exception(MaxRetriesException)
+        return self.response_future
+
+    def _close_transport(self) -> None:
+        if self._transport:
+            try:
+                self._transport.close()
+            except RuntimeError:
+                logger.debug("Failed to close transport.")
+            self._transport = None
+        # Cancel Future on connection lost
+        if self.response_future and not self.response_future.done():
+            self.response_future.cancel()
 
     async def close(self) -> None:
         """Close the underlying transport/connection."""
@@ -133,15 +151,16 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
                 self._partial_missing = 0
             if self.command.validator(data):
                 logger.debug("Received: %s", data.hex())
+                self._retry = 0
                 self.response_future.set_result(data)
             else:
                 logger.debug("Received invalid response: %s", data.hex())
-                asyncio.get_running_loop().call_soon(self._retry_mechanism)
+                asyncio.get_running_loop().call_soon(self._timeout_mechanism)
         except PartialResponseException as ex:
             logger.debug("Received response fragment (%d of %d): %s", ex.length, ex.expected, data.hex())
             self._partial_data = data
             self._partial_missing = ex.expected - ex.length
-            self._timer = asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
+            self._timer = asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
         except asyncio.InvalidStateError:
             logger.debug("Response already handled: %s", data.hex())
         except RequestRejectedException as ex:
@@ -158,13 +177,28 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
-        async with self._ensure_lock():
+        await self._ensure_lock().acquire()
+        try:
             await self._connect()
             response_future = asyncio.get_running_loop().create_future()
-            self._retry = 0
             self._send_request(command, response_future)
             await response_future
             return response_future
+        except asyncio.CancelledError:
+            if self._retry < self.retries:
+                self._retry += 1
+                if self._lock and self._lock.locked():
+                    self._lock.release()
+                if not self.keep_alive:
+                    self._close_transport()
+                return await self.send_request(command)
+            else:
+                return self._max_retries_reached()
+        finally:
+            if self._lock and self._lock.locked():
+                self._lock.release()
+            if not self.keep_alive:
+                self._close_transport()
 
     def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
         """Send message via transport"""
@@ -178,32 +212,19 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
         else:
             logger.debug("Sending: %s", self.command)
         self._transport.sendto(payload)
-        self._timer = asyncio.get_running_loop().call_later(self.timeout, self._retry_mechanism)
+        self._timer = asyncio.get_running_loop().call_later(self.timeout, self._timeout_mechanism)
 
-    def _retry_mechanism(self) -> None:
-        """Retry mechanism to prevent hanging transport"""
-        if self.response_future.done():
+    def _timeout_mechanism(self) -> None:
+        """Timeout mechanism to prevent hanging transport"""
+        if self.response_future and self.response_future.done():
             logger.debug("Response already received.")
-        elif self._retry < self.retries:
+            self._retry = 0
+        else:
             if self._timer:
                 logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
-            self._retry += 1
-            self._send_request(self.command, self.response_future)
-        else:
-            logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
-            self.response_future.set_exception(MaxRetriesException)
-            self._close_transport()
-
-    def _close_transport(self) -> None:
-        if self._transport:
-            try:
-                self._transport.close()
-            except RuntimeError:
-                logger.debug("Failed to close transport.")
-            self._transport = None
-        # Cancel Future on connection close
-        if self.response_future and not self.response_future.done():
-            self.response_future.cancel()
+                self._timer = None
+            if self.response_future and not self.response_future.done():
+                self.response_future.cancel()
 
     async def close(self):
         self._close_transport()
@@ -357,24 +378,6 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 logger.debug("Failed to receive response to %s in time (%ds).", self.command, self.timeout)
                 self._timer = None
             self._close_transport()
-
-    def _max_retries_reached(self) -> Future:
-        logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
-        self._close_transport()
-        self.response_future = asyncio.get_running_loop().create_future()
-        self.response_future.set_exception(MaxRetriesException)
-        return self.response_future
-
-    def _close_transport(self) -> None:
-        if self._transport:
-            try:
-                self._transport.close()
-            except RuntimeError:
-                logger.debug("Failed to close transport.")
-            self._transport = None
-        # Cancel Future on connection lost
-        if self.response_future and not self.response_future.done():
-            self.response_future.cancel()
 
     async def close(self):
         await self._ensure_lock().acquire()

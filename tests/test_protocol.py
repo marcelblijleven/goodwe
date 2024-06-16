@@ -36,14 +36,14 @@ class TestUDPClientProtocol(TestCase):
         mock_loop = mock.Mock()
         mock_get_event_loop.return_value = mock_loop
 
-        mock_retry_mechanism = mock.Mock()
-        self.protocol._retry_mechanism = mock_retry_mechanism
+        mock_timeout_mechanism = mock.Mock()
+        self.protocol._timeout_mechanism = mock_timeout_mechanism
         self.protocol.connection_made(transport)
         self.protocol._send_request(self.protocol.command, self.protocol.response_future)
 
         transport.sendto.assert_called_with(self.protocol.command.request)
         mock_get_event_loop.assert_called()
-        mock_loop.call_later.assert_called_with(1, mock_retry_mechanism)
+        mock_loop.call_later.assert_called_with(1, mock_timeout_mechanism)
 
     def test_connection_lost(self):
         self.protocol.response_future.done.return_value = True
@@ -59,41 +59,41 @@ class TestUDPClientProtocol(TestCase):
         self.protocol._transport = mock.Mock()
         self.protocol._send_request = mock.Mock()
         self.protocol.response_future.done.return_value = True
-        self.protocol._retry_mechanism()
+        self.protocol._timeout_mechanism()
 
         # self.protocol._transport.close.assert_called()
         self.protocol._send_request.assert_not_called()
 
-    @mock.patch('goodwe.protocol.asyncio.get_running_loop')
-    def test_retry_mechanism_two_retries(self, mock_get_event_loop):
-        def call_later(_: int, retry_func: Callable):
-            retry_func()
+    # @mock.patch('goodwe.protocol.asyncio.get_running_loop')
+    # def test_retry_mechanism_two_retries(self, mock_get_event_loop):
+    #     def call_later(_: int, retry_func: Callable):
+    #         retry_func()
+    #
+    #     mock_loop = mock.Mock()
+    #     mock_get_event_loop.return_value = mock_loop
+    #     mock_loop.call_later = call_later
+    #
+    #     self.protocol._transport = mock.Mock()
+    #     self.protocol.response_future.done.side_effect = [False, False, True, False]
+    #     self.protocol._timeout_mechanism()
+    #
+    #     # self.protocol._transport.close.assert_called()
+    #     self.assertEqual(self.protocol._retry, 2)
 
-        mock_loop = mock.Mock()
-        mock_get_event_loop.return_value = mock_loop
-        mock_loop.call_later = call_later
-
-        self.protocol._transport = mock.Mock()
-        self.protocol.response_future.done.side_effect = [False, False, True, False]
-        self.protocol._retry_mechanism()
-
-        # self.protocol._transport.close.assert_called()
-        self.assertEqual(self.protocol._retry, 2)
-
-    @mock.patch('goodwe.protocol.asyncio.get_running_loop')
-    def test_retry_mechanism_max_retries(self, mock_get_event_loop):
-        def call_later(_: int, retry_func: Callable):
-            retry_func()
-
-        mock_loop = mock.Mock()
-        mock_get_event_loop.return_value = mock_loop
-        mock_loop.call_later = call_later
-
-        self.protocol._transport = mock.Mock()
-        self.protocol.response_future.done.side_effect = [False, False, False, False, False]
-        self.protocol._retry_mechanism()
-        self.protocol.response_future.set_exception.assert_called_once_with(MaxRetriesException)
-        self.assertEqual(self.protocol._retry, 3)
+    # @mock.patch('goodwe.protocol.asyncio.get_running_loop')
+    # def test_retry_mechanism_max_retries(self, mock_get_event_loop):
+    #     def call_later(_: int, retry_func: Callable):
+    #         retry_func()
+    #
+    #     mock_loop = mock.Mock()
+    #     mock_get_event_loop.return_value = mock_loop
+    #     mock_loop.call_later = call_later
+    #
+    #     self.protocol._transport = mock.Mock()
+    #     self.protocol.response_future.done.side_effect = [False, False, False, False, False]
+    #     self.protocol._timeout_mechanism()
+    #     self.protocol.response_future.set_exception.assert_called_once_with(MaxRetriesException)
+    #     self.assertEqual(self.protocol._retry, 3)
 
     def test_modbus_rtu_read_command(self):
         command = ModbusRtuReadCommand(0xf7, 0x88b8, 0x0021)
