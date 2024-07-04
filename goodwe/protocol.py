@@ -6,7 +6,7 @@ import logging
 import platform
 import socket
 from asyncio.futures import Future
-from typing import Tuple, Optional, Callable
+from typing import Optional, Callable
 
 from .exceptions import MaxRetriesException, PartialResponseException, RequestFailedException, RequestRejectedException
 from .modbus import create_modbus_rtu_request, create_modbus_rtu_multi_request, create_modbus_tcp_request, \
@@ -138,7 +138,7 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
             logger.debug("Socket closed.")
         self._close_transport()
 
-    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
+    def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         """On datagram received"""
         if self._timer:
             self._timer.cancel()

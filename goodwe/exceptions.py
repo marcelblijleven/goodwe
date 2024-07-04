@@ -35,11 +35,11 @@ class PartialResponseException(InverterError):
 
     Attributes:
         length -- received data length
-        expected -- expected data lenght
+        expected -- expected data length
     """
 
-    def __init__(self, lenght: int, expected: int):
-        self.length: int = lenght
+    def __init__(self, length: int, expected: int):
+        self.length: int = length
         self.expected: int = expected
 
 

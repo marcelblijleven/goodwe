@@ -40,7 +40,7 @@ class DtMock(TestCase, DT):
 
     def assertSensor(self, sensor_name, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor_name))
-        sensor = self.sensor_map.get(sensor_name);
+        sensor = self.sensor_map.get(sensor_name)
         self.assertEqual(expected_unit, sensor.unit)
         self.sensor_map.pop(sensor_name)
 

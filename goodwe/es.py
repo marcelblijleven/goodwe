@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple
 
+from .const import *
 from .exceptions import InverterError
-from .inverter import Inverter
-from .inverter import OperationMode
-from .inverter import SensorKind as Kind
+from .inverter import Inverter, OperationMode, SensorKind as Kind
 from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand
 from .sensor import *
 
@@ -20,7 +18,7 @@ class ES(Inverter):
     _READ_DEVICE_RUNNING_DATA: ProtocolCommand = Aa55ProtocolCommand("010600", "0186")
     _READ_DEVICE_SETTINGS_DATA: ProtocolCommand = Aa55ProtocolCommand("010900", "0189")
 
-    __sensors: Tuple[Sensor, ...] = (
+    __sensors: tuple[Sensor, ...] = (
         Voltage("vpv1", 0, "PV1 Voltage", Kind.PV),  # modbus 0x500
         Current("ipv1", 2, "PV1 Current", Kind.PV),
         Calculated("ppv1",
@@ -124,7 +122,7 @@ class ES(Inverter):
                    "House Consumption", "W", Kind.AC),
     )
 
-    __all_settings: Tuple[Sensor, ...] = (
+    __all_settings: tuple[Sensor, ...] = (
         Integer("backup_supply", 12, "Backup Supply"),
         Integer("off-grid_charge", 14, "Off-grid Charge"),
         Integer("shadow_scan", 16, "Shadow Scan", "", Kind.PV),
@@ -156,7 +154,7 @@ class ES(Inverter):
     )
 
     # Settings added in ARM firmware 14
-    __settings_arm_fw_14: Tuple[Sensor, ...] = (
+    __settings_arm_fw_14: tuple[Sensor, ...] = (
         EcoModeV2("eco_mode_1", 47547, "Eco Mode Group 1"),
         ByteH("eco_mode_1_switch", 47549, "Eco Mode Group 1 Switch"),
         EcoModeV2("eco_mode_2", 47553, "Eco Mode Group 2"),
@@ -202,7 +200,7 @@ class ES(Inverter):
         if self._supports_eco_mode_v2():
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
 
-    async def read_runtime_data(self) -> Dict[str, Any]:
+    async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
         data = self._map_response(response, self.__sensors)
         return data
@@ -271,7 +269,7 @@ class ES(Inverter):
             else:
                 await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
 
-    async def read_settings_data(self) -> Dict[str, Any]:
+    async def read_settings_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
         data = self._map_response(response, self.settings())
         return data
@@ -285,7 +283,7 @@ class ES(Inverter):
                 Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
             )
 
-    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
         result = [e for e in OperationMode]
         result.remove(OperationMode.PEAK_SHAVING)
         result.remove(OperationMode.SELF_USE)
@@ -349,10 +347,10 @@ class ES(Inverter):
     async def _reset_inverter(self) -> None:
         await self._read_from_socket(Aa55ProtocolCommand("031d00", "039d"))
 
-    def sensors(self) -> Tuple[Sensor, ...]:
+    def sensors(self) -> tuple[Sensor, ...]:
         return self.__sensors
 
-    def settings(self) -> Tuple[Sensor, ...]:
+    def settings(self) -> tuple[Sensor, ...]:
         return tuple(self._settings.values())
 
     async def _set_general_mode(self) -> None:

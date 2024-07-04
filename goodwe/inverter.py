@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Callable, Dict, Tuple, Optional
+from typing import Any, Callable, Optional
 
 from .exceptions import MaxRetriesException, RequestFailedException
 from .protocol import InverterProtocol, ProtocolCommand, ProtocolResponse, TcpInverterProtocol, UdpInverterProtocol
@@ -142,7 +142,7 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def read_runtime_data(self) -> Dict[str, Any]:
+    async def read_runtime_data(self) -> dict[str, Any]:
         """
         Request the runtime data from the inverter.
         Answer dictionary of individual sensors and their values.
@@ -171,7 +171,7 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def read_settings_data(self) -> Dict[str, Any]:
+    async def read_settings_data(self) -> dict[str, Any]:
         """
         Request the settings data from the inverter.
         Answer dictionary of individual settings and their values.
@@ -207,7 +207,7 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
         """
         Answer list of supported inverter operation modes
         """
@@ -257,14 +257,14 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def sensors(self) -> Tuple[Sensor, ...]:
+    def sensors(self) -> tuple[Sensor, ...]:
         """
         Return tuple of sensor definitions
         """
         raise NotImplementedError()
 
     @abstractmethod
-    def settings(self) -> Tuple[Sensor, ...]:
+    def settings(self) -> tuple[Sensor, ...]:
         """
         Return tuple of settings definitions
         """
@@ -278,7 +278,7 @@ class Inverter(ABC):
             return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
 
     @staticmethod
-    def _map_response(response: ProtocolResponse, sensors: Tuple[Sensor, ...]) -> Dict[str, Any]:
+    def _map_response(response: ProtocolResponse, sensors: tuple[Sensor, ...]) -> dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
         result = {}
         for sensor in sensors:

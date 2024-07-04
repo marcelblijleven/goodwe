@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple
 
+from .const import *
 from .exceptions import InverterError, RequestFailedException, RequestRejectedException
-from .inverter import Inverter
-from .inverter import OperationMode
-from .inverter import SensorKind as Kind
+from .inverter import Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
 from .model import is_3_mppt, is_single_phase
 from .protocol import ProtocolCommand
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 class DT(Inverter):
     """Class representing inverter of DT/MS/D-NS/XS or GE's GEP(PSB/PSC) families"""
 
-    __all_sensors: Tuple[Sensor, ...] = (
+    __all_sensors: tuple[Sensor, ...] = (
         Timestamp("timestamp", 30100, "Timestamp"),
         Voltage("vpv1", 30103, "PV1 Voltage", Kind.PV),
         Current("ipv1", 30104, "PV1 Current", Kind.PV),
@@ -37,9 +35,9 @@ class DT(Inverter):
                    "PV3 Power", "W", Kind.PV),
         # ppv1 + ppv2 + ppv3
         Calculated("ppv",
-                   lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104))) + (round(
-                       read_voltage(data, 30105) * read_current(data, 30106))) + (round(
-                       read_voltage(data, 30107) * read_current(data, 30108))),
+                   lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104))) + (
+                       round(read_voltage(data, 30105) * read_current(data, 30106))) + (
+                                    round(read_voltage(data, 30107) * read_current(data, 30108))),
                    "PV Power", "W", Kind.PV),
         # Voltage("vpv4", 14, "PV4 Voltage", Kind.PV),
         # Current("ipv4", 16, "PV4 Current", Kind.PV),
@@ -115,12 +113,12 @@ class DT(Inverter):
 
     # Inverter's meter data
     # Modbus registers from offset 0x75f4 (30196)
-    __all_sensors_meter: Tuple[Sensor, ...] = (
+    __all_sensors_meter: tuple[Sensor, ...] = (
         PowerS("active_power", 30196, "Active Power", Kind.GRID),
     )
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
-    __all_settings: Tuple[Sensor, ...] = (
+    __all_settings: tuple[Sensor, ...] = (
         Timestamp("time", 40313, "Inverter time"),
 
         Integer("shadow_scan", 40326, "Shadow Scan", "", Kind.PV),
@@ -133,12 +131,12 @@ class DT(Inverter):
     )
 
     # Settings for single phase inverters
-    __settings_single_phase: Tuple[Sensor, ...] = (
+    __settings_single_phase: tuple[Sensor, ...] = (
         Long("grid_export_limit", 40328, "Grid Export Limit", "W", Kind.GRID),
     )
 
     # Settings for three phase inverters
-    __settings_three_phase: Tuple[Sensor, ...] = (
+    __settings_three_phase: tuple[Sensor, ...] = (
         Integer("grid_export_limit", 40336, "Grid Export Limit", "%", Kind.GRID),
     )
 
@@ -193,7 +191,7 @@ class DT(Inverter):
             self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
         pass
 
-    async def read_runtime_data(self) -> Dict[str, Any]:
+    async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
         data = self._map_response(response, self._sensors)
 
@@ -253,7 +251,7 @@ class DT(Inverter):
         else:
             await self._read_from_socket(self._write_multi_command(setting.offset, raw_value))
 
-    async def read_settings_data(self) -> Dict[str, Any]:
+    async def read_settings_data(self) -> dict[str, Any]:
         data = {}
         for setting in self.settings():
             value = await self.read_setting(setting.id_)
@@ -267,7 +265,7 @@ class DT(Inverter):
         if export_limit >= 0:
             return await self.write_setting('grid_export_limit', export_limit)
 
-    async def get_operation_modes(self, include_emulated: bool) -> Tuple[OperationMode, ...]:
+    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
         return ()
 
     async def get_operation_mode(self) -> OperationMode:
@@ -283,11 +281,11 @@ class DT(Inverter):
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         raise InverterError("Operation not supported, inverter has no batteries.")
 
-    def sensors(self) -> Tuple[Sensor, ...]:
+    def sensors(self) -> tuple[Sensor, ...]:
         result = self._sensors
         if self._has_meter:
             result = result + self._sensors_meter
         return result
 
-    def settings(self) -> Tuple[Sensor, ...]:
+    def settings(self) -> tuple[Sensor, ...]:
         return tuple(self._settings.values())

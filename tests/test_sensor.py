@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from goodwe.const import *
 from goodwe.sensor import *
 
 

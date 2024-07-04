@@ -6,7 +6,6 @@ from enum import IntEnum
 from struct import unpack
 from typing import Any, Callable, Optional
 
-from .const import *
 from .inverter import Sensor, SensorKind
 from .protocol import ProtocolResponse
 
@@ -405,9 +404,9 @@ class Timestamp(Sensor):
 class Enum(Sensor):
     """Sensor representing label from enumeration encoded in 1 bytes"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+    def __init__(self, id_: str, offset: int, labels: dict[int, str], name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 1, "", kind)
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
 
     def read_value(self, data: ProtocolResponse):
         return self._labels.get(read_byte(data))
@@ -416,9 +415,9 @@ class Enum(Sensor):
 class EnumH(Sensor):
     """Sensor representing label from enumeration encoded in 1 (high 8 bits of 16bit register)"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+    def __init__(self, id_: str, offset: int, labels: dict[int, str], name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 1, "", kind)
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
 
     def read_value(self, data: ProtocolResponse):
         return self._labels.get(read_byte(data))
@@ -427,9 +426,9 @@ class EnumH(Sensor):
 class EnumL(Sensor):
     """Sensor representing label from enumeration encoded in 1 byte (low 8 bits of 16bit register)"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+    def __init__(self, id_: str, offset: int, labels: dict[int, str], name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 1, "", kind)
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
 
     def read_value(self, data: ProtocolResponse):
         read_byte(data)
@@ -439,9 +438,9 @@ class EnumL(Sensor):
 class Enum2(Sensor):
     """Sensor representing label from enumeration encoded in 2 bytes"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+    def __init__(self, id_: str, offset: int, labels: dict[int, str], name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 2, "", kind)
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
 
     def read_value(self, data: ProtocolResponse):
         return self._labels.get(read_bytes2(data, None, 0))
@@ -450,9 +449,9 @@ class Enum2(Sensor):
 class EnumBitmap4(Sensor):
     """Sensor representing label from bitmap encoded in 4 bytes"""
 
-    def __init__(self, id_: str, offset: int, labels: Dict, name: str, kind: Optional[SensorKind] = None):
+    def __init__(self, id_: str, offset: int, labels: dict[int, str], name: str, kind: Optional[SensorKind] = None):
         super().__init__(id_, offset, name, 4, "", kind)
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
 
     def read_value(self, data: ProtocolResponse) -> Any:
         raise NotImplementedError()
@@ -465,10 +464,10 @@ class EnumBitmap4(Sensor):
 class EnumBitmap22(Sensor):
     """Sensor representing label from bitmap encoded in 2+2 bytes"""
 
-    def __init__(self, id_: str, offsetH: int, offsetL: int, labels: Dict, name: str,
+    def __init__(self, id_: str, offsetH: int, offsetL: int, labels: dict[int, str], name: str,
                  kind: Optional[SensorKind] = None):
         super().__init__(id_, offsetH, name, 2, "", kind)
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
         self._offsetL: int = offsetL
 
     def read_value(self, data: ProtocolResponse) -> Any:
@@ -482,11 +481,11 @@ class EnumBitmap22(Sensor):
 class EnumCalculated(Sensor):
     """Sensor representing label from enumeration of calculated value"""
 
-    def __init__(self, id_: str, getter: Callable[[ProtocolResponse], Any], labels: Dict, name: str,
+    def __init__(self, id_: str, getter: Callable[[ProtocolResponse], Any], labels: dict[int, str], name: str,
                  kind: Optional[SensorKind] = None):
         super().__init__(id_, 0, name, 0, "", kind)
         self._getter: Callable[[ProtocolResponse], Any] = getter
-        self._labels: Dict = labels
+        self._labels: dict[int, str] = labels
 
     def read_value(self, data: ProtocolResponse) -> Any:
         raise NotImplementedError()
@@ -500,23 +499,23 @@ class EcoMode(ABC):
 
     @abstractmethod
     def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
-        """Answer bytes representing all the time enabled charging eco mode group"""
+        """Answer bytes representing all the time enabled charging eco-mode group"""
 
     @abstractmethod
     def encode_discharge(self, eco_mode_power: int) -> bytes:
-        """Answer bytes representing all the time enabled discharging eco mode group"""
+        """Answer bytes representing all the time enabled discharging eco-mode group"""
 
     @abstractmethod
     def encode_off(self) -> bytes:
-        """Answer bytes representing empty and disabled eco mode group"""
+        """Answer bytes representing empty and disabled eco-mode group"""
 
     @abstractmethod
     def is_eco_charge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        """Answer if it represents the emulated 24/7 full-time discharge mode"""
 
     @abstractmethod
     def is_eco_discharge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        """Answer if it represents the emulated 24/7 full-time discharge mode"""
 
     @abstractmethod
     def get_schedule_type(self) -> ScheduleType:
@@ -586,19 +585,19 @@ class EcoModeV1(Sensor, EcoMode):
         raise ValueError
 
     def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
-        """Answer bytes representing all the time enabled charging eco mode group"""
+        """Answer bytes representing all the time enabled charging eco-mode group"""
         return bytes.fromhex("0000173b{:04x}ff7f".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1)))
 
     def encode_discharge(self, eco_mode_power: int) -> bytes:
-        """Answer bytes representing all the time enabled discharging eco mode group"""
+        """Answer bytes representing all the time enabled discharging eco-mode group"""
         return bytes.fromhex("0000173b{:04x}ff7f".format(abs(eco_mode_power)))
 
     def encode_off(self) -> bytes:
-        """Answer bytes representing empty and disabled eco mode group"""
+        """Answer bytes representing empty and disabled eco-mode group"""
         return bytes.fromhex("3000300000640000")
 
     def is_eco_charge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        """Answer if it represents the emulated 24/7 full-time discharge mode"""
         return self.start_h == 0 \
             and self.start_m == 0 \
             and self.end_h == 23 \
@@ -608,7 +607,7 @@ class EcoModeV1(Sensor, EcoMode):
             and self.power < 0
 
     def is_eco_discharge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        """Answer if it represents the emulated 24/7 full-time discharge mode"""
         return self.start_h == 0 \
             and self.start_m == 0 \
             and self.end_h == 23 \
@@ -707,7 +706,7 @@ class Schedule(Sensor, EcoMode):
         raise ValueError
 
     def encode_charge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
-        """Answer bytes representing all the time enabled charging eco mode group"""
+        """Answer bytes representing all the time enabled charging eco-mode group"""
         return bytes.fromhex(
             "0000173b{:02x}7f{:04x}{:04x}{:04x}".format(
                 255 - self.schedule_type,
@@ -716,7 +715,7 @@ class Schedule(Sensor, EcoMode):
                 0 if self.schedule_type != ScheduleType.ECO_MODE_745 else 0x0fff))
 
     def encode_discharge(self, eco_mode_power: int) -> bytes:
-        """Answer bytes representing all the time enabled discharging eco mode group"""
+        """Answer bytes representing all the time enabled discharging eco-mode group"""
         return bytes.fromhex("0000173b{:02x}7f{:04x}0064{:04x}".format(
             255 - self.schedule_type,
             abs(self.schedule_type.encode_power(eco_mode_power)),
@@ -729,7 +728,7 @@ class Schedule(Sensor, EcoMode):
             self.schedule_type.encode_power(100)))
 
     def is_eco_charge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        """Answer if it represents the emulated 24/7 full-time discharge mode"""
         return self.start_h == 0 \
             and self.start_m == 0 \
             and self.end_h == 23 \
@@ -740,7 +739,7 @@ class Schedule(Sensor, EcoMode):
             and (self.month_bits == 0 or self.month_bits == 0x0fff)
 
     def is_eco_discharge_mode(self) -> bool:
-        """Answer if it represents the emulated 24/7 fulltime discharge mode"""
+        """Answer if it represents the emulated 24/7 full-time discharge mode"""
         return self.start_h == 0 \
             and self.start_m == 0 \
             and self.end_h == 23 \
@@ -981,7 +980,7 @@ def read_unsigned_int(data: bytes, offset: int) -> int:
     return int.from_bytes(data[offset:offset + 2], byteorder="big", signed=False)
 
 
-def decode_bitmap(value: int, bitmap: Dict[int, str]) -> str:
+def decode_bitmap(value: int, bitmap: dict[int, str]) -> str:
     bits = value
     result = []
     for i in range(32):

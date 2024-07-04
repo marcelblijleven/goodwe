@@ -1,9 +1,7 @@
-from typing import Dict
-
 GOODWE_TCP_PORT = 502
 GOODWE_UDP_PORT = 8899
 
-BATTERY_MODES: Dict[int, str] = {
+BATTERY_MODES: dict[int, str] = {
     0: "No battery",
     1: "Standby",
     2: "Discharge",
@@ -12,7 +10,7 @@ BATTERY_MODES: Dict[int, str] = {
     5: "To be discharged",
 }
 
-ENERGY_MODES: Dict[int, str] = {
+ENERGY_MODES: dict[int, str] = {
     0: "Check Mode",
     1: "Wait Mode",
     2: "Normal (On-Grid)",
@@ -24,37 +22,37 @@ ENERGY_MODES: Dict[int, str] = {
     128: "Battery Discharging",
 }
 
-GRID_MODES: Dict[int, str] = {
+GRID_MODES: dict[int, str] = {
     0: "Not connected to grid",
     1: "Connected to grid",
     2: "Fault",
 }
 
-GRID_IN_OUT_MODES: Dict[int, str] = {
+GRID_IN_OUT_MODES: dict[int, str] = {
     0: "Idle",
     1: "Exporting",
     2: "Importing",
 }
 
-LOAD_MODES: Dict[int, str] = {
+LOAD_MODES: dict[int, str] = {
     0: "Inverter and the load is disconnected",
     1: "The inverter is connected to a load",
 }
 
-PV_MODES: Dict[int, str] = {
+PV_MODES: dict[int, str] = {
     0: "PV panels not connected",
     1: "PV panels connected, no power",
     2: "PV panels connected, producing power",
 }
 
-WORK_MODES: Dict[int, str] = {
+WORK_MODES: dict[int, str] = {
     0: "Wait Mode",
     1: "Normal",
     2: "Error",
     4: "Check Mode",
 }
 
-WORK_MODES_ET: Dict[int, str] = {
+WORK_MODES_ET: dict[int, str] = {
     0: "Wait Mode",
     1: "Normal (On-Grid)",
     2: "Normal (Off-Grid)",
@@ -63,14 +61,14 @@ WORK_MODES_ET: Dict[int, str] = {
     5: "Check Mode",
 }
 
-WORK_MODES_ES: Dict[int, str] = {
+WORK_MODES_ES: dict[int, str] = {
     0: "Inverter Off - Standby",
     1: "Inverter On",
     2: "Inverter Abnormal, stopping power",
     3: "Inverter Severly Abnormal, 20 seconds to restart",
 }
 
-SAFETY_COUNTRIES: Dict[int, str] = {
+SAFETY_COUNTRIES: dict[int, str] = {
     0: "IT CEI 0-21",
     1: "CZ-A1",
     2: "DE LV with PV",
@@ -198,7 +196,7 @@ SAFETY_COUNTRIES: Dict[int, str] = {
     149: "Brazil 254Vac",
 }
 
-ERROR_CODES: Dict[int, str] = {
+ERROR_CODES: dict[int, str] = {
     31: 'Internal Communication Failure',
     30: 'EEPROM R/W Failure',
     29: 'Fac Failure',
@@ -233,7 +231,7 @@ ERROR_CODES: Dict[int, str] = {
     0: 'GFCI Device Check Failure',
 }
 
-DIAG_STATUS_CODES: Dict[int, str] = {
+DIAG_STATUS_CODES: dict[int, str] = {
     0: "Battery voltage low",
     1: "Battery SOC low",
     2: "Battery SOC in back",
@@ -265,7 +263,7 @@ DIAG_STATUS_CODES: Dict[int, str] = {
     28: "SOC protect off",
 }
 
-BMS_ALARM_CODES: Dict[int, str] = {
+BMS_ALARM_CODES: dict[int, str] = {
     15: 'Charging over-voltage 3',
     14: 'Discharging under-voltage 3',
     13: 'Cell temperature high 3',
@@ -284,7 +282,7 @@ BMS_ALARM_CODES: Dict[int, str] = {
     0: 'Charging over-voltage 2',
 }
 
-BMS_WARNING_CODES: Dict[int, str] = {
+BMS_WARNING_CODES: dict[int, str] = {
     11: 'System temperature high',
     10: 'System temperature low 2',
     9: 'System temperature low 1',
@@ -299,7 +297,7 @@ BMS_WARNING_CODES: Dict[int, str] = {
     0: 'Charging over-voltage 1',
 }
 
-DERATING_MODE_CODES: Dict[int, str] = {
+DERATING_MODE_CODES: dict[int, str] = {
     31: '',
     30: '',
     29: '',

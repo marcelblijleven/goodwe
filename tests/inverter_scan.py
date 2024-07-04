@@ -21,7 +21,7 @@ def try_command(command, ip):
     print(f"Trying command: {command}")
     try:
         response = asyncio.run(
-            ProtocolCommand(bytes.fromhex(command), lambda x: True).execute(UdpInverterProtocol(ip, 8899)))
+            ProtocolCommand(bytes.fromhex(command), lambda x: True).execute(UdpInverterProtocol(ip, 8899, 0x7f)))
         print(f"Response to {command} command: {response.raw_data.hex()}")
     except InverterError:
         print(f"No response to {command} command")

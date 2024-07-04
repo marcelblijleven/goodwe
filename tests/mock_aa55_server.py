@@ -62,7 +62,7 @@ async def main():
     # low-level APIs.
     loop = asyncio.get_running_loop()
 
-    transport, protocol = await loop.create_datagram_endpoint(
+    transport, _ = await loop.create_datagram_endpoint(
         lambda: EchoServerProtocol(),
         local_addr=('127.0.0.1', 8899))
 
