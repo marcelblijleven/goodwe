@@ -1,3 +1,4 @@
+"""Modbus protocol implementation."""
 import logging
 from typing import Union
 

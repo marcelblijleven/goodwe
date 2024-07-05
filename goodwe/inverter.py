@@ -1,3 +1,4 @@
+"""Generic inverter API module."""
 from __future__ import annotations
 
 import logging
@@ -274,8 +275,7 @@ class Inverter(ABC):
     def _create_protocol(host: str, port: int, comm_addr: int, timeout: int, retries: int) -> InverterProtocol:
         if port == 502:
             return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
-        else:
-            return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
+        return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
 
     @staticmethod
     def _map_response(response: ProtocolResponse, sensors: tuple[Sensor, ...]) -> dict[str, Any]:

@@ -1,4 +1,4 @@
-# Serial number tags to identify inverter type
+"""Constants identifying inverter type/model."""
 from .inverter import Inverter
 
 PLATFORM_105_MODELS = ("ESU", "EMU", "ESA", "BPS", "BPU", "EMJ", "IJL")

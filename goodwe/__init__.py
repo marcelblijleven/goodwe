@@ -1,3 +1,4 @@
+"""Goodwe solar inverter communication library."""
 from __future__ import annotations
 
 import asyncio
@@ -127,7 +128,6 @@ async def search_inverters() -> bytes:
         result = await command.execute(UdpInverterProtocol("255.255.255.255", 48899, 1, 0))
         if result is not None:
             return result.response_data()
-        else:
-            raise InverterError("No response received to broadcast request.")
+        raise InverterError("No response received to broadcast request.")
     except asyncio.CancelledError:
         raise InverterError("No valid response received to broadcast request.") from None

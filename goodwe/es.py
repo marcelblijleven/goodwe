@@ -1,3 +1,4 @@
+"""Single phase hybrid inverter support aka platform 105."""
 from __future__ import annotations
 
 import logging
@@ -210,29 +211,27 @@ class ES(Inverter):
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
             # There does not seem to be time setting/sensor available (or is not known)
             return datetime.now()
-        elif setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4'):
+        if setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4'):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
             return await self._read_setting(setting)
-        elif setting_id.startswith("modbus"):
+        if setting_id.startswith("modbus"):
             response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
-        elif setting_id in self._settings:
+        if setting_id in self._settings:
             logger.debug("Reading setting %s", setting_id)
             all_settings = await self.read_settings_data()
             return all_settings.get(setting_id)
-        else:
-            raise ValueError(f'Unknown setting "{setting_id}"')
+        raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _read_setting(self, setting: Sensor) -> Any:
         count = (setting.size_ + (setting.size_ % 2)) // 2
         if self._is_modbus_setting(setting):
             response = await self._read_from_socket(self._read_command(setting.offset, count))
             return setting.read_value(response)
-        else:
-            response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
-            return setting.read_value(response)
+        response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
+        return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
         if setting_id == 'time':
@@ -284,7 +283,7 @@ class ES(Inverter):
             )
 
     async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
-        result = [e for e in OperationMode]
+        result = list(OperationMode)
         result.remove(OperationMode.PEAK_SHAVING)
         result.remove(OperationMode.SELF_USE)
         if not include_emulated:
@@ -304,10 +303,9 @@ class ES(Inverter):
         eco_mode = await self.read_setting('eco_mode_1')
         if eco_mode.is_eco_charge_mode():
             return OperationMode.ECO_CHARGE
-        elif eco_mode.is_eco_discharge_mode():
+        if eco_mode.is_eco_discharge_mode():
             return OperationMode.ECO_DISCHARGE
-        else:
-            return OperationMode.ECO
+        return OperationMode.ECO
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
                                  eco_mode_soc: int = 100) -> None:

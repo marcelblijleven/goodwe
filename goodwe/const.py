@@ -1,3 +1,4 @@
+"""Constants."""
 GOODWE_TCP_PORT = 502
 GOODWE_UDP_PORT = 8899
 

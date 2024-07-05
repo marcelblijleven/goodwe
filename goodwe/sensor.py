@@ -1,3 +1,4 @@
+"""Inverter sensor types."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -14,13 +15,13 @@ MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "O
 
 
 class ScheduleType(IntEnum):
-    ECO_MODE = 0,
-    DRY_CONTACT_LOAD = 1,
-    DRY_CONTACT_SMART_LOAD = 2,
-    PEAK_SHAVING = 3,
-    BACKUP_MODE = 4,
-    SMART_CHARGE_MODE = 5,
-    ECO_MODE_745 = 6,
+    ECO_MODE = 0
+    DRY_CONTACT_LOAD = 1
+    DRY_CONTACT_SMART_LOAD = 2
+    PEAK_SHAVING = 3
+    BACKUP_MODE = 4
+    SMART_CHARGE_MODE = 5
+    ECO_MODE_745 = 6
     NOT_SET = 85
 
     @classmethod
@@ -28,52 +29,48 @@ class ScheduleType(IntEnum):
         """Detect schedule type from its on/off value"""
         if value in (0, -1):
             return ScheduleType.ECO_MODE
-        elif value in (1, -2):
+        if value in (1, -2):
             return ScheduleType.DRY_CONTACT_LOAD
-        elif value in (2, -3):
+        if value in (2, -3):
             return ScheduleType.DRY_CONTACT_SMART_LOAD
-        elif value in (3, -4):
+        if value in (3, -4):
             return ScheduleType.PEAK_SHAVING
-        elif value in (4, -5):
+        if value in (4, -5):
             return ScheduleType.BACKUP_MODE
-        elif value in (5, -6):
+        if value in (5, -6):
             return ScheduleType.SMART_CHARGE_MODE
-        elif value in (6, -7):
+        if value in (6, -7):
             return ScheduleType.ECO_MODE_745
-        elif value == 85:
+        if value == 85:
             return ScheduleType.NOT_SET
-        else:
-            raise ValueError(f"{value}: on_off value {value} out of range.")
+        raise ValueError(f"{value}: on_off value {value} out of range.")
 
     def power_unit(self):
         """Return unit of power parameter"""
         if self == ScheduleType.PEAK_SHAVING:
             return "W"
-        else:
-            return "%"
+        return "%"
 
     def decode_power(self, value: int) -> int:
         """Decode human readable value of power parameter"""
         if self == ScheduleType.PEAK_SHAVING:
             return value * 10
-        elif self == ScheduleType.ECO_MODE_745:
+        if self == ScheduleType.ECO_MODE_745:
             return int(value / 10)
-        elif self == ScheduleType.NOT_SET:
+        if self == ScheduleType.NOT_SET:
             # Prevent out of range values when changing mode
             return value if -100 <= value <= 100 else int(value / 10)
-        else:
-            return value
+        return value
 
     def encode_power(self, value: int) -> int:
         """Encode human readable value of power parameter"""
         if self == ScheduleType.ECO_MODE:
             return value
-        elif self == ScheduleType.PEAK_SHAVING:
+        if self == ScheduleType.PEAK_SHAVING:
             return int(value / 10)
-        elif self == ScheduleType.ECO_MODE_745:
+        if self == ScheduleType.ECO_MODE_745:
             return value * 10
-        else:
-            return value
+        return value
 
     def is_in_range(self, value: int) -> bool:
         """Check if the value fits in allowed values range"""
@@ -872,8 +869,7 @@ def read_float4(buffer: ProtocolResponse, offset: int = None) -> float:
     data = buffer.read(4)
     if len(data) == 4:
         return unpack('>f', data)[0]
-    else:
-        return float(0)
+    return float(0)
 
 
 def read_voltage(buffer: ProtocolResponse, offset: int = None) -> float:
@@ -930,8 +926,7 @@ def read_temp(buffer: ProtocolResponse, offset: int = None) -> float | None:
     value = int.from_bytes(buffer.read(2), byteorder="big", signed=True)
     if value == -1 or value == 32767:
         return None
-    else:
-        return float(value) / 10
+    return float(value) / 10
 
 
 def read_datetime(buffer: ProtocolResponse, offset: int = None) -> datetime:
@@ -969,10 +964,9 @@ def read_grid_mode(buffer: ProtocolResponse, offset: int = None) -> int:
     value = read_bytes2_signed(buffer, offset)
     if value < -90:
         return 2
-    elif value >= 90:
+    if value >= 90:
         return 1
-    else:
-        return 0
+    return 0
 
 
 def read_unsigned_int(data: bytes, offset: int) -> int:
@@ -994,7 +988,7 @@ def decode_bitmap(value: int, bitmap: dict[int, str]) -> str:
 def decode_day_of_week(data: int) -> str:
     if data == -1:
         return "Mon-Sun"
-    elif data == 0:
+    if data == 0:
         return ""
     bits = bin(data)[2:]
     daynames = list(DAY_NAMES)

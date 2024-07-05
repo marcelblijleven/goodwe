@@ -1,3 +1,4 @@
+"""Hybrid inverter support aka platform 205, 745, 753"""
 from __future__ import annotations
 
 import logging
@@ -644,12 +645,10 @@ class ET(Inverter):
         setting = self._settings.get(setting_id)
         if setting:
             return await self._read_setting(setting)
-        else:
-            if setting_id.startswith("modbus"):
-                response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
-                return int.from_bytes(response.read(2), byteorder="big", signed=True)
-            else:
-                raise ValueError(f'Unknown setting "{setting_id}"')
+        if setting_id.startswith("modbus"):
+            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+            return int.from_bytes(response.read(2), byteorder="big", signed=True)
+        raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _read_setting(self, setting: Sensor) -> Any:
         try:
@@ -705,7 +704,7 @@ class ET(Inverter):
             await self.write_setting('grid_export_limit', export_limit)
 
     async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
-        result = [e for e in OperationMode]
+        result = list(OperationMode)
         if not self._has_peak_shaving:
             result.remove(OperationMode.PEAK_SHAVING)
         if not is_745_platform(self):
@@ -727,10 +726,9 @@ class ET(Inverter):
         eco_mode = await self.read_setting('eco_mode_1')
         if eco_mode.is_eco_charge_mode():
             return OperationMode.ECO_CHARGE
-        elif eco_mode.is_eco_discharge_mode():
+        if eco_mode.is_eco_discharge_mode():
             return OperationMode.ECO_DISCHARGE
-        else:
-            return OperationMode.ECO
+        return OperationMode.ECO
 
     async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
                                  eco_mode_soc: int = 100) -> None:

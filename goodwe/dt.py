@@ -1,3 +1,4 @@
+"""Grid-only inverter support - models DT/MS/D-NS/XS or GE's GEP(PSB/PSC)"""
 from __future__ import annotations
 
 import logging
@@ -189,7 +190,6 @@ class DT(Inverter):
         else:
             # this is only 2 PV strings inverter
             self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
-        pass
 
     async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -209,12 +209,10 @@ class DT(Inverter):
         setting = self._settings.get(setting_id)
         if setting:
             return await self._read_setting(setting)
-        else:
-            if setting_id.startswith("modbus"):
-                response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
-                return int.from_bytes(response.read(2), byteorder="big", signed=True)
-            else:
-                raise ValueError(f'Unknown setting "{setting_id}"')
+        if setting_id.startswith("modbus"):
+            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+            return int.from_bytes(response.read(2), byteorder="big", signed=True)
+        raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _read_setting(self, setting: Sensor) -> Any:
         try:
