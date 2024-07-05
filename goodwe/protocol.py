@@ -56,12 +56,11 @@ class InverterProtocol:
         """
         if self._lock and self._running_loop == asyncio.get_event_loop():
             return self._lock
-        else:
-            logger.debug("Creating lock instance for current event loop.")
-            self._lock = asyncio.Lock()
-            self._running_loop = asyncio.get_event_loop()
-            self._close_transport()
-            return self._lock
+        logger.debug("Creating lock instance for current event loop.")
+        self._lock = asyncio.Lock()
+        self._running_loop = asyncio.get_event_loop()
+        self._close_transport()
+        return self._lock
 
     def _max_retries_reached(self) -> Future:
         logger.debug("Max number of retries (%d) reached, request %s failed.", self.retries, self.command)
@@ -193,8 +192,7 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
                 if not self.keep_alive:
                     self._close_transport()
                 return await self.send_request(command)
-            else:
-                return self._max_retries_reached()
+            return self._max_retries_reached()
         finally:
             if self._lock and self._lock.locked():
                 self._lock.release()
@@ -272,7 +270,6 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         """On connection made"""
         logger.debug("Connection opened.")
-        pass
 
     def eof_received(self) -> None:
         logger.debug("EOF received.")
@@ -341,8 +338,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                     self._lock.release()
                 self._close_transport()
                 return await self.send_request(command)
-            else:
-                return self._max_retries_reached()
+            return self._max_retries_reached()
         except (ConnectionRefusedError, TimeoutError, OSError, asyncio.TimeoutError):
             if self._retry < self.retries:
                 logger.debug("Connection refused error.")
@@ -350,8 +346,7 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
                 if self._lock and self._lock.locked():
                     self._lock.release()
                 return await self.send_request(command)
-            else:
-                return self._max_retries_reached()
+            return self._max_retries_reached()
         finally:
             if self._lock and self._lock.locked():
                 self._lock.release()
@@ -403,8 +398,7 @@ class ProtocolResponse:
     def response_data(self) -> bytes:
         if self.command is not None:
             return self.command.trim_response(self.raw_data)
-        else:
-            return self.raw_data
+        return self.raw_data
 
     def seek(self, address: int) -> None:
         if self.command is not None:
@@ -458,10 +452,9 @@ class ProtocolCommand:
             result = response_future.result()
             if result is not None:
                 return ProtocolResponse(result, self)
-            else:
-                raise RequestFailedException(
-                    "No response received to '" + self.request.hex() + "' request."
-                )
+            raise RequestFailedException(
+                "No response received to '" + self.request.hex() + "' request."
+            )
         except (asyncio.CancelledError, ConnectionRefusedError):
             raise RequestFailedException(
                 "No valid response received to '" + self.request.hex() + "' request."
@@ -544,12 +537,11 @@ class Aa55ProtocolCommand(ProtocolCommand):
         if self.request[4] == 1:
             if self.request[5] == 2:
                 return f'READ device info ({self.request.hex()})'
-            elif self.request[5] == 6:
+            if self.request[5] == 6:
                 return f'READ runtime data ({self.request.hex()})'
-            elif self.request[5] == 9:
+            if self.request[5] == 9:
                 return f'READ settings ({self.request.hex()})'
-        else:
-            return self.request.hex()
+        return self.request.hex()
 
 
 class Aa55ReadCommand(Aa55ProtocolCommand):
@@ -558,13 +550,12 @@ class Aa55ReadCommand(Aa55ProtocolCommand):
     """
 
     def __init__(self, offset: int, count: int):
-        super().__init__("011A03" + "{:04x}".format(offset) + "{:02x}".format(count), "019A", offset, count)
+        super().__init__(f"011A03{offset:04x}{count:02x}", "019A", offset, count)
 
     def __repr__(self):
         if self.value > 1:
             return f'READ {self.value} registers from {self.first_address} ({self.request.hex()})'
-        else:
-            return f'READ register {self.first_address} ({self.request.hex()})'
+        return f'READ register {self.first_address} ({self.request.hex()})'
 
 
 class Aa55WriteCommand(Aa55ProtocolCommand):
@@ -573,7 +564,7 @@ class Aa55WriteCommand(Aa55ProtocolCommand):
     """
 
     def __init__(self, register: int, value: int):
-        super().__init__("023905" + "{:04x}".format(register) + "01" + "{:04x}".format(value), "02B9", register, value)
+        super().__init__(f"023905{register:04x}01{value:04x}", "02B9", register, value)
 
     def __repr__(self):
         return f'WRITE {self.value} to register {self.first_address} ({self.request.hex()})'
@@ -585,7 +576,7 @@ class Aa55WriteMultiCommand(Aa55ProtocolCommand):
     """
 
     def __init__(self, offset: int, values: bytes):
-        super().__init__("02390B" + "{:04x}".format(offset) + "{:02x}".format(len(values)) + values.hex(),
+        super().__init__(f"02390B{offset:04x}{len(values):02x}{values.hex()}",
                          "02B9", offset, len(values) // 2)
 
 
@@ -641,8 +632,7 @@ class ModbusRtuReadCommand(ModbusRtuProtocolCommand):
     def __repr__(self):
         if self.value > 1:
             return f'READ {self.value} registers from {self.first_address} ({self.request.hex()})'
-        else:
-            return f'READ register {self.first_address} ({self.request.hex()})'
+        return f'READ register {self.first_address} ({self.request.hex()})'
 
 
 class ModbusRtuWriteCommand(ModbusRtuProtocolCommand):
@@ -711,8 +701,7 @@ class ModbusTcpReadCommand(ModbusTcpProtocolCommand):
     def __repr__(self):
         if self.value > 1:
             return f'READ {self.value} registers from {self.first_address} ({self.request.hex()})'
-        else:
-            return f'READ register {self.first_address} ({self.request.hex()})'
+        return f'READ register {self.first_address} ({self.request.hex()})'
 
 
 class ModbusTcpWriteCommand(ModbusTcpProtocolCommand):

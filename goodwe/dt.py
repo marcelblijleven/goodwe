@@ -175,7 +175,7 @@ class DT(Inverter):
         self.arm_version = read_unsigned_int(response, 70)  # 30036
         self.dsp_svn_version = read_unsigned_int(response, 72)  # 35037
         self.arm_svn_version = read_unsigned_int(response, 74)  # 35038
-        self.firmware = "{}.{}.{:02x}".format(self.dsp1_version, self.dsp2_version, self.arm_version)
+        self.firmware = f"{self.dsp1_version}.{self.dsp2_version}.{self.arm_version:02x}"
 
         if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors

@@ -76,10 +76,9 @@ class ScheduleType(IntEnum):
         """Check if the value fits in allowed values range"""
         if self == ScheduleType.ECO_MODE:
             return -100 <= value <= 100
-        elif self == ScheduleType.ECO_MODE_745:
+        if self == ScheduleType.ECO_MODE_745:
             return -1000 <= value <= 1000
-        else:
-            return True
+        return True
 
 
 class Voltage(Sensor):

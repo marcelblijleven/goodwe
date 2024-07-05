@@ -279,7 +279,7 @@ class ES(Inverter):
     async def set_grid_export_limit(self, export_limit: int) -> None:
         if export_limit >= 0:
             await self._read_from_socket(
-                Aa55ProtocolCommand("033502" + "{:04x}".format(export_limit), "03b5")
+                Aa55ProtocolCommand(f"033502{export_limit:04x}", "03b5")
             )
 
     async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
@@ -396,25 +396,22 @@ class ES(Inverter):
     async def _clear_battery_mode_param(self) -> None:
         await self._read_from_socket(Aa55WriteCommand(0x0700, 1))
 
-    async def _set_limit_power_for_charge(self, startH: int, startM: int, stopH: int, stopM: int, limit: int) -> None:
+    async def _set_limit_power_for_charge(self, start_h: int, start_m: int, stop_h: int, stop_m: int,
+                                          limit: int) -> None:
         if limit < 0 or limit > 100:
             raise ValueError()
-        await self._read_from_socket(Aa55ProtocolCommand("032c05"
-                                                         + "{:02x}".format(startH) + "{:02x}".format(startM)
-                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM)
-                                                         + "{:02x}".format(limit), "03AC"))
+        await self._read_from_socket(Aa55ProtocolCommand(
+            f"032c05{start_h:02x}{start_m:02x}{stop_h:02x}{stop_m:02x}{limit:02x}", "03AC"))
 
-    async def _set_limit_power_for_discharge(self, startH: int, startM: int, stopH: int, stopM: int,
+    async def _set_limit_power_for_discharge(self, start_h: int, start_m: int, stop_h: int, stop_m: int,
                                              limit: int) -> None:
         if limit < 0 or limit > 100:
             raise ValueError()
-        await self._read_from_socket(Aa55ProtocolCommand("032d05"
-                                                         + "{:02x}".format(startH) + "{:02x}".format(startM)
-                                                         + "{:02x}".format(stopH) + "{:02x}".format(stopM)
-                                                         + "{:02x}".format(limit), "03AD"))
+        await self._read_from_socket(Aa55ProtocolCommand(
+            f"032d05{start_h:02x}{start_m:02x}{stop_h:02x}{stop_m:02x}{limit:02x}", "03AD"))
 
     async def _set_offgrid_work_mode(self, mode: int) -> None:
-        await self._read_from_socket(Aa55ProtocolCommand("033601" + "{:02x}".format(mode), "03B6"))
+        await self._read_from_socket(Aa55ProtocolCommand(f"033601{mode:02x}", "03B6"))
 
     async def _set_relay_control(self, mode: int) -> None:
         param = 0
@@ -422,7 +419,7 @@ class ES(Inverter):
             param = 16
         elif mode == 3:
             param = 48
-        await self._read_from_socket(Aa55ProtocolCommand("03270200" + "{:02x}".format(param), "03B7"))
+        await self._read_from_socket(Aa55ProtocolCommand(f"03270200{param:02x}", "03B7"))
 
     async def _set_store_energy_mode(self, mode: int) -> None:
         param = 0
@@ -434,10 +431,10 @@ class ES(Inverter):
             param = 8
         elif mode == 3:
             param = 1
-        await self._read_from_socket(Aa55ProtocolCommand("032601" + "{:02x}".format(param), "03B6"))
+        await self._read_from_socket(Aa55ProtocolCommand(f"032601{param:02x}", "03B6"))
 
     async def _set_work_mode(self, mode: int) -> None:
-        await self._read_from_socket(Aa55ProtocolCommand("035901" + "{:02x}".format(mode), "03D9"))
+        await self._read_from_socket(Aa55ProtocolCommand(f"035901{mode:02x}", "03D9"))
 
     def _is_modbus_setting(self, sensor: Sensor) -> bool:
         return sensor.offset > 30000
