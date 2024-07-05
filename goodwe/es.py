@@ -206,6 +206,10 @@ class ES(Inverter):
         data = self._map_response(response, self.__sensors)
         return data
 
+    async def read_sensor(self, sensor_id: str) -> Any:
+        data = await self.read_runtime_data()
+        return data[sensor_id]
+
     async def read_setting(self, setting_id: str) -> Any:
         if setting_id == 'time':
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)

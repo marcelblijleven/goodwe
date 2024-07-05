@@ -149,6 +149,7 @@ class DT(Inverter):
         self._sensors = self.__all_sensors
         self._sensors_meter = self.__all_sensors_meter
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
+        self._sensors_map: dict[str, Sensor] | None = None
         self._has_meter: bool = True
 
     @staticmethod
@@ -205,25 +206,34 @@ class DT(Inverter):
 
         return data
 
+    async def read_sensor(self, sensor_id: str) -> Any:
+        sensor: Sensor = self._get_sensor(sensor_id)
+        if sensor:
+            return await self._read_sensor(sensor)
+        if sensor_id.startswith("modbus"):
+            response = await self._read_from_socket(self._read_command(int(sensor_id[7:]), 1))
+            return int.from_bytes(response.read(2), byteorder="big", signed=True)
+        raise ValueError(f'Unknown sensor "{sensor_id}"')
+
     async def read_setting(self, setting_id: str) -> Any:
         setting = self._settings.get(setting_id)
         if setting:
-            return await self._read_setting(setting)
+            return await self._read_sensor(setting)
         if setting_id.startswith("modbus"):
             response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
         raise ValueError(f'Unknown setting "{setting_id}"')
 
-    async def _read_setting(self, setting: Sensor) -> Any:
+    async def _read_sensor(self, setting: Sensor) -> Any:
         try:
             count = (setting.size_ + (setting.size_ % 2)) // 2
             response = await self._read_from_socket(self._read_command(setting.offset, count))
             return setting.read_value(response)
         except RequestRejectedException as ex:
             if ex.message == ILLEGAL_DATA_ADDRESS:
-                logger.debug("Unsupported setting %s", setting.id_)
+                logger.debug("Unsupported sensor/setting %s", setting.id_)
                 self._settings.pop(setting.id_, None)
-                raise ValueError(f'Unknown setting "{setting.id_}"')
+                raise ValueError(f'Unknown sensor/setting "{setting.id_}"')
             return None
 
     async def write_setting(self, setting_id: str, value: Any):
@@ -278,6 +288,11 @@ class DT(Inverter):
 
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         raise InverterError("Operation not supported, inverter has no batteries.")
+
+    def _get_sensor(self, sensor_id: str) -> Sensor | None:
+        if self._sensors_map is None:
+            self._sensors_map = {s.id_: s for s in self.sensors()}
+        return self._sensors_map.get(sensor_id)
 
     def sensors(self) -> tuple[Sensor, ...]:
         result = self._sensors

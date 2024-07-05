@@ -152,6 +152,14 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def read_sensor(self, sensor_id: str) -> Any:
+        """
+        Read the value of specific inverter sensor.
+        Sensor must be in list provided by sensors() method, otherwise ValueError is raised.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     async def read_setting(self, setting_id: str) -> Any:
         """
         Read the value of specific inverter setting/configuration parameter.

@@ -65,6 +65,11 @@ for sensor in inverter.sensors():
         print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
 
 # -------------
+# Read sensorr
+# -------------
+# print(asyncio.run(inverter.read_sensor('vpv1')))
+
+# -------------
 # Read settings
 # -------------
 # response = asyncio.run(inverter.read_settings_data())

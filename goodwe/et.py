@@ -492,6 +492,7 @@ class ET(Inverter):
         self._sensors_meter = self.__all_sensors_meter
         self._sensors_mppt = self.__all_sensors_mppt
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
+        self._sensors_map: dict[str, Sensor] | None = None
 
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
@@ -641,25 +642,34 @@ class ET(Inverter):
 
         return data
 
+    async def read_sensor(self, sensor_id: str) -> Any:
+        sensor: Sensor = self._get_sensor(sensor_id)
+        if sensor:
+            return await self._read_sensor(sensor)
+        if sensor_id.startswith("modbus"):
+            response = await self._read_from_socket(self._read_command(int(sensor_id[7:]), 1))
+            return int.from_bytes(response.read(2), byteorder="big", signed=True)
+        raise ValueError(f'Unknown sensor "{sensor_id}"')
+
     async def read_setting(self, setting_id: str) -> Any:
-        setting = self._settings.get(setting_id)
+        setting: Sensor = self._settings.get(setting_id)
         if setting:
-            return await self._read_setting(setting)
+            return await self._read_sensor(setting)
         if setting_id.startswith("modbus"):
             response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
         raise ValueError(f'Unknown setting "{setting_id}"')
 
-    async def _read_setting(self, setting: Sensor) -> Any:
+    async def _read_sensor(self, sensor: Sensor) -> Any:
         try:
-            count = (setting.size_ + (setting.size_ % 2)) // 2
-            response = await self._read_from_socket(self._read_command(setting.offset, count))
-            return setting.read_value(response)
+            count = (sensor.size_ + (sensor.size_ % 2)) // 2
+            response = await self._read_from_socket(self._read_command(sensor.offset, count))
+            return sensor.read_value(response)
         except RequestRejectedException as ex:
             if ex.message == ILLEGAL_DATA_ADDRESS:
-                logger.debug("Unsupported setting %s", setting.id_)
-                self._settings.pop(setting.id_, None)
-                raise ValueError(f'Unknown setting "{setting.id_}"')
+                logger.debug("Unsupported sensor/setting %s", sensor.id_)
+                self._settings.pop(sensor.id_, None)
+                raise ValueError(f'Unknown sensor/setting "{sensor.id_}"')
             return None
 
     async def write_setting(self, setting_id: str, value: Any):
@@ -766,7 +776,7 @@ class ET(Inverter):
             eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
             # Load the current values to try to detect schedule type
             try:
-                await self._read_setting(eco_mode)
+                await self._read_sensor(eco_mode)
             except ValueError:
                 pass
             eco_mode.set_schedule_type(ScheduleType.ECO_MODE, is_745_platform(self))
@@ -786,6 +796,11 @@ class ET(Inverter):
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         if 0 <= dod <= 100:
             await self.write_setting('battery_discharge_depth', 100 - dod)
+
+    def _get_sensor(self, sensor_id: str) -> Sensor | None:
+        if self._sensors_map is None:
+            self._sensors_map = {s.id_: s for s in self.sensors()}
+        return self._sensors_map.get(sensor_id)
 
     def sensors(self) -> tuple[Sensor, ...]:
         result = self._sensors + self._sensors_meter
