@@ -370,7 +370,7 @@ class ET(Inverter):
 
         Integer("battery_soc_protection", 47500, "Battery SoC Protection", "", Kind.BAT),
 
-        Integer("grid_export", 47509, "Grid Export Enabled", "", Kind.GRID),
+        Integer("grid_export", 47509, "Grid Export Limit Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 47510, "Grid Export Limit", "W", Kind.GRID),
         Integer("ems_power_mode", 47511, "EMS Power Mode", "", Kind.BAT),
         Integer("ems_power", 47512, "EMS Power", "W", Kind.BAT),
