@@ -192,6 +192,17 @@ class Energy4(Sensor):
         return float(value) / 10 if value is not None else None
 
 
+class Energy4W(Sensor):
+    """Sensor representing meter energy [kWh] value encoded in 4 bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 4, "kWh", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        value = read_bytes4(data)
+        return float(value) / 1000 if value is not None else None
+
+
 class Energy8(Sensor):
     """Sensor representing energy [kWh] value encoded in 8 bytes"""
 
