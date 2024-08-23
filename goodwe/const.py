@@ -262,6 +262,7 @@ DIAG_STATUS_CODES: dict[int, str] = {
     26: "Real power limit set",
     27: "DC output on",
     28: "SOC protect off",
+    30: "BMS: Emergency charging",
 }
 
 BMS_ALARM_CODES: dict[int, str] = {
