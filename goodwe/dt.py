@@ -74,6 +74,7 @@ class DT(Inverter):
         Integer("warning_code", 30132, "Warning code"),
         Apparent4("apparent_power", 30133, "Apparent Power", Kind.AC),
         Reactive4("reactive_power", 30135, "Reactive Power", Kind.AC),
+        # 30137 reserved
         PowerS("total_input_power", 30138, "Total Input Power", Kind.PV),
         Decimal("power_factor", 30139, 1000, "Power Factor", "", Kind.GRID),
         # 30140 inverter efficiency
@@ -97,7 +98,7 @@ class DT(Inverter):
         # 30159 reserved
         # 30160 reserved
         # 30161 reserved
-        Integer("functionbit", 30162, "FunctionBit", "", Kind.PV),
+        Integer("funbit", 30162, "FunctionBit", "", Kind.PV),
         Voltage("vbus", 30163, "Bus Voltage", Kind.PV),
         Voltage("vnbus", 30164, "NBus Voltage", Kind.PV),
         Long("derating_mode", 30165, "Derating Mode code"),
@@ -117,9 +118,6 @@ class DT(Inverter):
         Energy4W("meter_e_total_exp", 30197, "Meter Total Energy (export)", Kind.GRID),
         Energy4W("meter_e_total_imp", 30199, "Meter Total Energy (import)", Kind.GRID),
         Integer("meter_comm_status", 30209, "Meter Communication Status"),  # 1 OK, 0 NotOK
-
-
-
     )
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
@@ -150,8 +148,9 @@ class DT(Inverter):
     )
 
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        super().__init__(host, port, comm_addr if comm_addr else 0xf7, timeout, retries)
-        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x7531, 0x0063)
+        super().__init__(host, port, comm_addr if comm_addr else 0x7f, timeout, retries)
+        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x7531, 0x0028)
+        self._READ_METER_VERSION_INFO: ProtocolCommand = self._read_command(0x756f, 0x0014)
         self._READ_DEVICE_MODEL: ProtocolCommand = self._read_command(0x9CED, 0x0008)
         self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
         self._READ_METER_DATA: ProtocolCommand = self._read_command(0x75f3, 0xF)
@@ -171,55 +170,46 @@ class DT(Inverter):
         """Filter to exclude sensors on < 3 PV inverters"""
         return not s.id_.endswith('pv3')
 
-    async def read_device_info(self) -> dict[str, Any]:
-        device_info = {}
-
+    async def read_device_info(self):
+        response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
+        response = response.response_data()
         try:
-            response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
-            response = response.response_data()
-            self.model_name = response[22:32].decode("ascii").rstrip('\x00').strip()
-        except Exception as e:
+            self.model_name = response[22:32].decode("ascii").rstrip()
+        except:
             try:
-                response2 = await self._read_from_socket(self._READ_DEVICE_MODEL)
-                response2 = response2.response_data()
-                self.model_name = response2[0:16].decode("ascii").rstrip('\x00').strip()
-            except Exception as e:
-                print(f"No model name sent from the inverter. Error: {e}")
-                self.model_name = "Unknown"
-        
+                response = await self._read_from_socket(self._READ_DEVICE_MODEL)
+                response = response.response_data()
+                self.model_name = response[0:16].decode("ascii").rstrip('\x00').strip()
+            except InverterError as e:
+                logger.debug("No model name sent from the inverter.")
+
+        # Modbus registers from 30001 - 30040
+        self.serial_number = self._decode(response[6:22])  # 30004 - 30012
+        self.dsp1_version = read_unsigned_int(response, 66)  # 30034
+        self.dsp2_version = read_unsigned_int(response, 68)  # 30035
+        self.arm_version = read_unsigned_int(response, 70)  # 30036
+        self.dsp_svn_version = read_unsigned_int(response, 72)  # 35037
+        self.arm_svn_version = read_unsigned_int(response, 74)  # 35038
+        self.firmware = f"{self.dsp1_version}.{self.dsp2_version}.{self.arm_version:02x}"
+
+        if is_single_phase(self):
+            self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
+            self._settings.update({s.id_: s for s in self.__settings_single_phase})
+        else:
+            self._settings.update({s.id_: s for s in self.__settings_three_phase})
+
+        if is_3_mppt(self):
+            pass
+        else:
+            self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
+
         try:
-            # Modbus registers from 30001 - 30099
-            self.serial_number = self._decode(response[6:22])  # 30004 - 30012
-            self.meter_serial_number = self._decode(response[148:162]) #30075 - 30082
-            self.dsp1_version = read_unsigned_int(response, 66)  # 30034
-            self.dsp2_version = read_unsigned_int(response, 68)  # 30035
-            self.arm_version = read_unsigned_int(response, 70)  # 30036
-            self.dsp_svn_version = read_unsigned_int(response, 72)  # 35037
-            self.arm_svn_version = read_unsigned_int(response, 74)  # 35038
-            self.meter_software_version = read_unsigned_int(response, 124) #30063
-            self.firmware = f"{self.dsp1_version}.{self.dsp2_version}.{self.arm_version:02x}"
-            
-            device_info['model_name'] = self.model_name
-            device_info['serial_number'] = self.serial_number
-            device_info['meter_serial_number'] = self.meter_serial_number
-            device_info['meter_software_version'] = self.meter_software_version
-
-            if is_single_phase(self):
-                self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
-                self._settings.update({s.id_: s for s in self.__settings_single_phase})
-            else:
-                self._settings.update({s.id_: s for s in self.__settings_three_phase})
-
-            if is_3_mppt(self):
-                pass
-            else:
-                self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
-
-        except Exception as e:
-            print(f"Error reading device info: {e}")
-            device_info['error'] = str(e)
-
-        return device_info
+            response = await self._read_from_socket(self._READ_METER_VERSION_INFO)
+            response = response.response_data()
+            self.meter_software_version = read_unsigned_int(response, 0)  # 30063
+            self.meter_serial_number = self._decode(response[24:38])  # 30075 - 30082
+        except InverterError as e:
+            logger.debug("Could not read meter version info.")
 
     async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
