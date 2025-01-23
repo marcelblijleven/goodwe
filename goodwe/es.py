@@ -158,6 +158,7 @@ class ES(Inverter):
     __settings_arm_fw_14: tuple[Sensor, ...] = (
         Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
         Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
+        
         EcoModeV2("eco_mode_1", 47547, "Eco Mode Group 1"),
         ByteH("eco_mode_1_switch", 47549, "Eco Mode Group 1 Switch"),
         EcoModeV2("eco_mode_2", 47553, "Eco Mode Group 2"),
@@ -217,7 +218,7 @@ class ES(Inverter):
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
             # There does not seem to be time setting/sensor available (or is not known)
             return datetime.now()
-        if setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4'):
+        if setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4', 'fast_charging', 'fast_charging_soc'):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
