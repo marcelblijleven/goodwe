@@ -156,6 +156,8 @@ class ES(Inverter):
 
     # Settings added in ARM firmware 14
     __settings_arm_fw_14: tuple[Sensor, ...] = (
+        Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
+        Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
         EcoModeV2("eco_mode_1", 47547, "Eco Mode Group 1"),
         ByteH("eco_mode_1_switch", 47549, "Eco Mode Group 1 Switch"),
         EcoModeV2("eco_mode_2", 47553, "Eco Mode Group 2"),
