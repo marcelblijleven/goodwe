@@ -156,9 +156,6 @@ class ES(Inverter):
 
     # Settings added in ARM firmware 14
     __settings_arm_fw_14: tuple[Sensor, ...] = (
-        Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
-        Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
-        
         EcoModeV2("eco_mode_1", 47547, "Eco Mode Group 1"),
         ByteH("eco_mode_1_switch", 47549, "Eco Mode Group 1 Switch"),
         EcoModeV2("eco_mode_2", 47553, "Eco Mode Group 2"),
@@ -167,6 +164,12 @@ class ES(Inverter):
         ByteH("eco_mode_3_switch", 47561, "Eco Mode Group 3 Switch"),
         EcoModeV2("eco_mode_4", 47565, "Eco Mode Group 4"),
         ByteH("eco_mode_4_switch", 47567, "Eco Mode Group 4 Switch"),
+    )
+
+    # Settings added in ARM firmware 19
+    __settings_arm_fw_19: Tuple[Sensor, ...] = (
+        Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
+        Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
     )
 
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
@@ -203,6 +206,8 @@ class ES(Inverter):
 
         if self._supports_eco_mode_v2():
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
+        if self.arm_version >= 19:
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
 
     async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
