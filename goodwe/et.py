@@ -248,7 +248,7 @@ class ET(Inverter):
         Power4S("meter_active_power_total", 36025, "Meter Active Power Total", Kind.GRID),
         Reactive4("meter_reactive_power1", 36027, "Meter Reactive Power L1", Kind.GRID),
         Reactive4("meter_reactive_power2", 36029, "Meter Reactive Power L2", Kind.GRID),
-        Reactive4("meter_reactive_power3", 36031, "Meter Reactive Power L2", Kind.GRID),
+        Reactive4("meter_reactive_power3", 36031, "Meter Reactive Power L3", Kind.GRID),
         Reactive4("meter_reactive_power_total", 36033, "Meter Reactive Power Total", Kind.GRID),
         Apparent4("meter_apparent_power1", 36035, "Meter Apparent Power L1", Kind.GRID),
         Apparent4("meter_apparent_power2", 36037, "Meter Apparent Power L2", Kind.GRID),
