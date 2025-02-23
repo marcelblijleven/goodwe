@@ -153,9 +153,8 @@ class ET(Inverter):
                    read_bytes2_signed(data, 35140),
                    "House Consumption", "W", Kind.AC),
 
-        # Power4S("pbattery2", 35264, "Battery2 Power", Kind.BAT),
-        # Integer("battery2_mode", 35266, "Battery2 Mode code", "", Kind.BAT),
-        # Enum2("battery2_mode_label", 35184, BATTERY_MODES, "Battery2 Mode", Kind.BAT),
+#        Voltage("vbattery2", 47924, "Battery2 Voltage", Kind.BAT),
+#        Enum2("battery2_mode_label", 35184, BATTERY_MODES, "Battery2 Mode", Kind.BAT),
     )
 
     # Modbus registers from offset 0x9088 (37000)
@@ -220,6 +219,13 @@ class ET(Inverter):
         # Energy4("battery2_total_charge", 39054, "Total Battery 2 Charge", Kind.BAT),
         # Energy4("battery2_total_discharge", 39056, "Total Battery 2 Discharge", Kind.BAT),
         # String8("battery2_sn", 39058, "Battery 2 S/N", Kind.BAT),
+    )
+
+    # Modbus registers from offset 0x89be (35262)
+    __all_sensors_battery2_extended: tuple[Sensor, ...] = (
+        Power4S("pbattery2", 35264, "Battery2 Power", Kind.BAT),
+        Integer("battery2_mode", 35266, "Battery2 Mode code", "", Kind.BAT),
+        Enum2("battery2_mode_label", 35266, BATTERY_MODES, "Battery2 Mode", Kind.BAT)
     )
 
     # Inverter's meter data
@@ -479,6 +485,7 @@ class ET(Inverter):
         self._READ_BATTERY_INFO: ProtocolCommand = self._read_command(0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = self._read_command(0x9858, 0x0016)
         self._READ_MPPT_DATA: ProtocolCommand = self._read_command(0x89e5, 0x3d)
+        self._READ_BATTERY2_INFO_EXTENDED = self._read_command(0x89be, 0x06)
         self._has_eco_mode_v2: bool = True
         self._has_peak_shaving: bool = True
         self._has_battery: bool = True
@@ -489,6 +496,7 @@ class ET(Inverter):
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_battery2 = self.__all_sensors_battery2
+        self._sensors_battery2_extended = self.__all_sensors_battery2_extended
         self._sensors_meter = self.__all_sensors_meter
         self._sensors_mppt = self.__all_sensors_mppt
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
@@ -590,6 +598,9 @@ class ET(Inverter):
                 response = await self._read_from_socket(self._READ_BATTERY2_INFO)
                 data.update(
                     self._map_response(response, self._sensors_battery2))
+                response = await self._read_from_socket(self._READ_BATTERY2_INFO_EXTENDED)
+                data.update(
+                    self._map_response(response, self._sensors_battery2_extended))
             except RequestRejectedException as ex:
                 if ex.message == ILLEGAL_DATA_ADDRESS:
                     logger.info("Battery 2 values not supported, disabling further attempts.")
@@ -820,6 +831,7 @@ class ET(Inverter):
             result = result + self._sensors_battery
         if self._has_battery2:
             result = result + self._sensors_battery2
+            result = result + self._sensors_battery2_extended
         if self._has_mppt:
             result = result + self._sensors_mppt
         return result
