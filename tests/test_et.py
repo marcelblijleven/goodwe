@@ -767,6 +767,7 @@ class GW25K_ET_Test(EtMock):
         self.mock_response(self._READ_METER_DATA_EXTENDED, 'GW25K-ET_meter_data.hex')
         self.mock_response(self._READ_BATTERY_INFO, 'GW25K-ET_battery_info.hex')
         self.mock_response(self._READ_MPPT_DATA, 'GW25K-ET_mppt_data.hex')
+        self.mock_response(self._READ_BATTERY2_INFO_EXTENDED, 'GW25K-ET_battery2_info_extended.hex')
 
     def test_GW25K_ET_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -788,7 +789,7 @@ class GW25K_ET_Test(EtMock):
         self.loop.run_until_complete(self.read_device_info())
 
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(237, len(data))
+        self.assertEqual(240, len(data))
 
         self.sensor_map = {s.id_: s for s in self.sensors()}
 
@@ -1033,6 +1034,9 @@ class GW25K_ET_Test(EtMock):
         self.assertSensor('apparent_power1', 0, 'VA', data)
         self.assertSensor('apparent_power2', 0, 'VA', data)
         self.assertSensor('apparent_power3', 0, 'VA', data)
+        self.assertSensor('pbattery2', -1254, 'W', data)
+        self.assertSensor('battery2_mode', 3, '', data)
+        self.assertSensor('battery2_mode_label', 'Charge', '', data)
 
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
 
@@ -1048,6 +1052,7 @@ class GW29K9_ET_Test(EtMock):
         self.mock_response(self._READ_BATTERY_INFO, 'GW29K9-ET_battery_info.hex')
         self.mock_response(self._READ_BATTERY2_INFO, 'GW29K9-ET_battery2_info.hex')
         self.mock_response(self._READ_MPPT_DATA, 'GW29K9-ET_mppt_data.hex')
+        self.mock_response(self._READ_BATTERY2_INFO_EXTENDED, 'GW29K9-ET_battery2_info_extended.hex')
 
     def test_GW29K9_ET_device_info(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -1068,8 +1073,10 @@ class GW29K9_ET_Test(EtMock):
         # Reset sensors
         self.loop.run_until_complete(self.read_device_info())
 
+        self.sensor_map = {s.id_: s for s in self.sensors()}
+
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(211, len(data))
+        self.assertEqual(214, len(data))
 
         self.sensor_map = {s.id_: s for s in self.sensors()}
 
@@ -1287,6 +1294,10 @@ class GW29K9_ET_Test(EtMock):
         self.assertSensor('apparent_power1', 0, 'VA', data)
         self.assertSensor('apparent_power2', 0, 'VA', data)
         self.assertSensor('apparent_power3', 0, 'VA', data)
+        self.assertSensor('pbattery2', -1254, 'W', data)
+        self.assertSensor('battery2_mode', 3, '', data)
+        self.assertSensor('battery2_mode_label', 'Charge', '', data)
+
 
         self.assertFalse(self.sensor_map, f"Some sensors were not tested {self.sensor_map}")
 
