@@ -173,15 +173,6 @@ class DT(Inverter):
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
         response = response.response_data()
-        try:
-            self.model_name = response[22:32].decode("ascii").rstrip()
-        except:
-            try:
-                response = await self._read_from_socket(self._READ_DEVICE_MODEL)
-                response = response.response_data()
-                self.model_name = response[0:16].decode("ascii").rstrip('\x00').strip()
-            except InverterError as e:
-                logger.debug("No model name sent from the inverter.")
 
         # Modbus registers from 30001 - 30040
         self.serial_number = self._decode(response[6:22])  # 30004 - 30012
@@ -191,6 +182,16 @@ class DT(Inverter):
         self.dsp_svn_version = read_unsigned_int(response, 72)  # 35037
         self.arm_svn_version = read_unsigned_int(response, 74)  # 35038
         self.firmware = f"{self.dsp1_version}.{self.dsp2_version}.{self.arm_version:02x}"
+
+        try:
+            self.model_name = response[22:32].decode("ascii").rstrip()
+        except:
+            try:
+                response = await self._read_from_socket(self._READ_DEVICE_MODEL)
+                response = response.response_data()
+                self.model_name = response[0:16].decode("ascii").rstrip('\x00').strip()
+            except InverterError as e:
+                logger.debug("No model name sent from the inverter.")
 
         if is_single_phase(self):
             self._sensors = tuple(filter(self._single_phase_only, self.__all_sensors))
