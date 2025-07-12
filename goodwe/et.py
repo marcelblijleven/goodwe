@@ -466,6 +466,7 @@ class ET(Inverter):
         Integer("backup_mode_enable", 47605, "Backup Mode Switch"),
         Integer("max_charge_power", 47606, "Max Charge Power"),
         Integer("smart_charging_enable", 47609, "Smart Charging Mode Switch"),
+        Integer("smart_charging_peak_power_limit", 47592, "Smart Charging Peak Power Limit"),
         Integer("eco_mode_enable", 47612, "Eco Mode Switch"),
     )
 
