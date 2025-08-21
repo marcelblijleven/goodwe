@@ -40,12 +40,12 @@ class DT(Inverter):
                        round(read_voltage(data, 30105) * read_current(data, 30106))) + (
                                     round(read_voltage(data, 30107) * read_current(data, 30108))),
                    "PV Power", "W", Kind.PV),
-        # Voltage("vpv4", 14, "PV4 Voltage", Kind.PV),
-        # Current("ipv4", 16, "PV4 Current", Kind.PV),
-        # Voltage("vpv5", 14, "PV5 Voltage", Kind.PV),
-        # Current("ipv5", 16, "PV5 Current", Kind.PV),
-        # Voltage("vpv6", 14, "PV6 Voltage", Kind.PV),
-        # Current("ipv6", 16, "PV7 Current", Kind.PV),
+        # Voltage("vpv4", 30109, "PV4 Voltage", Kind.PV),
+        # Current("ipv4", 30110, "PV4 Current", Kind.PV),
+        # Voltage("vpv5", 30111, "PV5 Voltage", Kind.PV),
+        # Current("ipv5", 30112, "PV5 Current", Kind.PV),
+        # Voltage("vpv6", 30113, "PV6 Voltage", Kind.PV),
+        # Current("ipv6", 30114, "PV7 Current", Kind.PV),
         Voltage("vline1", 30115, "On-grid L1-L2 Voltage", Kind.AC),
         Voltage("vline2", 30116, "On-grid L2-L3 Voltage", Kind.AC),
         Voltage("vline3", 30117, "On-grid L3-L1 Voltage", Kind.AC),
@@ -74,8 +74,7 @@ class DT(Inverter):
         Integer("warning_code", 30132, "Warning code"),
         Apparent4("apparent_power", 30133, "Apparent Power", Kind.AC),
         Reactive4("reactive_power", 30135, "Reactive Power", Kind.AC),
-        # 30137 reserved
-        PowerS("total_input_power", 30138, "Total Input Power", Kind.PV),
+        PowerS("total_input_power", 30137, "Total Input Power", Kind.PV),
         Decimal("power_factor", 30139, 1000, "Power Factor", "", Kind.GRID),
         # 30140 inverter efficiency
         Temp("temperature", 30141, "Inverter Temperature", Kind.AC),
@@ -86,29 +85,29 @@ class DT(Inverter):
         Long("h_total", 30147, "Hours Total", "h", Kind.PV),
         Integer("safety_country", 30149, "Safety Country code", "", Kind.AC),
         Enum2("safety_country_label", 30149, SAFETY_COUNTRIES, "Safety Country", Kind.AC),
-        # 30150 reserved
-        # 30151 reserved
-        # 30152 reserved
-        # 30153 reserved
-        # 30154 reserved
-        # 30155 reserved
-        # 30156 reserved
-        # 30157 reserved
-        # 30158 reserved
-        # 30159 reserved
-        # 30160 reserved
-        # 30161 reserved
+        # 30150 PV1 input power kW
+        # 30152 PV2 input power kW
+        # 30154 PV3 input power kW
+        # 30156 PV4 input power kW
+        # 30158 PV5 input power kW
+        # 30160 PV6 input power kW
         Integer("funbit", 30162, "FunctionBit", "", Kind.PV),
         Voltage("vbus", 30163, "Bus Voltage", Kind.PV),
         Voltage("vnbus", 30164, "NBus Voltage", Kind.PV),
         Long("derating_mode", 30165, "Derating Mode code"),
         EnumBitmap4("derating_mode_label", 30165, DERATING_MODE_CODES, "Derating Mode"),
-        # 30167 reserved
-        # 30168 reserved
-        # 30169 reserved
-        # 30170 reserved
-        # 30171 reserved
+        # 30167 PV2 fault value
+        # 30168 Line2 fault value
+        # 30169 Line3 fault value
+        # 30170 Line3 fault value (duplicate commentary in modbus protocol document)
+        # 30171 Manufacture ID
         Integer("rssi", 30172, "RSSI"),
+        # 30173 ISO test value
+        # 30174 PID and Wietap status
+        # 30175 String 1 Current
+        # 30176 String 2 Current
+        # 30177 String 3 Current
+        # 30178 - 30194 listed String 4 Current through to String 20 Current
     )
 
     # Inverter's meter data
@@ -117,7 +116,24 @@ class DT(Inverter):
         Power4S("meter_active_power", 30195, "Meter Active Power", Kind.GRID),
         Energy4W("meter_e_total_exp", 30197, "Meter Total Energy (export)", Kind.GRID),
         Energy4W("meter_e_total_imp", 30199, "Meter Total Energy (import)", Kind.GRID),
-        Integer("meter_comm_status", 30209, "Meter Communication Status"),  # 1 OK, 0 NotOK
+        # 30201 GPRS Burn Mode
+        # 30202 Cabinet Humidity %
+        # 30203 ARM Error Message
+        # 30205 Warning Code 2
+        # 30207 AFCI Status
+        # 30208 Output control status - Japanese models only
+        Integer("meter_comm_status", 30209, "Meter Communication Status code"),  # 1 Normal, 2 Disconnected
+        Enum2("meter_comm_label", 30209, METER_COMMUNICATION_STATUS, "Meter Communication Status"),
+        Calculated("house_consumption", lambda data: None, "House Consumption", "W", Kind.AC), # calculated and patched in read_runtime_data as we are unable to calculate it from seperate modbus offsets in all_sensors and all_sensors_meter
+        CurrentSmA("leakage_current", 30210, "Leakage Current", Kind.PV),
+        # 30211 repeat of 30197 in U64 instead of U32
+        # 30215 repeat of 30199 in U64 instead of U32
+        # 30219 Wireless Module AT Instruction Status Log
+        # 30220 Disable Inverter Flag - 0 for normal operation, 1 for inverter disabled until safety regulations changed
+        # 30221 ARM Internal Firmware Version
+        # 30227 G100 CLS State (UK anti-reflux status)
+        # 30228 Grid power monitored by DSPs CT (S32)
+        # 30230 String Current Detection Flag - 0 No string current detected, 1 String current detected
     )
 
     # Modbus registers of inverter settings, offsets are modbus register addresses
@@ -126,9 +142,8 @@ class DT(Inverter):
         Integer("shadow_scan_pv1", 40326, "Shadow Scan Status PV1", "", Kind.PV),
         Integer("shadow_scan_pv2", 40352, "Shadow Scan Status PV2", "", Kind.PV),
         Integer("shadow_scan_pv3", 40362, "Shadow Scan Status PV3", "", Kind.PV),
-        Integer("shadow_scan_pv1_time", 40347, "Shadow Scan PV1 Time", "", Kind.PV),
-        Integer("shadow_scan_pv2_time", 40353, "Shadow Scan PV2 Time", "", Kind.PV),
-        # Integer("shadow_scan_pv3_time", 40xxx, "Shadow Scan PV3 Time", "", Kind.PV),  #TBC
+        Integer("shadow_scan_time", 40347, "Shadow Scan Time", "", Kind.PV),
+        # Integer("shadow_scan_pv2_time", 40353, "Shadow Scan PV2 Time", "", Kind.PV),  - documentation suggests a duplicate of 40347 as the value is global for all 3 strings
         Integer("grid_export", 40327, "Grid Export Limit Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 40328, "Grid Export Limit", "%", Kind.GRID),
         Integer("start", 40330, "Start / Power On", "", Kind.GRID),
@@ -220,6 +235,8 @@ class DT(Inverter):
             try:
                 response = await self._read_from_socket(self._READ_METER_DATA)
                 data.update(self._map_response(response, self._sensors_meter))
+                #patch house_consumption int from all_sensors_meter now that we have values available
+                data["house_consumption"] = abs(data.get("ppv", 0) - data.get("meter_active_power", 0))
             except (RequestRejectedException, RequestFailedException):
                 logger.info("Meter values not supported, disabling further attempts.")
                 self._has_meter = False

@@ -120,6 +120,19 @@ class CurrentS(Sensor):
         return encode_current_signed(value)
 
 
+class CurrentSmA(Sensor):
+    """Sensor representing current [mA] value encoded in 2 (signed) bytes"""
+
+    def __init__(self, id_: str, offset: int, name: str, kind: Optional[SensorKind]):
+        super().__init__(id_, offset, name, 2, "mA", kind)
+
+    def read_value(self, data: ProtocolResponse):
+        return read_current_signed(data)
+
+    def encode_value(self, value: Any, register_value: bytes = None) -> bytes:
+        return encode_current_signed(value)
+
+
 class Frequency(Sensor):
     """Sensor representing frequency [Hz] value encoded in 2 bytes"""
 
