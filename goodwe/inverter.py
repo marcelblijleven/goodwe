@@ -281,7 +281,7 @@ class Inverter(ABC):
 
     @staticmethod
     def _create_protocol(host: str, port: int, comm_addr: int, timeout: int, retries: int) -> InverterProtocol:
-        if port == 502:
+        if port != 8899:
             return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
         return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
 
