@@ -9,6 +9,7 @@ from typing import Any, Callable, Optional
 
 from .exceptions import MaxRetriesException, RequestFailedException
 from .protocol import InverterProtocol, ProtocolCommand, ProtocolResponse, TcpInverterProtocol, UdpInverterProtocol
+from .const import GOODWE_UDP_PORT, GOODWE_TCP_PORT
 
 logger = logging.getLogger(__name__)
 
@@ -281,7 +282,7 @@ class Inverter(ABC):
 
     @staticmethod
     def _create_protocol(host: str, port: int, comm_addr: int, timeout: int, retries: int) -> InverterProtocol:
-        if port != 8899:
+        if port != GOODWE_UDP_PORT:
             return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
         return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
 
