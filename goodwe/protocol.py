@@ -121,9 +121,11 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     async def _connect(self) -> None:
         if not self._transport or self._transport.is_closing():
+            allow_broadcast = platform.system() == "Darwin" and self._host == "255.255.255.255"
             self._transport, self.protocol = await asyncio.get_running_loop().create_datagram_endpoint(
                 lambda: self,
                 remote_addr=(self._host, self._port),
+                allow_broadcast=allow_broadcast,
             )
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
