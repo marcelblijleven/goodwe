@@ -71,6 +71,8 @@ class OperationMode(IntEnum):
     PEAK_SHAVING - Peak shaving mode
     ECO_CHARGE - Eco mode with a single "Charge" group valid all the time (from 00:00-23:59, Mon-Sun)
     ECO_DISCHARGE - Eco mode with a single "Discharge" group valid all the time (from 00:00-23:59, Mon-Sun)
+    STANDBY - Battery standby mode, disables both charge and discharge
+    STANDBY_OFF - Battery normal mode, enables both charge and discharge
     """
 
     GENERAL = 0
@@ -79,6 +81,8 @@ class OperationMode(IntEnum):
     ECO = 3
     PEAK_SHAVING = 4
     SELF_USE = 5
+    STANDBY = 8
+    STANDBY_OFF = 97
     ECO_CHARGE = 98
     ECO_DISCHARGE = 99
 

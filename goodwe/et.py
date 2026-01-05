@@ -248,7 +248,7 @@ class ET(Inverter):
         Power4S("meter_active_power_total", 36025, "Meter Active Power Total", Kind.GRID),
         Reactive4("meter_reactive_power1", 36027, "Meter Reactive Power L1", Kind.GRID),
         Reactive4("meter_reactive_power2", 36029, "Meter Reactive Power L2", Kind.GRID),
-        Reactive4("meter_reactive_power3", 36031, "Meter Reactive Power L3", Kind.GRID),
+        Reactive4("meter_reactive_power3", 36031, "Meter Reactive Power L2", Kind.GRID),
         Reactive4("meter_reactive_power_total", 36033, "Meter Reactive Power Total", Kind.GRID),
         Apparent4("meter_apparent_power1", 36035, "Meter Apparent Power L1", Kind.GRID),
         Apparent4("meter_apparent_power2", 36037, "Meter Apparent Power L2", Kind.GRID),
@@ -767,6 +767,15 @@ class ET(Inverter):
             await self.write_setting('work_mode', 5)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+        elif operation_mode == OperationMode.STANDBY:
+            await self.write_setting('ems_power_mode', 8)  # 47511 = 8
+            await self.write_setting('ems_power', 0)       # 47512 = 0
+            await self._set_offline(False)
+            await self._clear_battery_mode_param()
+        elif operation_mode == OperationMode.STANDBY_OFF:
+            await self.write_setting('ems_power_mode', 1)  # 47511 = 1
+            await self._set_offline(False)
+            await self._clear_battery_mode_param()    
         elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
             if eco_mode_power < 0 or eco_mode_power > 100:
                 raise ValueError()
