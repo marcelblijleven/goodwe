@@ -139,10 +139,19 @@ class ES(Inverter):
         Integer("bp_pv_discharge", 38, "BP PV Discharge"),
         Integer("bp_bms_protocol", 40, "BP BMS Protocol"),
         Integer("power_factor", 42, "Power Factor"),
+        Integer("float_voltage", 44, "Float Voltage"),
+        Integer("float_current", 46, "Float Current"),
+        Integer("float_time", 48, "Float Time"),
+        Integer("battery_type", 50, "Battery Type"),
         Integer("grid_export_limit", 52, "Grid Export Limit", "W", Kind.GRID),
-        Integer("battery_soc_protection", 56, "Battery SoC Protection", "", Kind.BAT),
+        Integer("battery_soc_protection", 56, "Battery SoC Protection", "", Kind.BAT),        
+        Integer("average_voltage", 60, "Average Voltage"),
+        Integer("average_time", 62, "Average Time"),      
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
+        
+        Integer("battery_count", 82, "Battery Count"),
+        Integer("protocol_code", 84, "Protocol Code"),
 
         EcoModeV1("eco_mode_1", 1793, "Eco Mode Group 1"),  # 0x701
         ByteH("eco_mode_1_switch", 1796, "Eco Mode Group 1 Switch", "", Kind.BAT),
