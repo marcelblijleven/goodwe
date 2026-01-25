@@ -6,7 +6,7 @@ import logging
 
 from .const import *
 from .exceptions import InverterError, RequestFailedException, RequestRejectedException
-from .inverter import Inverter, OperationMode, SensorKind as Kind
+from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
 from .model import is_3_mppt, is_single_phase
 from .protocol import ProtocolCommand
@@ -367,6 +367,12 @@ class DT(Inverter):
         eco_mode_power: int = 100,
         eco_mode_soc: int = 100,
     ) -> None:
+        raise InverterError("Operation not supported.")
+
+    async def get_ems_mode(self) -> EMSMode:
+        raise InverterError("Operation not supported.")
+
+    async def set_ems_mode(self, ems_mode: EMSMode, ems_power_limit: int = 0) -> None:
         raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:

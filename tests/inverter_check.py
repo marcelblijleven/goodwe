@@ -1,12 +1,13 @@
 """Simple test script to check inverter UDP protocol communication"""
+
 import asyncio
 import logging
 import sys
 from importlib.metadata import version
 
 # Force the local files, not pip installed lib
-sys.path.insert(0, '../goodwe')
-sys.path.insert(0, '../../goodwe')
+sys.path.insert(0, "../goodwe")
+sys.path.insert(0, "../../goodwe")
 
 import goodwe
 
@@ -16,12 +17,12 @@ logging.basicConfig(
     level=getattr(logging, "DEBUG", None),
 )
 
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 module_ver = None
 try:
-    module_ver = version('goodwe')
+    module_ver = version("goodwe")
 except ModuleNotFoundError:
     pass
 
@@ -35,26 +36,31 @@ if module_ver:
 # Set the appropriate IP address
 IP_ADDRESS = "192.168.2.14"
 PORT = 8899
-FAMILY = "ET"  # One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
-COMM_ADDR = 0xf7  # Usually 0xf7 for ET/EH/EM/ES or 0x7f for DT/D-NS/XS, or None for default value
+FAMILY = (
+    "ET"  # One of ET, EH, ES, EM, DT, NS, XS or None to detect family automatically
+)
+COMM_ADDR = 0xF7  # Usually 0xf7 for ET/EH/EM/ES or 0x7f for DT/D-NS/XS, or None for default value
 TIMEOUT = 1
 RETRIES = 3
 
-inverter = asyncio.run(goodwe.connect(IP_ADDRESS, PORT, FAMILY, COMM_ADDR, TIMEOUT, RETRIES))
-print(f"Identified inverter\n"
-      f"- Model: {inverter.model_name}\n"
-      f"- SerialNr: {inverter.serial_number}\n"
-      f"- Rated power: {inverter.rated_power}\n"
-      f"- A/C output type: {inverter.ac_output_type}\n"
-      f"- Firmware: {inverter.firmware}\n"
-      f"- ARM firmware: {inverter.arm_firmware}\n"
-      f"- Modbus version: {inverter.modbus_version}\n"
-      f"- DSP1 version: {inverter.dsp1_version}\n"
-      f"- DSP2 version: {inverter.dsp2_version}\n"
-      f"- DSP svn version: {inverter.dsp_svn_version}\n"
-      f"- Arm version: {inverter.arm_version}\n"
-      f"- ARM svn version: {inverter.arm_svn_version}\n"
-      )
+inverter = asyncio.run(
+    goodwe.connect(IP_ADDRESS, PORT, FAMILY, COMM_ADDR, TIMEOUT, RETRIES)
+)
+print(
+    f"Identified inverter\n"
+    f"- Model: {inverter.model_name}\n"
+    f"- SerialNr: {inverter.serial_number}\n"
+    f"- Rated power: {inverter.rated_power}\n"
+    f"- A/C output type: {inverter.ac_output_type}\n"
+    f"- Firmware: {inverter.firmware}\n"
+    f"- ARM firmware: {inverter.arm_firmware}\n"
+    f"- Modbus version: {inverter.modbus_version}\n"
+    f"- DSP1 version: {inverter.dsp1_version}\n"
+    f"- DSP2 version: {inverter.dsp2_version}\n"
+    f"- DSP svn version: {inverter.dsp_svn_version}\n"
+    f"- Arm version: {inverter.arm_version}\n"
+    f"- ARM svn version: {inverter.arm_svn_version}\n"
+)
 
 # -----------------
 # Read runtime data
@@ -62,7 +68,9 @@ print(f"Identified inverter\n"
 response = asyncio.run(inverter.read_runtime_data())
 for sensor in inverter.sensors():
     if sensor.id_ in response:
-        print(f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}")
+        print(
+            f"{sensor.id_}: \t\t {sensor.name} = {response[sensor.id_]} {sensor.unit}"
+        )
 
 # -------------
 # Read sensorr
@@ -96,6 +104,17 @@ for sensor in inverter.sensors():
 # ---------------------------
 # print(asyncio.run(inverter.get_operation_mode()))
 # asyncio.run(inverter.set_operation_mode(goodwe.OperationMode.BACKUP))
+# print(asyncio.run(inverter.get_operation_mode()))
+
+# ---------------------------
+# Set inverter EMS mode
+# ---------------------------
+# print(asyncio.run(inverter.get_ems_mode()))
+# print(asyncio.run(inverter.read_setting("ems_mode")))
+# print(asyncio.run(inverter.read_setting("ems_power_limit")))
+# asyncio.run(inverter.set_ems_mode(goodwe.EMSMode.BATTERY_STANDBY))
+# print(asyncio.run(inverter.get_operation_mode()))
+# asyncio.run(inverter.set_ems_mode(goodwe.EMSMode.AUTO))
 # print(asyncio.run(inverter.get_operation_mode()))
 
 # --------------------

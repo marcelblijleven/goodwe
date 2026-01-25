@@ -6,7 +6,7 @@ import logging
 
 from .const import *
 from .exceptions import RequestFailedException, RequestRejectedException
-from .inverter import Inverter, OperationMode, SensorKind as Kind
+from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
 from .model import is_2_battery, is_4_mppt, is_745_platform, is_single_phase
 from .protocol import ProtocolCommand
@@ -562,8 +562,8 @@ class ET(Inverter):
         ),
         Integer("grid_export", 47509, "Grid Export Limit Enabled", "", Kind.GRID),
         Integer("grid_export_limit", 47510, "Grid Export Limit", "W", Kind.GRID),
-        Integer("ems_power_mode", 47511, "EMS Power Mode", "", Kind.BAT),
-        Integer("ems_power", 47512, "EMS Power", "W", Kind.BAT),
+        Integer("ems_mode", 47511, "EMS Mode"),
+        Integer("ems_power_limit", 47512, "EMS Power Limit", "W"),
         Integer("battery_protocol_code", 47514, "Battery Protocol Code", "", Kind.BAT),
         EcoModeV1("eco_mode_1", 47515, "Eco Mode Group 1"),
         ByteH("eco_mode_1_switch", 47518, "Eco Mode Group 1 Switch"),
@@ -1090,6 +1090,18 @@ class ET(Inverter):
             await self.write_setting("eco_mode_4_switch", 0)
             await self.write_setting("work_mode", 3)
             await self._set_offline(False)
+
+    async def get_ems_mode(self) -> EMSMode:
+        mode_id = await self.read_setting("ems_mode")
+        try:
+            return EMSMode(mode_id)
+        except ValueError:
+            logger.debug("Unknown EMS mode %s", mode_id)
+            return None
+
+    async def set_ems_mode(self, ems_mode: EMSMode, ems_power_limit: int = 0) -> None:
+        await self.write_setting("ems_mode", ems_mode.value)
+        await self.write_setting("ems_power_limit", ems_power_limit)
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting("battery_discharge_depth")

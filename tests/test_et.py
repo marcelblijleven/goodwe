@@ -356,6 +356,10 @@ class GW10K_ET_Test(EtMock):
             "f710b99b0004080000173b0032ff7f02a3", self._list_of_requests[-9].hex()
         )
 
+    def test_get_ems_mode(self):
+        self.loop.run_until_complete(self.get_ems_mode())
+        self.assertEqual("f703b9970001042c", self.request.hex())
+
     def test_get_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.get_ongrid_battery_dod())
         self.assertEqual("f703b12c00017669", self.request.hex())

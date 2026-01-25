@@ -6,7 +6,7 @@ import logging
 
 from .const import *
 from .exceptions import InverterError
-from .inverter import Inverter, OperationMode, SensorKind as Kind
+from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .protocol import (
     ProtocolCommand,
     Aa55ProtocolCommand,
@@ -450,6 +450,12 @@ class ES(Inverter):
             await self.write_setting("eco_mode_3_switch", 0)
             await self.write_setting("eco_mode_4_switch", 0)
             await self._set_eco_mode()
+
+    async def get_ems_mode(self) -> EMSMode:
+        raise InverterError("Operation not supported.")
+
+    async def set_ems_mode(self, ems_mode: EMSMode, ems_power_limit: int = 0) -> None:
+        raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:
         return await self.read_setting("dod")
