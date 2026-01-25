@@ -1,4 +1,5 @@
 """Single phase hybrid inverter support aka platform 105."""
+
 from __future__ import annotations
 
 import logging
@@ -6,7 +7,13 @@ import logging
 from .const import *
 from .exceptions import InverterError
 from .inverter import Inverter, OperationMode, SensorKind as Kind
-from .protocol import ProtocolCommand, Aa55ProtocolCommand, Aa55ReadCommand, Aa55WriteCommand, Aa55WriteMultiCommand
+from .protocol import (
+    ProtocolCommand,
+    Aa55ProtocolCommand,
+    Aa55ReadCommand,
+    Aa55WriteCommand,
+    Aa55WriteMultiCommand,
+)
 from .sensor import *
 
 logger = logging.getLogger(__name__)
@@ -22,39 +29,63 @@ class ES(Inverter):
     __sensors: tuple[Sensor, ...] = (
         Voltage("vpv1", 0, "PV1 Voltage", Kind.PV),  # modbus 0x500
         Current("ipv1", 2, "PV1 Current", Kind.PV),
-        Calculated("ppv1",
-                   lambda data: round(read_voltage(data, 0) * read_current(data, 2)),
-                   "PV1 Power", "W", Kind.PV),
+        Calculated(
+            "ppv1",
+            lambda data: round(read_voltage(data, 0) * read_current(data, 2)),
+            "PV1 Power",
+            "W",
+            Kind.PV,
+        ),
         Byte("pv1_mode", 4, "PV1 Mode code", "", Kind.PV),
         Enum("pv1_mode_label", 4, PV_MODES, "PV1 Mode", Kind.PV),
         Voltage("vpv2", 5, "PV2 Voltage", Kind.PV),
         Current("ipv2", 7, "PV2 Current", Kind.PV),
-        Calculated("ppv2",
-                   lambda data: round(read_voltage(data, 5) * read_current(data, 7)),
-                   "PV2 Power", "W", Kind.PV),
+        Calculated(
+            "ppv2",
+            lambda data: round(read_voltage(data, 5) * read_current(data, 7)),
+            "PV2 Power",
+            "W",
+            Kind.PV,
+        ),
         Byte("pv2_mode", 9, "PV2 Mode code", "", Kind.PV),
         Enum("pv2_mode_label", 9, PV_MODES, "PV2 Mode", Kind.PV),
-        Calculated("ppv",
-                   lambda data: round(read_voltage(data, 0) * read_current(data, 2)) + round(
-                       read_voltage(data, 5) * read_current(data, 7)),
-                   "PV Power", "W", Kind.PV),
+        Calculated(
+            "ppv",
+            lambda data: round(read_voltage(data, 0) * read_current(data, 2))
+            + round(read_voltage(data, 5) * read_current(data, 7)),
+            "PV Power",
+            "W",
+            Kind.PV,
+        ),
         Voltage("vbattery1", 10, "Battery Voltage", Kind.BAT),  # modbus 0x506
         # Voltage("vbattery2", 12, "Battery Voltage 2", Kind.BAT),
         Integer("battery_status", 14, "Battery Status", "", Kind.BAT),
         Temp("battery_temperature", 16, "Battery Temperature", Kind.BAT),
-        Calculated("ibattery1",
-                   lambda data: abs(read_current(data, 18)) * (-1 if read_byte(data, 30) == 3 else 1),
-                   "Battery Current", "A", Kind.BAT),
+        Calculated(
+            "ibattery1",
+            lambda data: abs(read_current(data, 18))
+            * (-1 if read_byte(data, 30) == 3 else 1),
+            "Battery Current",
+            "A",
+            Kind.BAT,
+        ),
         # round(vbattery1 * ibattery1),
-        Calculated("pbattery1",
-                   lambda data: abs(
-                       round(read_voltage(data, 10) * read_current(data, 18))
-                   ) * (-1 if read_byte(data, 30) == 3 else 1),
-                   "Battery Power", "W", Kind.BAT),
+        Calculated(
+            "pbattery1",
+            lambda data: abs(round(read_voltage(data, 10) * read_current(data, 18)))
+            * (-1 if read_byte(data, 30) == 3 else 1),
+            "Battery Power",
+            "W",
+            Kind.BAT,
+        ),
         Integer("battery_charge_limit", 20, "Battery Charge Limit", "A", Kind.BAT),
-        Integer("battery_discharge_limit", 22, "Battery Discharge Limit", "A", Kind.BAT),
+        Integer(
+            "battery_discharge_limit", 22, "Battery Discharge Limit", "A", Kind.BAT
+        ),
         Integer("battery_error", 24, "Battery Error Code", "", Kind.BAT),
-        Byte("battery_soc", 26, "Battery State of Charge", "%", Kind.BAT),  # modbus 0x50E
+        Byte(
+            "battery_soc", 26, "Battery State of Charge", "%", Kind.BAT
+        ),  # modbus 0x50E
         # Byte("cbattery2", 27, "Battery State of Charge 2", "%", Kind.BAT),
         # Byte("cbattery3", 28, "Battery State of Charge 3", "%", Kind.BAT),
         Byte("battery_soh", 29, "Battery State of Health", "%", Kind.BAT),
@@ -64,9 +95,14 @@ class ES(Inverter):
         Byte("meter_status", 33, "Meter Status code", "", Kind.AC),
         Voltage("vgrid", 34, "On-grid Voltage", Kind.AC),
         Current("igrid", 36, "On-grid Current", Kind.AC),
-        Calculated("pgrid",
-                   lambda data: abs(read_bytes2_signed(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1),
-                   "On-grid Export Power", "W", Kind.AC),
+        Calculated(
+            "pgrid",
+            lambda data: abs(read_bytes2_signed(data, 38))
+            * (-1 if read_byte(data, 80) == 2 else 1),
+            "On-grid Export Power",
+            "W",
+            Kind.AC,
+        ),
         Frequency("fgrid", 40, "On-grid Frequency", Kind.AC),
         Byte("grid_mode", 42, "Work Mode code", "", Kind.GRID),
         Enum("grid_mode_label", 42, WORK_MODES_ES, "Work Mode", Kind.GRID),
@@ -92,10 +128,16 @@ class ES(Inverter):
         Enum("grid_in_out_label", 80, GRID_IN_OUT_MODES, "On-grid Mode", Kind.GRID),
         Power("pback_up", 81, "Back-up Power", Kind.UPS),
         # pload + pback_up
-        Calculated("plant_power",
-                   lambda data: round(read_bytes2(data, 47, 0) + read_bytes2(data, 81, 0)),
-                   "Plant Power", "W", Kind.AC),
-        Decimal("meter_power_factor", 83, 1000, "Meter Power Factor", "", Kind.GRID),  # modbus 0x531
+        Calculated(
+            "plant_power",
+            lambda data: round(read_bytes2(data, 47, 0) + read_bytes2(data, 81, 0)),
+            "Plant Power",
+            "W",
+            Kind.AC,
+        ),
+        Decimal(
+            "meter_power_factor", 83, 1000, "Meter Power Factor", "", Kind.GRID
+        ),  # modbus 0x531
         # Integer("xx85", 85, "Unknown sensor@85"),
         # Integer("xx87", 87, "Unknown sensor@87"),
         Long("diagnose_result", 89, "Diag Status Code"),
@@ -111,16 +153,23 @@ class ES(Inverter):
         # Current("igrid_wo", 111, "On-grid Wo Current", Kind.AC),
         # Energy4("e_bat_charge_total", 113, "Total Battery Charge", Kind.BAT),
         # Energy4("e_bat_discharge_total", 117, "Total Battery Discharge", Kind.BAT),
-
         # ppv1 + ppv2 + pbattery - pgrid
-        Calculated("house_consumption",
-                   lambda data:
-                   round(read_voltage(data, 0) * read_current(data, 2)) +
-                   round(read_voltage(data, 5) * read_current(data, 7)) +
-                   (abs(round(read_voltage(data, 10) * read_current(data, 18))) *
-                    (-1 if read_byte(data, 30) == 3 else 1)) -
-                   (abs(read_bytes2_signed(data, 38)) * (-1 if read_byte(data, 80) == 2 else 1)),
-                   "House Consumption", "W", Kind.AC),
+        Calculated(
+            "house_consumption",
+            lambda data: round(read_voltage(data, 0) * read_current(data, 2))
+            + round(read_voltage(data, 5) * read_current(data, 7))
+            + (
+                abs(round(read_voltage(data, 10) * read_current(data, 18)))
+                * (-1 if read_byte(data, 30) == 3 else 1)
+            )
+            - (
+                abs(read_bytes2_signed(data, 38))
+                * (-1 if read_byte(data, 80) == 2 else 1)
+            ),
+            "House Consumption",
+            "W",
+            Kind.AC,
+        ),
     )
 
     __all_settings: tuple[Sensor, ...] = (
@@ -130,10 +179,25 @@ class ES(Inverter):
         Integer("grid_export", 18, "Export Limit Enabled", "", Kind.GRID),
         Integer("capacity", 22, "Capacity"),
         Decimal("charge_v", 24, 10, "Charge Voltage", "V"),
-        Integer("charge_i", 26, "Charge Current", "A", ),
-        Integer("discharge_i", 28, "Discharge Current", "A", ),
+        Integer(
+            "charge_i",
+            26,
+            "Charge Current",
+            "A",
+        ),
+        Integer(
+            "discharge_i",
+            28,
+            "Discharge Current",
+            "A",
+        ),
         Decimal("discharge_v", 30, 10, "Discharge Voltage", "V"),
-        Calculated("dod", lambda data: 100 - read_bytes2(data, 32, 0), "Depth of Discharge", "%"),
+        Calculated(
+            "dod",
+            lambda data: 100 - read_bytes2(data, 32, 0),
+            "Depth of Discharge",
+            "%",
+        ),
         Integer("battery_activated", 34, "Battery Activated"),
         Integer("bp_off_grid_charge", 36, "BP Off-grid Charge"),
         Integer("bp_pv_discharge", 38, "BP PV Discharge"),
@@ -143,7 +207,6 @@ class ES(Inverter):
         Integer("battery_soc_protection", 56, "Battery SoC Protection", "", Kind.BAT),
         Integer("work_mode", 66, "Work Mode"),
         Integer("grid_quality_check", 68, "Grid Quality Check"),
-
         EcoModeV1("eco_mode_1", 1793, "Eco Mode Group 1"),  # 0x701
         ByteH("eco_mode_1_switch", 1796, "Eco Mode Group 1 Switch", "", Kind.BAT),
         EcoModeV1("eco_mode_2", 1797, "Eco Mode Group 2"),
@@ -167,13 +230,20 @@ class ES(Inverter):
     )
 
     # Settings added in ARM firmware 19
-    __settings_arm_fw_19: Tuple[Sensor, ...] = (
+    __settings_arm_fw_19: tuple[Sensor, ...] = (
         Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
         Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
     )
 
-    def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        super().__init__(host, port, comm_addr if comm_addr else 0xf7, timeout, retries)
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        comm_addr: int = 0,
+        timeout: int = 1,
+        retries: int = 3,
+    ):
+        super().__init__(host, port, comm_addr if comm_addr else 0xF7, timeout, retries)
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:
@@ -219,17 +289,26 @@ class ES(Inverter):
         return data[sensor_id]
 
     async def read_setting(self, setting_id: str) -> Any:
-        if setting_id == 'time':
+        if setting_id == "time":
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
             # There does not seem to be time setting/sensor available (or is not known)
             return datetime.now()
-        if setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4', 'fast_charging', 'fast_charging_soc'):
+        if setting_id in (
+            "eco_mode_1",
+            "eco_mode_2",
+            "eco_mode_3",
+            "eco_mode_4",
+            "fast_charging",
+            "fast_charging_soc",
+        ):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
             return await self._read_setting(setting)
         if setting_id.startswith("modbus"):
-            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+            response = await self._read_from_socket(
+                self._read_command(int(setting_id[7:]), 1)
+            )
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
         if setting_id in self._settings:
             logger.debug("Reading setting %s", setting_id)
@@ -240,18 +319,25 @@ class ES(Inverter):
     async def _read_setting(self, setting: Sensor) -> Any:
         count = (setting.size_ + (setting.size_ % 2)) // 2
         if self._is_modbus_setting(setting):
-            response = await self._read_from_socket(self._read_command(setting.offset, count))
+            response = await self._read_from_socket(
+                self._read_command(setting.offset, count)
+            )
             return setting.read_value(response)
         response = await self._read_from_socket(Aa55ReadCommand(setting.offset, count))
         return setting.read_value(response)
 
     async def write_setting(self, setting_id: str, value: Any):
-        if setting_id == 'time':
+        if setting_id == "time":
             await self._read_from_socket(
-                Aa55ProtocolCommand("030206" + Timestamp("time", 0, "").encode_value(value).hex(), "0382")
+                Aa55ProtocolCommand(
+                    "030206" + Timestamp("time", 0, "").encode_value(value).hex(),
+                    "0382",
+                )
             )
         elif setting_id.startswith("modbus"):
-            await self._read_from_socket(self._write_command(int(setting_id[7:]), int(value)))
+            await self._read_from_socket(
+                self._write_command(int(setting_id[7:]), int(value))
+            )
         else:
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
@@ -262,9 +348,13 @@ class ES(Inverter):
         if setting.size_ == 1:
             # modbus can address/store only 16 bit values, read the other 8 bytes
             if self._is_modbus_setting(setting):
-                response = await self._read_from_socket(self._read_command(setting.offset, 1))
+                response = await self._read_from_socket(
+                    self._read_command(setting.offset, 1)
+                )
             else:
-                response = await self._read_from_socket(Aa55ReadCommand(setting.offset, 1))
+                response = await self._read_from_socket(
+                    Aa55ReadCommand(setting.offset, 1)
+                )
             raw_value = setting.encode_value(value, response.response_data()[0:2])
         else:
             raw_value = setting.encode_value(value)
@@ -276,9 +366,13 @@ class ES(Inverter):
                 await self._read_from_socket(Aa55WriteCommand(setting.offset, value))
         else:
             if self._is_modbus_setting(setting):
-                await self._read_from_socket(self._write_multi_command(setting.offset, raw_value))
+                await self._read_from_socket(
+                    self._write_multi_command(setting.offset, raw_value)
+                )
             else:
-                await self._read_from_socket(Aa55WriteMultiCommand(setting.offset, raw_value))
+                await self._read_from_socket(
+                    Aa55WriteMultiCommand(setting.offset, raw_value)
+                )
 
     async def read_settings_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_SETTINGS_DATA)
@@ -286,7 +380,7 @@ class ES(Inverter):
         return data
 
     async def get_grid_export_limit(self) -> int:
-        return await self.read_setting('grid_export_limit')
+        return await self.read_setting("grid_export_limit")
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
         if export_limit >= 0:
@@ -294,7 +388,9 @@ class ES(Inverter):
                 Aa55ProtocolCommand(f"033502{export_limit:04x}", "03b5")
             )
 
-    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
+    async def get_operation_modes(
+        self, include_emulated: bool
+    ) -> tuple[OperationMode, ...]:
         result = list(OperationMode)
         result.remove(OperationMode.PEAK_SHAVING)
         result.remove(OperationMode.SELF_USE)
@@ -304,7 +400,7 @@ class ES(Inverter):
         return tuple(result)
 
     async def get_operation_mode(self) -> OperationMode | None:
-        mode_id = await self.read_setting('work_mode')
+        mode_id = await self.read_setting("work_mode")
         try:
             mode = OperationMode(mode_id)
         except ValueError:
@@ -312,15 +408,19 @@ class ES(Inverter):
             return None
         if OperationMode.ECO != mode:
             return mode
-        eco_mode = await self.read_setting('eco_mode_1')
+        eco_mode = await self.read_setting("eco_mode_1")
         if eco_mode.is_eco_charge_mode():
             return OperationMode.ECO_CHARGE
         if eco_mode.is_eco_discharge_mode():
             return OperationMode.ECO_DISCHARGE
         return OperationMode.ECO
 
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
-                                 eco_mode_soc: int = 100) -> None:
+    async def set_operation_mode(
+        self,
+        operation_mode: OperationMode,
+        eco_mode_power: int = 100,
+        eco_mode_soc: int = 100,
+    ) -> None:
         if operation_mode == OperationMode.GENERAL:
             await self._set_general_mode()
         elif operation_mode == OperationMode.OFF_GRID:
@@ -336,19 +436,23 @@ class ES(Inverter):
                 raise ValueError()
             if eco_mode_soc < 0 or eco_mode_soc > 100:
                 raise ValueError()
-            eco_mode: EcoMode | Sensor = self._settings.get('eco_mode_1')
+            eco_mode: EcoMode | Sensor = self._settings.get("eco_mode_1")
             await self._read_setting(eco_mode)
             if operation_mode == OperationMode.ECO_CHARGE:
-                await self.write_setting('eco_mode_1', eco_mode.encode_charge(eco_mode_power, eco_mode_soc))
+                await self.write_setting(
+                    "eco_mode_1", eco_mode.encode_charge(eco_mode_power, eco_mode_soc)
+                )
             else:
-                await self.write_setting('eco_mode_1', eco_mode.encode_discharge(eco_mode_power))
-            await self.write_setting('eco_mode_2_switch', 0)
-            await self.write_setting('eco_mode_3_switch', 0)
-            await self.write_setting('eco_mode_4_switch', 0)
+                await self.write_setting(
+                    "eco_mode_1", eco_mode.encode_discharge(eco_mode_power)
+                )
+            await self.write_setting("eco_mode_2_switch", 0)
+            await self.write_setting("eco_mode_3_switch", 0)
+            await self.write_setting("eco_mode_4_switch", 0)
             await self._set_eco_mode()
 
     async def get_ongrid_battery_dod(self) -> int:
-        return await self.read_setting('dod')
+        return await self.read_setting("dod")
 
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         if 0 <= dod <= 100:
@@ -408,19 +512,29 @@ class ES(Inverter):
     async def _clear_battery_mode_param(self) -> None:
         await self._read_from_socket(Aa55WriteCommand(0x0700, 1))
 
-    async def _set_limit_power_for_charge(self, start_h: int, start_m: int, stop_h: int, stop_m: int,
-                                          limit: int) -> None:
+    async def _set_limit_power_for_charge(
+        self, start_h: int, start_m: int, stop_h: int, stop_m: int, limit: int
+    ) -> None:
         if limit < 0 or limit > 100:
             raise ValueError()
-        await self._read_from_socket(Aa55ProtocolCommand(
-            f"032c05{start_h:02x}{start_m:02x}{stop_h:02x}{stop_m:02x}{limit:02x}", "03AC"))
+        await self._read_from_socket(
+            Aa55ProtocolCommand(
+                f"032c05{start_h:02x}{start_m:02x}{stop_h:02x}{stop_m:02x}{limit:02x}",
+                "03AC",
+            )
+        )
 
-    async def _set_limit_power_for_discharge(self, start_h: int, start_m: int, stop_h: int, stop_m: int,
-                                             limit: int) -> None:
+    async def _set_limit_power_for_discharge(
+        self, start_h: int, start_m: int, stop_h: int, stop_m: int, limit: int
+    ) -> None:
         if limit < 0 or limit > 100:
             raise ValueError()
-        await self._read_from_socket(Aa55ProtocolCommand(
-            f"032d05{start_h:02x}{start_m:02x}{stop_h:02x}{stop_m:02x}{limit:02x}", "03AD"))
+        await self._read_from_socket(
+            Aa55ProtocolCommand(
+                f"032d05{start_h:02x}{start_m:02x}{stop_h:02x}{stop_m:02x}{limit:02x}",
+                "03AD",
+            )
+        )
 
     async def _set_offgrid_work_mode(self, mode: int) -> None:
         await self._read_from_socket(Aa55ProtocolCommand(f"033601{mode:02x}", "03B6"))
@@ -431,7 +545,9 @@ class ES(Inverter):
             param = 16
         elif mode == 3:
             param = 48
-        await self._read_from_socket(Aa55ProtocolCommand(f"03270200{param:02x}", "03B7"))
+        await self._read_from_socket(
+            Aa55ProtocolCommand(f"03270200{param:02x}", "03B7")
+        )
 
     async def _set_store_energy_mode(self, mode: int) -> None:
         param = 0
