@@ -1,4 +1,5 @@
 """Generic inverter API module."""
+
 from __future__ import annotations
 
 import logging
@@ -7,8 +8,15 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Any, Callable, Optional
 
+from .const import GOODWE_UDP_PORT
 from .exceptions import MaxRetriesException, RequestFailedException
-from .protocol import InverterProtocol, ProtocolCommand, ProtocolResponse, TcpInverterProtocol, UdpInverterProtocol
+from .protocol import (
+    InverterProtocol,
+    ProtocolCommand,
+    ProtocolResponse,
+    TcpInverterProtocol,
+    UdpInverterProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +97,17 @@ class Inverter(ABC):
     Represents the inverter state and its basic behavior
     """
 
-    def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        self._protocol: InverterProtocol = self._create_protocol(host, port, comm_addr, timeout, retries)
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        comm_addr: int = 0,
+        timeout: int = 1,
+        retries: int = 3,
+    ):
+        self._protocol: InverterProtocol = self._create_protocol(
+            host, port, comm_addr, timeout, retries
+        )
         self._consecutive_failures_count: int = 0
 
         self.model_name: str | None = None
@@ -125,11 +142,15 @@ class Inverter(ABC):
             return result
         except MaxRetriesException:
             self._consecutive_failures_count += 1
-            raise RequestFailedException(f'No valid response received even after {self._protocol.retries} retries',
-                                         self._consecutive_failures_count) from None
+            raise RequestFailedException(
+                f"No valid response received even after {self._protocol.retries} retries",
+                self._consecutive_failures_count,
+            ) from None
         except RequestFailedException as ex:
             self._consecutive_failures_count += 1
-            raise RequestFailedException(ex.message, self._consecutive_failures_count) from None
+            raise RequestFailedException(
+                ex.message, self._consecutive_failures_count
+            ) from None
 
     def set_keep_alive(self, keep_alive: bool) -> None:
         self._protocol.keep_alive = keep_alive
@@ -189,7 +210,7 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     async def send_command(
-            self, command: bytes, validator: Callable[[bytes], bool] = lambda x: True
+        self, command: bytes, validator: Callable[[bytes], bool] = lambda x: True
     ) -> ProtocolResponse:
         """
         Send low level command (as bytes).
@@ -216,7 +237,9 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
+    async def get_operation_modes(
+        self, include_emulated: bool
+    ) -> tuple[OperationMode, ...]:
         """
         Answer list of supported inverter operation modes
         """
@@ -230,8 +253,12 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
-                                 eco_mode_soc: int = 100) -> None:
+    async def set_operation_mode(
+        self,
+        operation_mode: OperationMode,
+        eco_mode_power: int = 100,
+        eco_mode_soc: int = 100,
+    ) -> None:
         """
         BEWARE !!!
         This method modifies inverter operational parameter accessible to installers only.
@@ -280,13 +307,17 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @staticmethod
-    def _create_protocol(host: str, port: int, comm_addr: int, timeout: int, retries: int) -> InverterProtocol:
-        if port == 502:
-            return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
-        return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
+    def _create_protocol(
+        host: str, port: int, comm_addr: int, timeout: int, retries: int
+    ) -> InverterProtocol:
+        if port == GOODWE_UDP_PORT:
+            return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
+        return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
 
     @staticmethod
-    def _map_response(response: ProtocolResponse, sensors: tuple[Sensor, ...]) -> dict[str, Any]:
+    def _map_response(
+        response: ProtocolResponse, sensors: tuple[Sensor, ...]
+    ) -> dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
         result = {}
         for sensor in sensors:
@@ -302,7 +333,7 @@ class Inverter(ABC):
         """Decode the bytes to ascii string"""
         try:
             if any(x < 32 for x in data):
-                return data.decode("utf-16be").rstrip().replace('\x00', '')
+                return data.decode("utf-16be").rstrip().replace("\x00", "")
             return data.decode("ascii").rstrip()
         except ValueError:
             return data.hex()
