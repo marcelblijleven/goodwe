@@ -166,6 +166,12 @@ class ES(Inverter):
         ByteH("eco_mode_4_switch", 47567, "Eco Mode Group 4 Switch"),
     )
 
+    # Settings added in ARM firmware 19
+    __settings_arm_fw_19: Tuple[Sensor, ...] = (
+        Integer("fast_charging", 47545, "Fast Charging Enabled", "", Kind.BAT),
+        Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
+    )
+
     def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
         super().__init__(host, port, comm_addr if comm_addr else 0xf7, timeout, retries)
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
@@ -200,6 +206,8 @@ class ES(Inverter):
 
         if self._supports_eco_mode_v2():
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
+        if self.arm_version >= 19:
+            self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
 
     async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_DEVICE_RUNNING_DATA)
@@ -215,7 +223,7 @@ class ES(Inverter):
             # Fake setting, just to enable write_setting to work (if checked as pair in read as in HA)
             # There does not seem to be time setting/sensor available (or is not known)
             return datetime.now()
-        if setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4'):
+        if setting_id in ('eco_mode_1', 'eco_mode_2', 'eco_mode_3', 'eco_mode_4', 'fast_charging', 'fast_charging_soc'):
             setting: Sensor | None = self._settings.get(setting_id)
             if not setting:
                 raise ValueError(f'Unknown setting "{setting_id}"')
