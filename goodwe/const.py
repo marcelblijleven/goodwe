@@ -333,3 +333,9 @@ DERATING_MODE_CODES: dict[int, str] = {
     1: 'Active power derating',
     0: 'Overtemperature derating',
 }
+
+METER_COMMUNICATION_STATUS: dict[int, str] = {
+    0: '',
+    1: 'Normal',
+    2: 'Disconnected',
+}
