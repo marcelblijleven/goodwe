@@ -104,8 +104,8 @@ class EMSMode(IntEnum):
     BATTERY_STANDBY - Battery Standby
     BUY_POWER- Buy Power
     SELL_POWER - Sell Power
-    CHARGE_BAT - Charge Bat
-    DISCHARGE_BAT - Discharge Bat
+    CHARGE_BATTERY - Charge Battery
+    DISCHARGE_BATTERY - Discharge Battery
     """
 
     # Scenario: Self-use.
@@ -206,7 +206,7 @@ class EMSMode(IntEnum):
     # The charging power is also affected by the charging current limit.
     #
     # Interpretation: Charge Battery from PV (high priority) or Grid (low priority); priorities are inverted compared to IMPORT_AC.
-    CHARGE_BAT = 11
+    CHARGE_BATTERY = 11
 
     # Scenario: Force the battery to work at set power value.
     #
@@ -216,7 +216,7 @@ class EMSMode(IntEnum):
     # If the PV power is too large, MPPT will be limited. Discharge power is also affected by discharge current limit.
     #
     # Interpretation: ???
-    DISCHARGE_BAT = 12
+    DISCHARGE_BATTERY = 12
 
 
 class Inverter(ABC):
@@ -406,7 +406,9 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_ems_mode(self, ems_mode: EMSMode, ems_power_limit: int = 0) -> None:
+    async def set_ems_mode(
+        self, ems_mode: EMSMode, ems_power_limit: int | None = None
+    ) -> None:
         """
         Set the inverter EMS mode.
 

@@ -372,7 +372,9 @@ class DT(Inverter):
     async def get_ems_mode(self) -> EMSMode:
         raise InverterError("Operation not supported.")
 
-    async def set_ems_mode(self, ems_mode: EMSMode, ems_power_limit: int = 0) -> None:
+    async def set_ems_mode(
+        self, ems_mode: EMSMode, ems_power_limit: int | None = None
+    ) -> None:
         raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:

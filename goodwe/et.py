@@ -1099,9 +1099,12 @@ class ET(Inverter):
             logger.debug("Unknown EMS mode %s", mode_id)
             return None
 
-    async def set_ems_mode(self, ems_mode: EMSMode, ems_power_limit: int = 0) -> None:
+    async def set_ems_mode(
+        self, ems_mode: EMSMode, ems_power_limit: int | None = None
+    ) -> None:
         await self.write_setting("ems_mode", ems_mode.value)
-        await self.write_setting("ems_power_limit", ems_power_limit)
+        if ems_power_limit:
+            await self.write_setting("ems_power_limit", ems_power_limit)
 
     async def get_ongrid_battery_dod(self) -> int:
         return 100 - await self.read_setting("battery_discharge_depth")
