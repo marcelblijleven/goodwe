@@ -1,4 +1,5 @@
 """Generic inverter API module."""
+
 from __future__ import annotations
 
 import logging
@@ -7,8 +8,15 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Any, Callable, Optional
 
+from .const import GOODWE_UDP_PORT
 from .exceptions import MaxRetriesException, RequestFailedException
-from .protocol import InverterProtocol, ProtocolCommand, ProtocolResponse, TcpInverterProtocol, UdpInverterProtocol
+from .protocol import (
+    InverterProtocol,
+    ProtocolCommand,
+    ProtocolResponse,
+    TcpInverterProtocol,
+    UdpInverterProtocol,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +69,7 @@ class Sensor:
 
 class OperationMode(IntEnum):
     """
-    Enumeration of sensor kinds.
+    Enumeration of operation modes.
 
     Possible values are:
     GENERAL - General mode
@@ -83,14 +91,151 @@ class OperationMode(IntEnum):
     ECO_DISCHARGE = 99
 
 
+class EMSMode(IntEnum):
+    """
+    Enumeration of EMS modes.
+
+    AUTO - Auto
+    CHARGE_PV - Charge PV
+    IMPORT_AC - Import AC
+    EXPORT_AC- Export AC
+    CONSERVE - Conserve
+    OFF_GRID- Off-Grid
+    BATTERY_STANDBY - Battery Standby
+    BUY_POWER- Buy Power
+    SELL_POWER - Sell Power
+    CHARGE_BATTERY - Charge Battery
+    DISCHARGE_BATTERY - Discharge Battery
+    """
+
+    # Scenario: Self-use.
+    #
+    # PBattery = PInv - Pmeter - Ppv (Discharge/Charge)
+    #
+    # The battery power is controlled by the meter power when the meter communication is normal.
+    AUTO = 1
+
+    # Scenario: Control the battery to keep charging.
+    #
+    # PBattery = Xmax + PV (Charge)
+    # Xmax is to allow the power to be taken from the grid, and PV power is preferred.
+    # When set to 0, only PV power is used. Charging power will be limited by charging current limit.
+    #
+    # Interpretation: Charge Battery from PV (high priority) or Grid (low priority).
+    # EmsPowerSet = negative ESS ActivePower (if possible because of PV).
+    CHARGE_PV = 2
+
+    # Scenario: Control the battery to keep discharging.
+    #
+    # PBattery = Xmax (Discharge)
+    #
+    # Xmax is the allowable discharge power of the battery. When the power fed into the grid is limited, PV power will be used first.
+    #
+    # Interpretation: ESS ActivePower = PV power + EmsPowerSet (i.e. battery* discharge); useful for surplus feed-to-grid.
+    DISCHARGE_PV = 3
+
+    # Scenario: The inverter is used as a unit for power grid energy scheduling.
+    #
+    # PBattery = Xset + PV (Charge)
+    #
+    # Xset refers to the power purchased from the power grid. The power purchased from the grid is preferred.
+    # If the PV power is too large, the MPPT power will be limited. (grid side load is not considered)
+    #
+    # Interpretation: Charge Battery from Grid (high priority) or PV (low priority)
+    # EmsPowerSet = negative ESS ActivePower; as long as BMS_CHARGE_MAX_CURRENT is > 0, no AC-Power is exported
+    # when BMS_CHARGE_MAX_CURRENT == 0, PV surplus feed in starts!
+    IMPORT_AC = 4
+
+    # Scenario: The inverter is used as a unit for power grid energy scheduling.
+    #
+    # PBattery = Xset (Discharge)
+    #
+    # Xset is to sell power to the grid. PV power is preferred. When PV energy is insufficient, the battery will discharge.
+    # PV power will be limited by x. (grid side load is not considered)
+    #
+    # Interpretation: EmsPowerSet = positive ESS ActivePower. But PV will be limited, i.e. remaining power is not used to charge battery.
+    EXPORT_AC = 5
+
+    # Scenario: Off-grid reservation mode.
+    #
+    # PBattery = PV (Charge)
+    #
+    # In on-grid mode, the battery is continuously charged, and only PV power (AC Couple model takes 10% of the rated power of the power grid) is used.
+    # The battery can only discharge in off-grid mode.
+    CONSERVE = 6
+
+    # Scenario: Off-Grid Mode.
+    #
+    # PBattery = Pbackup - Ppv (Charge/Discharge)
+    #
+    # Forced off-grid operation.
+    OFF_GRID = 7
+
+    # Scenario: The inverter is used as a unit for power grid energy scheduling.
+    #
+    # PBattery = 0 (Standby)
+    #
+    # The battery does not charge and discharge
+    BATTERY_STANDBY = 8
+
+    # Scenario: Regional energy management.
+    #
+    # PBattery = PInv - (Pmeter + Xset) - Ppv (Charge/Discharge)
+    #
+    # When the meter communication is normal, the power purchased from the power grid is controlled as Xset.
+    # When the PV power is too large, the MPPT power will be limited. When the load is too large, the battery will discharge.
+    #
+    # Interpretation: Control power at the point of common coupling.
+    BUY_POWER = 9
+
+    # Scenario: Regional energy management.
+    #
+    # PBattery = PInv - (Pmeter - Xset) - Ppv (Charge/Discharge)
+    #
+    # When the communication of electricity meter is normal, the power sold from the power grid is controlled as Xset, PV power is preferred,
+    # and the battery discharges when PV energy is insufficient.PV power will be limited by Xset.
+    #
+    # Interpretation: Control power at the point of common coupling.
+    SELL_POWER = 10
+
+    # Scenario: Force the battery to work at set power value.
+    #
+    # PBattery = Xset (Charge)
+    #
+    # Xset is the charging power of the battery. PV power is preferred. When PV * power is insufficient, it will buy power from the power grid.
+    # The charging power is also affected by the charging current limit.
+    #
+    # Interpretation: Charge Battery from PV (high priority) or Grid (low priority); priorities are inverted compared to IMPORT_AC.
+    CHARGE_BATTERY = 11
+
+    # Scenario: Force the battery to work at set power value.
+    #
+    # PBattery = Xset (Discharge)
+    #
+    # Xset is the discharge power of the battery, and the battery discharge has priority.
+    # If the PV power is too large, MPPT will be limited. Discharge power is also affected by discharge current limit.
+    #
+    # Interpretation: ???
+    DISCHARGE_BATTERY = 12
+
+
 class Inverter(ABC):
     """
     Common superclass for various inverter models implementations.
     Represents the inverter state and its basic behavior
     """
 
-    def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        self._protocol: InverterProtocol = self._create_protocol(host, port, comm_addr, timeout, retries)
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        comm_addr: int = 0,
+        timeout: int = 1,
+        retries: int = 3,
+    ):
+        self._protocol: InverterProtocol = self._create_protocol(
+            host, port, comm_addr, timeout, retries
+        )
         self._consecutive_failures_count: int = 0
 
         self.model_name: str | None = None
@@ -125,11 +270,15 @@ class Inverter(ABC):
             return result
         except MaxRetriesException:
             self._consecutive_failures_count += 1
-            raise RequestFailedException(f'No valid response received even after {self._protocol.retries} retries',
-                                         self._consecutive_failures_count) from None
+            raise RequestFailedException(
+                f"No valid response received even after {self._protocol.retries} retries",
+                self._consecutive_failures_count,
+            ) from None
         except RequestFailedException as ex:
             self._consecutive_failures_count += 1
-            raise RequestFailedException(ex.message, self._consecutive_failures_count) from None
+            raise RequestFailedException(
+                ex.message, self._consecutive_failures_count
+            ) from None
 
     def set_keep_alive(self, keep_alive: bool) -> None:
         self._protocol.keep_alive = keep_alive
@@ -189,7 +338,7 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     async def send_command(
-            self, command: bytes, validator: Callable[[bytes], bool] = lambda x: True
+        self, command: bytes, validator: Callable[[bytes], bool] = lambda x: True
     ) -> ProtocolResponse:
         """
         Send low level command (as bytes).
@@ -216,7 +365,9 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
+    async def get_operation_modes(
+        self, include_emulated: bool
+    ) -> tuple[OperationMode, ...]:
         """
         Answer list of supported inverter operation modes
         """
@@ -230,11 +381,15 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
-                                 eco_mode_soc: int = 100) -> None:
+    async def set_operation_mode(
+        self,
+        operation_mode: OperationMode,
+        eco_mode_power: int = 100,
+        eco_mode_soc: int = 100,
+    ) -> None:
         """
         BEWARE !!!
-        This method modifies inverter operational parameter accessible to installers only.
+        This method modifies inverter operational parameter.
         Use with caution and at your own risk !
 
         Set the inverter operation mode
@@ -242,6 +397,24 @@ class Inverter(ABC):
         The modes ECO_CHARGE and ECO_DISCHARGE are not real inverter operation modes, but a convenience
         shortcuts to enter Eco Mode with a single group valid all the time (from 00:00-23:59, Mon-Sun)
         charging or discharging with optional charging power and SoC (%) parameters.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def get_ems_mode(self) -> EMSMode:
+        """Get the inverter EMS mode."""
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def set_ems_mode(
+        self, ems_mode: EMSMode, ems_power_limit: int | None = None
+    ) -> None:
+        """
+        Set the inverter EMS mode.
+
+        BEWARE !!!
+        This method modifies inverter operational parameter.
+        Use with caution and at your own risk !
         """
         raise NotImplementedError()
 
@@ -257,7 +430,7 @@ class Inverter(ABC):
     async def set_ongrid_battery_dod(self, dod: int) -> None:
         """
         BEWARE !!!
-        This method modifies On-Grid Battery DoD parameter accessible to installers only.
+        This method modifies On-Grid Battery DoD parameter.
         Use with caution and at your own risk !
 
         Set the On-Grid Battery DoD
@@ -280,13 +453,17 @@ class Inverter(ABC):
         raise NotImplementedError()
 
     @staticmethod
-    def _create_protocol(host: str, port: int, comm_addr: int, timeout: int, retries: int) -> InverterProtocol:
-        if port == 502:
-            return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
-        return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
+    def _create_protocol(
+        host: str, port: int, comm_addr: int, timeout: int, retries: int
+    ) -> InverterProtocol:
+        if port == GOODWE_UDP_PORT:
+            return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
+        return TcpInverterProtocol(host, port, comm_addr, timeout, retries)
 
     @staticmethod
-    def _map_response(response: ProtocolResponse, sensors: tuple[Sensor, ...]) -> dict[str, Any]:
+    def _map_response(
+        response: ProtocolResponse, sensors: tuple[Sensor, ...]
+    ) -> dict[str, Any]:
         """Process the response data and return dictionary with runtime values"""
         result = {}
         for sensor in sensors:
@@ -302,7 +479,7 @@ class Inverter(ABC):
         """Decode the bytes to ascii string"""
         try:
             if any(x < 32 for x in data):
-                return data.decode("utf-16be").rstrip().replace('\x00', '')
+                return data.decode("utf-16be").rstrip().replace("\x00", "")
             return data.decode("ascii").rstrip()
         except ValueError:
             return data.hex()

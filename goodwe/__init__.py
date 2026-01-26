@@ -1,10 +1,11 @@
 """Goodwe solar inverter communication library."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
 
-from .const import GOODWE_TCP_PORT, GOODWE_UDP_PORT
+from .const import GOODWE_UDP_PORT
 from .dt import DT
 from .es import ES
 from .et import ET
@@ -24,8 +25,15 @@ DT_FAMILY = ["DT", "MS", "NS", "XS"]
 DISCOVERY_COMMAND = Aa55ProtocolCommand("010200", "0182")
 
 
-async def connect(host: str, port: int = GOODWE_UDP_PORT, family: str = None, comm_addr: int = 0, timeout: int = 1,
-                  retries: int = 3, do_discover: bool = True) -> Inverter:
+async def connect(
+    host: str,
+    port: int = GOODWE_UDP_PORT,
+    family: str = None,
+    comm_addr: int = 0,
+    timeout: int = 1,
+    retries: int = 3,
+    do_discover: bool = True,
+) -> Inverter:
     """Contact the inverter at the specified host/port and answer appropriate Inverter instance.
 
     The specific inverter family/type will be detected automatically, but it can be passed explicitly.
@@ -56,7 +64,9 @@ async def connect(host: str, port: int = GOODWE_UDP_PORT, family: str = None, co
     return inv
 
 
-async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, retries: int = 3) -> Inverter:
+async def discover(
+    host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, retries: int = 3
+) -> Inverter:
     """Contact the inverter at the specified value and answer appropriate Inverter instance
 
     Raise InverterError if unable to contact or recognise supported inverter
@@ -67,7 +77,9 @@ async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, ret
         # Try the common AA55C07F0102000241 command first and detect inverter type from serial_number
         try:
             logger.debug("Probing inverter at %s:%s.", host, port)
-            response = await DISCOVERY_COMMAND.execute(UdpInverterProtocol(host, port, timeout, retries))
+            response = await DISCOVERY_COMMAND.execute(
+                UdpInverterProtocol(host, port, timeout, retries)
+            )
             response = response.response_data()
             model_name = response[5:15].decode("ascii").rstrip()
             serial_number = response[31:47].decode("ascii")
@@ -75,24 +87,38 @@ async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, ret
             i: Inverter | None = None
             for model_tag in ET_MODEL_TAGS:
                 if model_tag in serial_number:
-                    logger.debug("Detected ET/EH/BT/BH/GEH inverter %s, S/N:%s.", model_name, serial_number)
+                    logger.debug(
+                        "Detected ET/EH/BT/BH/GEH inverter %s, S/N:%s.",
+                        model_name,
+                        serial_number,
+                    )
                     i = ET(host, port, 0, timeout, retries)
                     break
             if not i:
                 for model_tag in ES_MODEL_TAGS:
                     if model_tag in serial_number:
-                        logger.debug("Detected ES/EM/BP inverter %s, S/N:%s.", model_name, serial_number)
+                        logger.debug(
+                            "Detected ES/EM/BP inverter %s, S/N:%s.",
+                            model_name,
+                            serial_number,
+                        )
                         i = ES(host, port, 0, timeout, retries)
                         break
             if not i:
                 for model_tag in DT_MODEL_TAGS:
                     if model_tag in serial_number:
-                        logger.debug("Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.", model_name, serial_number)
+                        logger.debug(
+                            "Detected DT/MS/D-NS/XS/GEP inverter %s, S/N:%s.",
+                            model_name,
+                            serial_number,
+                        )
                         i = DT(host, port, 0, timeout, retries)
                         break
             if i:
                 await i.read_device_info()
-                logger.debug("Connected to inverter %s, S/N:%s.", i.model_name, i.serial_number)
+                logger.debug(
+                    "Connected to inverter %s, S/N:%s.", i.model_name, i.serial_number
+                )
                 return i
 
         except InverterError as ex:
@@ -105,7 +131,12 @@ async def discover(host: str, port: int = GOODWE_UDP_PORT, timeout: int = 1, ret
             logger.debug("Probing %s inverter at %s.", inv.__name__, host)
             await i.read_device_info()
             await i.read_runtime_data()
-            logger.debug("Detected %s family inverter %s, S/N:%s.", inv.__name__, i.model_name, i.serial_number)
+            logger.debug(
+                "Detected %s family inverter %s, S/N:%s.",
+                inv.__name__,
+                i.model_name,
+                i.serial_number,
+            )
             return i
         except InverterError as ex:
             failures.append(ex)
@@ -125,9 +156,13 @@ async def search_inverters() -> bytes:
     logger.debug("Searching inverters by broadcast to port 48899")
     command = ProtocolCommand("WIFIKIT-214028-READ".encode("utf-8"), lambda r: True)
     try:
-        result = await command.execute(UdpInverterProtocol("255.255.255.255", 48899, 1, 0))
+        result = await command.execute(
+            UdpInverterProtocol("255.255.255.255", 48899, 1, 0)
+        )
         if result is not None:
             return result.response_data()
         raise InverterError("No response received to broadcast request.")
     except asyncio.CancelledError:
-        raise InverterError("No valid response received to broadcast request.") from None
+        raise InverterError(
+            "No valid response received to broadcast request."
+        ) from None

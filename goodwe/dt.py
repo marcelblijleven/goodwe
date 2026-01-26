@@ -1,11 +1,12 @@
 """Grid-only inverter support - models DT/MS/D-NS/XS or GE's GEP(PSB/PSC)"""
+
 from __future__ import annotations
 
 import logging
 
 from .const import *
 from .exceptions import InverterError, RequestFailedException, RequestRejectedException
-from .inverter import Inverter, OperationMode, SensorKind as Kind
+from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
 from .model import is_3_mppt, is_single_phase
 from .protocol import ProtocolCommand
@@ -21,25 +22,41 @@ class DT(Inverter):
         Timestamp("timestamp", 30100, "Timestamp"),
         Voltage("vpv1", 30103, "PV1 Voltage", Kind.PV),
         Current("ipv1", 30104, "PV1 Current", Kind.PV),
-        Calculated("ppv1",
-                   lambda data: round(read_voltage(data, 30103) * read_current(data, 30104)),
-                   "PV1 Power", "W", Kind.PV),
+        Calculated(
+            "ppv1",
+            lambda data: round(read_voltage(data, 30103) * read_current(data, 30104)),
+            "PV1 Power",
+            "W",
+            Kind.PV,
+        ),
         Voltage("vpv2", 30105, "PV2 Voltage", Kind.PV),
         Current("ipv2", 30106, "PV2 Current", Kind.PV),
-        Calculated("ppv2",
-                   lambda data: round(read_voltage(data, 30105) * read_current(data, 30106)),
-                   "PV2 Power", "W", Kind.PV),
+        Calculated(
+            "ppv2",
+            lambda data: round(read_voltage(data, 30105) * read_current(data, 30106)),
+            "PV2 Power",
+            "W",
+            Kind.PV,
+        ),
         Voltage("vpv3", 30107, "PV3 Voltage", Kind.PV),
         Current("ipv3", 30108, "PV3 Current", Kind.PV),
-        Calculated("ppv3",
-                   lambda data: round(read_voltage(data, 30107) * read_current(data, 30108)),
-                   "PV3 Power", "W", Kind.PV),
+        Calculated(
+            "ppv3",
+            lambda data: round(read_voltage(data, 30107) * read_current(data, 30108)),
+            "PV3 Power",
+            "W",
+            Kind.PV,
+        ),
         # ppv1 + ppv2 + ppv3
-        Calculated("ppv",
-                   lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104))) + (
-                       round(read_voltage(data, 30105) * read_current(data, 30106))) + (
-                                    round(read_voltage(data, 30107) * read_current(data, 30108))),
-                   "PV Power", "W", Kind.PV),
+        Calculated(
+            "ppv",
+            lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104)))
+            + (round(read_voltage(data, 30105) * read_current(data, 30106)))
+            + (round(read_voltage(data, 30107) * read_current(data, 30108))),
+            "PV Power",
+            "W",
+            Kind.PV,
+        ),
         # Voltage("vpv4", 30109, "PV4 Voltage", Kind.PV),
         # Current("ipv4", 30110, "PV4 Current", Kind.PV),
         # Voltage("vpv5", 30111, "PV5 Voltage", Kind.PV),
@@ -58,15 +75,27 @@ class DT(Inverter):
         Frequency("fgrid1", 30124, "On-grid L1 Frequency", Kind.AC),
         Frequency("fgrid2", 30125, "On-grid L2 Frequency", Kind.AC),
         Frequency("fgrid3", 30126, "On-grid L3 Frequency", Kind.AC),
-        Calculated("pgrid1",
-                   lambda data: round(read_voltage(data, 30118) * read_current(data, 30121)),
-                   "On-grid L1 Power", "W", Kind.AC),
-        Calculated("pgrid2",
-                   lambda data: round(read_voltage(data, 30119) * read_current(data, 30122)),
-                   "On-grid L2 Power", "W", Kind.AC),
-        Calculated("pgrid3",
-                   lambda data: round(read_voltage(data, 30120) * read_current(data, 30123)),
-                   "On-grid L3 Power", "W", Kind.AC),
+        Calculated(
+            "pgrid1",
+            lambda data: round(read_voltage(data, 30118) * read_current(data, 30121)),
+            "On-grid L1 Power",
+            "W",
+            Kind.AC,
+        ),
+        Calculated(
+            "pgrid2",
+            lambda data: round(read_voltage(data, 30119) * read_current(data, 30122)),
+            "On-grid L2 Power",
+            "W",
+            Kind.AC,
+        ),
+        Calculated(
+            "pgrid3",
+            lambda data: round(read_voltage(data, 30120) * read_current(data, 30123)),
+            "On-grid L3 Power",
+            "W",
+            Kind.AC,
+        ),
         Power4("total_inverter_power", 30127, "Total Power", Kind.AC),
         Integer("work_mode", 30129, "Work Mode code"),
         Enum2("work_mode_label", 30129, WORK_MODES, "Work Mode"),
@@ -84,7 +113,9 @@ class DT(Inverter):
         Energy4("e_total", 30145, "Total PV Generation", Kind.PV),
         Long("h_total", 30147, "Hours Total", "h", Kind.PV),
         Integer("safety_country", 30149, "Safety Country code", "", Kind.AC),
-        Enum2("safety_country_label", 30149, SAFETY_COUNTRIES, "Safety Country", Kind.AC),
+        Enum2(
+            "safety_country_label", 30149, SAFETY_COUNTRIES, "Safety Country", Kind.AC
+        ),
         # 30150 PV1 input power kW
         # 30152 PV2 input power kW
         # 30154 PV3 input power kW
@@ -149,7 +180,9 @@ class DT(Inverter):
         Integer("start", 40330, "Start / Power On", "", Kind.GRID),
         Integer("stop", 40331, "Stop / Power Off", "", Kind.GRID),
         Integer("restart", 40332, "Restart", "", Kind.GRID),
-        Integer("grid_export_hw", 40345, "Grid Export Limit Enabled (HW)", "", Kind.GRID),
+        Integer(
+            "grid_export_hw", 40345, "Grid Export Limit Enabled (HW)", "", Kind.GRID
+        ),
     )
 
     # Settings for single phase inverters
@@ -162,13 +195,24 @@ class DT(Inverter):
         Integer("grid_export_limit", 40336, "Grid Export Limit", "%", Kind.GRID),
     )
 
-    def __init__(self, host: str, port: int, comm_addr: int = 0, timeout: int = 1, retries: int = 3):
-        super().__init__(host, port, comm_addr if comm_addr else 0x7f, timeout, retries)
-        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(0x7531, 0x0028)
-        self._READ_METER_VERSION_INFO: ProtocolCommand = self._read_command(0x756f, 0x0014)
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        comm_addr: int = 0,
+        timeout: int = 1,
+        retries: int = 3,
+    ):
+        super().__init__(host, port, comm_addr if comm_addr else 0x7F, timeout, retries)
+        self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(
+            0x7531, 0x0028
+        )
+        self._READ_METER_VERSION_INFO: ProtocolCommand = self._read_command(
+            0x756F, 0x0014
+        )
         self._READ_DEVICE_MODEL: ProtocolCommand = self._read_command(0x9CED, 0x0008)
         self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
-        self._READ_METER_DATA: ProtocolCommand = self._read_command(0x75f3, 0xF)
+        self._READ_METER_DATA: ProtocolCommand = self._read_command(0x75F3, 0xF)
         self._sensors = self.__all_sensors
         self._sensors_meter = self.__all_sensors_meter
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
@@ -178,12 +222,12 @@ class DT(Inverter):
     @staticmethod
     def _single_phase_only(s: Sensor) -> bool:
         """Filter to exclude phase2/3 sensors on single phase inverters"""
-        return not ((s.id_.endswith('2') or s.id_.endswith('3')) and 'pv' not in s.id_)
+        return not ((s.id_.endswith("2") or s.id_.endswith("3")) and "pv" not in s.id_)
 
     @staticmethod
     def _pv1_pv2_only(s: Sensor) -> bool:
         """Filter to exclude sensors on < 3 PV inverters"""
-        return not s.id_.endswith('pv3')
+        return not s.id_.endswith("pv3")
 
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
@@ -196,7 +240,9 @@ class DT(Inverter):
         self.arm_version = read_unsigned_int(response, 70)  # 30036
         self.dsp_svn_version = read_unsigned_int(response, 72)  # 35037
         self.arm_svn_version = read_unsigned_int(response, 74)  # 35038
-        self.firmware = f"{self.dsp1_version}.{self.dsp2_version}.{self.arm_version:02x}"
+        self.firmware = (
+            f"{self.dsp1_version}.{self.dsp2_version}.{self.arm_version:02x}"
+        )
 
         try:
             self.model_name = response[22:32].decode("ascii").rstrip()
@@ -204,7 +250,7 @@ class DT(Inverter):
             try:
                 response = await self._read_from_socket(self._READ_DEVICE_MODEL)
                 response = response.response_data()
-                self.model_name = response[0:16].decode("ascii").rstrip('\x00').strip()
+                self.model_name = response[0:16].decode("ascii").rstrip("\x00").strip()
             except InverterError as e:
                 logger.debug("No model name sent from the inverter.")
 
@@ -248,7 +294,9 @@ class DT(Inverter):
         if sensor:
             return await self._read_sensor(sensor)
         if sensor_id.startswith("modbus"):
-            response = await self._read_from_socket(self._read_command(int(sensor_id[7:]), 1))
+            response = await self._read_from_socket(
+                self._read_command(int(sensor_id[7:]), 1)
+            )
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
         raise ValueError(f'Unknown sensor "{sensor_id}"')
 
@@ -257,14 +305,18 @@ class DT(Inverter):
         if setting:
             return await self._read_sensor(setting)
         if setting_id.startswith("modbus"):
-            response = await self._read_from_socket(self._read_command(int(setting_id[7:]), 1))
+            response = await self._read_from_socket(
+                self._read_command(int(setting_id[7:]), 1)
+            )
             return int.from_bytes(response.read(2), byteorder="big", signed=True)
         raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _read_sensor(self, setting: Sensor) -> Any:
         try:
             count = (setting.size_ + (setting.size_ % 2)) // 2
-            response = await self._read_from_socket(self._read_command(setting.offset, count))
+            response = await self._read_from_socket(
+                self._read_command(setting.offset, count)
+            )
             return setting.read_value(response)
         except RequestRejectedException as ex:
             if ex.message == ILLEGAL_DATA_ADDRESS:
@@ -279,14 +331,18 @@ class DT(Inverter):
             await self._write_setting(setting, value)
         else:
             if setting_id.startswith("modbus"):
-                await self._read_from_socket(self._write_command(int(setting_id[7:]), int(value)))
+                await self._read_from_socket(
+                    self._write_command(int(setting_id[7:]), int(value))
+                )
             else:
                 raise ValueError(f'Unknown setting "{setting_id}"')
 
     async def _write_setting(self, setting: Sensor, value: Any):
         if setting.size_ == 1:
             # modbus can address/store only 16 bit values, read the other 8 bytes
-            response = await self._read_from_socket(self._read_command(setting.offset, 1))
+            response = await self._read_from_socket(
+                self._read_command(setting.offset, 1)
+            )
             raw_value = setting.encode_value(value, response.response_data()[0:2])
         else:
             raw_value = setting.encode_value(value)
@@ -294,7 +350,9 @@ class DT(Inverter):
             value = int.from_bytes(raw_value, byteorder="big", signed=True)
             await self._read_from_socket(self._write_command(setting.offset, value))
         else:
-            await self._read_from_socket(self._write_multi_command(setting.offset, raw_value))
+            await self._read_from_socket(
+                self._write_multi_command(setting.offset, raw_value)
+            )
 
     async def read_settings_data(self) -> dict[str, Any]:
         data = {}
@@ -304,20 +362,34 @@ class DT(Inverter):
         return data
 
     async def get_grid_export_limit(self) -> int:
-        return await self.read_setting('grid_export_limit')
+        return await self.read_setting("grid_export_limit")
 
     async def set_grid_export_limit(self, export_limit: int) -> None:
         if export_limit >= 0:
-            return await self.write_setting('grid_export_limit', export_limit)
+            return await self.write_setting("grid_export_limit", export_limit)
 
-    async def get_operation_modes(self, include_emulated: bool) -> tuple[OperationMode, ...]:
+    async def get_operation_modes(
+        self, include_emulated: bool
+    ) -> tuple[OperationMode, ...]:
         return ()
 
     async def get_operation_mode(self) -> OperationMode:
         raise InverterError("Operation not supported.")
 
-    async def set_operation_mode(self, operation_mode: OperationMode, eco_mode_power: int = 100,
-                                 eco_mode_soc: int = 100) -> None:
+    async def set_operation_mode(
+        self,
+        operation_mode: OperationMode,
+        eco_mode_power: int = 100,
+        eco_mode_soc: int = 100,
+    ) -> None:
+        raise InverterError("Operation not supported.")
+
+    async def get_ems_mode(self) -> EMSMode:
+        raise InverterError("Operation not supported.")
+
+    async def set_ems_mode(
+        self, ems_mode: EMSMode, ems_power_limit: int | None = None
+    ) -> None:
         raise InverterError("Operation not supported.")
 
     async def get_ongrid_battery_dod(self) -> int:
