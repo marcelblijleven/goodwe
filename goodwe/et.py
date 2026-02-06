@@ -573,6 +573,7 @@ class ET(Inverter):
         ByteH("eco_mode_3_switch", 47526, "Eco Mode Group 3 Switch"),
         EcoModeV1("eco_mode_4", 47527, "Eco Mode Group 4"),
         ByteH("eco_mode_4_switch", 47530, "Eco Mode Group 4 Switch"),
+        Integer("soc_upper_limit", 47760, "SoC Upper Limit"),
         # Direct BMS communication for EMS Control
         Integer("bms_version", 47900, "BMS Version"),
         Integer("bms_bat_modules", 47901, "BMS Battery Modules"),
