@@ -31,6 +31,7 @@ PLATFORM_745_HV_MODELS = (
     "ARB",
     "URB",
     "EBR",
+    "NAH",  # ESA/EHA-G20
 )
 PLATFORM_753_MODELS = ("AES", "HHI", "ABP", "EHB", "HSB", "HUA", "CUA")
 
@@ -90,6 +91,7 @@ SINGLE_PHASE_MODELS = (
     "HMB",
     "HBB",
     "SPN",
+    "NAH",
 )
 
 MPPT3_MODELS = (
@@ -105,7 +107,7 @@ MPPT3_MODELS = (
     "GW15K-ET20",
 )
 
-MPPT4_MODELS = ("HSB", "EHB")
+MPPT4_MODELS = ("HSB", "EHB", "GW8K-EHA-G20", "GW10K-EHA-G20")
 
 BAT_2_MODELS = ("25KET", "29K9ET")
 
