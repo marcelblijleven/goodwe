@@ -51,7 +51,12 @@ class EtMock(TestCase, ET):
 
     @classmethod
     def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
+        cls.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(cls.loop)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.loop.close()
 
 
 class GW10K_ET_Test(EtMock):
@@ -378,7 +383,7 @@ class GW10K_ET_fw819_Test(EtMock):
         )
         self.mock_response(ModbusRtuReadCommand(0xF7, 47547, 6), "eco_mode_v2.hex")
         self.mock_response(ModbusRtuReadCommand(0xF7, 47589, 6), ILLEGAL_DATA_ADDRESS)
-        asyncio.get_event_loop().run_until_complete(self.read_device_info())
+        asyncio.new_event_loop().run_until_complete(self.read_device_info())
 
     def test_GW10K_ET_fw819_device_info(self):
         self.assertEqual("0GW10K-ET", self.model_name)
@@ -436,7 +441,7 @@ class GW10K_ET_fw1023_Test(EtMock):
             self._READ_DEVICE_VERSION_INFO, "GW10K-ET_device_info_fw1023.hex"
         )
         self.mock_response(self._READ_RUNNING_DATA, "GW10K-ET_running_data_fw1023.hex")
-        asyncio.get_event_loop().run_until_complete(self.read_device_info())
+        asyncio.new_event_loop().run_until_complete(self.read_device_info())
 
     def test_GW10K_ET_fw1023_device_info(self):
         self.assertEqual("GW10K-ET", self.model_name)
