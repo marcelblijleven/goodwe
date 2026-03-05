@@ -44,7 +44,12 @@ class EsMock(TestCase, ES):
 
     @classmethod
     def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
+        cls.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(cls.loop)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.loop.close()
 
 
 class GW5048D_ES_Test(EsMock):

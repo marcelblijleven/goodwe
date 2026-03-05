@@ -48,7 +48,12 @@ class DtMock(TestCase, DT):
 
     @classmethod
     def setUpClass(cls):
-        cls.loop = asyncio.get_event_loop()
+        cls.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(cls.loop)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.loop.close()
 
 
 class GW6000_DT_Test(DtMock):
