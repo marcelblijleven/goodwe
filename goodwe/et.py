@@ -1120,15 +1120,16 @@ class ET(Inverter):
         return self._sensors_map.get(sensor_id)
 
     def sensors(self) -> tuple[Sensor, ...]:
-        result = self._sensors + self._sensors_meter
+        result = {s.id_: s for s in self._sensors}
+        result.update({s.id_: s for s in self._sensors_meter})
         if self._has_battery:
-            result = result + self._sensors_battery
+            result.update({s.id_: s for s in self._sensors_battery})
         if self._has_battery2:
-            result = result + self._sensors_battery2
-            result = result + self._sensors_battery2_extended
+            result.update({s.id_: s for s in self._sensors_battery2})
+            result.update({s.id_: s for s in self._sensors_battery2_extended})
         if self._has_mppt:
-            result = result + self._sensors_mppt
-        return result
+            result.update({s.id_: s for s in self._sensors_mppt})
+        return result.values()
 
     def settings(self) -> tuple[Sensor, ...]:
         return tuple(self._settings.values())

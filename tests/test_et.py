@@ -904,6 +904,7 @@ class GW20K_ET_Test(EtMock):
         self.assertEqual(219, len(data))
 
         self.sensor_map = {s.id_: s for s in self.sensors()}
+        self.assertEqual(len(self.sensor_map), len(self.sensors()))
 
         # self.assertEqual(36104, self.sensor_map.get("meter_e_total_exp").offset)
 
@@ -1132,6 +1133,10 @@ class GW20K_ET_Test(EtMock):
         self.assertSensor('apparent_power2', 0, 'VA', data)
         self.assertSensor('apparent_power3', 0, 'VA', data)        
 
+        self.assertFalse(
+            self.sensor_map, f"Some sensors were not tested {self.sensor_map}"
+        )
+
 
 class GW25K_ET_Test(EtMock):
 
@@ -1170,6 +1175,7 @@ class GW25K_ET_Test(EtMock):
         self.assertEqual(242, len(data))
 
         self.sensor_map = {s.id_: s for s in self.sensors()}
+        self.assertEqual(len(self.sensor_map), len(self.sensors()))
 
         # self.assertEqual(36104, self.sensor_map.get("meter_e_total_exp").offset)
 
@@ -1475,6 +1481,7 @@ class GW29K9_ET_Test(EtMock):
         self.assertEqual(216, len(data))
 
         self.sensor_map = {s.id_: s for s in self.sensors()}
+        self.assertEqual(len(self.sensor_map), len(self.sensors()))
 
         self.assertSensor(
             "timestamp",
