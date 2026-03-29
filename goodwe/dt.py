@@ -8,7 +8,7 @@ from .const import *
 from .exceptions import InverterError, RequestFailedException, RequestRejectedException
 from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
-from .model import is_3_mppt, is_single_phase
+from .model import is_3_mppt, is_4_mppt, is_single_phase
 from .protocol import ProtocolCommand
 from .sensor import *
 
@@ -47,22 +47,30 @@ class DT(Inverter):
             "W",
             Kind.PV,
         ),
-        # ppv1 + ppv2 + ppv3
+        Voltage("vpv4", 30109, "PV4 Voltage", Kind.PV),
+        Current("ipv4", 30110, "PV4 Current", Kind.PV),
         Calculated(
-            "ppv",
-            lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104)))
-            + (round(read_voltage(data, 30105) * read_current(data, 30106)))
-            + (round(read_voltage(data, 30107) * read_current(data, 30108))),
-            "PV Power",
+            "ppv4",
+            lambda data: round(read_voltage(data, 30109) * read_current(data, 30110)),
+            "PV4 Power",
             "W",
             Kind.PV,
         ),
-        # Voltage("vpv4", 30109, "PV4 Voltage", Kind.PV),
-        # Current("ipv4", 30110, "PV4 Current", Kind.PV),
         # Voltage("vpv5", 30111, "PV5 Voltage", Kind.PV),
         # Current("ipv5", 30112, "PV5 Current", Kind.PV),
         # Voltage("vpv6", 30113, "PV6 Voltage", Kind.PV),
         # Current("ipv6", 30114, "PV7 Current", Kind.PV),
+        # ppv1 + ppv2 + ppv3 + ppv4
+        Calculated(
+            "ppv",
+            lambda data: (round(read_voltage(data, 30103) * read_current(data, 30104)))
+            + (round(read_voltage(data, 30105) * read_current(data, 30106)))
+            + (round(read_voltage(data, 30107) * read_current(data, 30108)))
+            + (round(read_voltage(data, 30109) * read_current(data, 30110))),
+            "PV Power",
+            "W",
+            Kind.PV,
+        ),
         Voltage("vline1", 30115, "On-grid L1-L2 Voltage", Kind.AC),
         Voltage("vline2", 30116, "On-grid L2-L3 Voltage", Kind.AC),
         Voltage("vline3", 30117, "On-grid L3-L1 Voltage", Kind.AC),
@@ -224,11 +232,6 @@ class DT(Inverter):
         """Filter to exclude phase2/3 sensors on single phase inverters"""
         return not ((s.id_.endswith("2") or s.id_.endswith("3")) and "pv" not in s.id_)
 
-    @staticmethod
-    def _pv1_pv2_only(s: Sensor) -> bool:
-        """Filter to exclude sensors on < 3 PV inverters"""
-        return not s.id_.endswith("pv3")
-
     async def read_device_info(self):
         response = await self._read_from_socket(self._READ_DEVICE_VERSION_INFO)
         response = response.response_data()
@@ -260,10 +263,15 @@ class DT(Inverter):
         else:
             self._settings.update({s.id_: s for s in self.__settings_three_phase})
 
-        if is_3_mppt(self):
+        if is_4_mppt(self):
             pass
+        elif is_3_mppt(self):
+            # This inverter does not have 4 MPPTs or PV strings
+            self._sensors = tuple(filter(lambda s: not ("pv4" in s.id_), self._sensors))
         else:
-            self._sensors = tuple(filter(self._pv1_pv2_only, self._sensors))
+            # This inverter does not have 3,4 MPPTs or PV strings
+            self._sensors = tuple(filter(lambda s: not ("pv4" in s.id_), self._sensors))
+            self._sensors = tuple(filter(lambda s: not ("pv3" in s.id_), self._sensors))
 
         try:
             response = await self._read_from_socket(self._READ_METER_VERSION_INFO)
