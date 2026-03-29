@@ -736,13 +736,25 @@ class GW20K_SDT_20_Test(DtMock):
 
     def __init__(self, methodName="runTest"):
         DtMock.__init__(self, methodName, 8899)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, "GW20K-SDT-20_device_info.hex")
         self.mock_response(self._READ_RUNNING_DATA, "GW20K-SDT-20_running_data.hex")
         self.mock_response(self._READ_METER_DATA, ILLEGAL_DATA_ADDRESS)
+
+    def test_GW20K_SDT_20_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual("5020KDTB233W0000", self.serial_number)
+        self.assertEqual(17, self.dsp1_version)
+        self.assertEqual(17, self.dsp2_version)
+        self.assertEqual(1156, self.dsp_svn_version)
+        self.assertEqual(18, self.arm_version)
+        self.assertEqual(246, self.arm_svn_version)
+        self.assertEqual("17.17.12", self.firmware)
+
 
     def test_GW20K_SDT_20_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(45, len(data))
+        self.assertEqual(51, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -756,6 +768,12 @@ class GW20K_SDT_20_Test(DtMock):
         self.assertSensor("vpv2", 688.8, "V", data)
         self.assertSensor("ipv2", 1.9, "A", data)
         self.assertSensor("ppv2", 1309, "W", data)
+        self.assertSensor("vpv3", 711.3, "V", data)
+        self.assertSensor("ipv3", 2.0, "A", data)
+        self.assertSensor("ppv3", 1423, "W", data)
+        self.assertSensor("vpv4", 728.7, "V", data)
+        self.assertSensor("ipv4", 2.1, "A", data)
+        self.assertSensor("ppv4", 1530, "W", data)
         self.assertSensor("ppv", 5616, "W", data)
         self.assertSensor("vline1", 402.6, "V", data)
         self.assertSensor("vline2", 402.6, "V", data)
