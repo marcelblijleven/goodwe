@@ -1044,27 +1044,33 @@ class ET(Inverter):
             await self.write_setting("work_mode", 0)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+            await self._disable_tou_mode()
         elif operation_mode == OperationMode.OFF_GRID:
             await self.write_setting("work_mode", 1)
             await self._set_offline(True)
             await self.write_setting("backup_supply", 1)
             await self.write_setting("cold_start", 4)
             await self._clear_battery_mode_param()
+            await self._disable_tou_mode()
         elif operation_mode == OperationMode.BACKUP:
             await self.write_setting("work_mode", 2)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+            await self._disable_tou_mode()
         elif operation_mode == OperationMode.ECO:
             await self.write_setting("work_mode", 3)
             await self._set_offline(False)
+            await self._enable_tou_mode()
         elif operation_mode == OperationMode.PEAK_SHAVING:
             await self.write_setting("work_mode", 4)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+            await self._disable_tou_mode()
         elif operation_mode == OperationMode.SELF_USE:
             await self.write_setting("work_mode", 5)
             await self._set_offline(False)
             await self._clear_battery_mode_param()
+            await self._disable_tou_mode()
         elif operation_mode in (OperationMode.ECO_CHARGE, OperationMode.ECO_DISCHARGE):
             if eco_mode_power < 0 or eco_mode_power > 100:
                 raise ValueError()
@@ -1091,6 +1097,7 @@ class ET(Inverter):
             await self.write_setting("eco_mode_4_switch", 0)
             await self.write_setting("work_mode", 3)
             await self._set_offline(False)
+            await self._enable_tou_mode()
 
     async def get_ems_mode(self) -> EMSMode:
         mode_id = await self.read_setting("ems_mode")
@@ -1140,3 +1147,11 @@ class ET(Inverter):
     async def _set_offline(self, mode: bool) -> None:
         value = bytes.fromhex("00070000") if mode else bytes.fromhex("00010000")
         await self._read_from_socket(self._write_multi_command(0xB997, value))
+
+    async def _enable_tou_mode(self) -> None:
+        if is_745_platform(self):
+            await self.write_setting("eco_mode_enable", 1)
+
+    async def _disable_tou_mode(self) -> None:
+        if is_745_platform(self):
+            await self.write_setting("eco_mode_enable", 0)
