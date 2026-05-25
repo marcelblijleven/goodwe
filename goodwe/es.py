@@ -242,8 +242,10 @@ class ES(Inverter):
         comm_addr: int = 0,
         timeout: int = 1,
         retries: int = 3,
+        dtls: bool = False,
     ):
-        super().__init__(host, port, comm_addr if comm_addr else 0xF7, timeout, retries)
+        super().__init__(host, port, comm_addr if comm_addr else 0xF7,
+                         timeout, retries, dtls=dtls)
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
 
     def _supports_eco_mode_v2(self) -> bool:

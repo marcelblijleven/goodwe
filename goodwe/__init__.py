@@ -33,6 +33,7 @@ async def connect(
     timeout: int = 1,
     retries: int = 3,
     do_discover: bool = True,
+    dtls: bool = False,
 ) -> Inverter:
     """Contact the inverter at the specified host/port and answer appropriate Inverter instance.
 
@@ -45,15 +46,25 @@ async def connect(
     Since the UDP communication is by definition unreliable, when no (valid) response is received by the specified
     timeout, it is considered lost and the command will be re-tried up to retries times.
 
+    Newer Wi-Fi/LAN Kit-20 dongles (firmware that advertises ``dtls_port:8899`` in the
+    discovery probe response on UDP/48899) encrypt local communication with DTLS. Pass
+    ``dtls=True`` to use the DTLS transport. Requires pyOpenSSL — install via
+    ``pip install goodwe[dtls]``. Family must be specified explicitly when dtls=True
+    (auto-discovery is not supported on the encrypted path).
+
     Raise InverterError if unable to contact or recognise supported inverter.
     """
     if family in ET_FAMILY:
-        inv = ET(host, port, comm_addr, timeout, retries)
+        inv = ET(host, port, comm_addr, timeout, retries, dtls=dtls)
     elif family in ES_FAMILY:
-        inv = ES(host, port, comm_addr, timeout, retries)
+        inv = ES(host, port, comm_addr, timeout, retries, dtls=dtls)
     elif family in DT_FAMILY:
-        inv = DT(host, port, comm_addr, timeout, retries)
+        inv = DT(host, port, comm_addr, timeout, retries, dtls=dtls)
     elif do_discover:
+        if dtls:
+            raise InverterError(
+                "dtls=True requires explicit family; auto-discovery uses plaintext"
+            )
         return await discover(host, port, timeout, retries)
     else:
         raise InverterError("Specify either an inverter family or set do_discover True")

@@ -210,8 +210,10 @@ class DT(Inverter):
         comm_addr: int = 0,
         timeout: int = 1,
         retries: int = 3,
+        dtls: bool = False,
     ):
-        super().__init__(host, port, comm_addr if comm_addr else 0x7F, timeout, retries)
+        super().__init__(host, port, comm_addr if comm_addr else 0x7F,
+                         timeout, retries, dtls=dtls)
         self._READ_DEVICE_VERSION_INFO: ProtocolCommand = self._read_command(
             0x7531, 0x0028
         )

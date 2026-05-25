@@ -232,9 +232,10 @@ class Inverter(ABC):
         comm_addr: int = 0,
         timeout: int = 1,
         retries: int = 3,
+        dtls: bool = False,
     ):
         self._protocol: InverterProtocol = self._create_protocol(
-            host, port, comm_addr, timeout, retries
+            host, port, comm_addr, timeout, retries, dtls=dtls
         )
         self._consecutive_failures_count: int = 0
 
@@ -454,8 +455,14 @@ class Inverter(ABC):
 
     @staticmethod
     def _create_protocol(
-        host: str, port: int, comm_addr: int, timeout: int, retries: int
+        host: str, port: int, comm_addr: int, timeout: int, retries: int,
+        dtls: bool = False,
     ) -> InverterProtocol:
+        if dtls:
+            # Imported lazily so the optional pyOpenSSL dependency is only
+            # required when the DTLS path is actually used.
+            from .dtls import DTLSInverterProtocol  # noqa: PLC0415
+            return DTLSInverterProtocol(host, port, comm_addr, timeout, retries)
         if port == GOODWE_UDP_PORT:
             return UdpInverterProtocol(host, port, comm_addr, timeout, retries)
         return TcpInverterProtocol(host, port, comm_addr, timeout, retries)

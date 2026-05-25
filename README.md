@@ -19,6 +19,25 @@ know to work properly.
 Since v0.4.x the library also supports standard Modbus/TCP over port 502.
 This protocol is supported by the V2.0 version of LAN+WiFi communication dongle (model WLA0000-01-00P).
 
+### Newer Wi-Fi/LAN Kit-20 firmware (DTLS)
+
+Some newer Wi-Fi/LAN Kit-20 dongles (firmware released ~2024 onward — sometimes
+marketed as the "Cyber Security dongle") encrypt their local Modbus protocol with
+DTLS over UDP/8899. The standard `WIFIKIT-214028-READ` discovery probe to UDP/48899
+returns `dtls_port:8899` for affected hardware; plaintext requests on UDP/8899 are
+silently dropped.
+
+Pass `dtls=True` to `goodwe.connect()` to use the DTLS transport. The application
+protocol (Modbus RTU framing, register layout) is unchanged from the plaintext path
+— only the transport differs. Auto-discovery is plaintext-only, so the inverter
+family must be specified explicitly when `dtls=True`:
+
+```python
+inverter = await goodwe.connect(ip_address, family="DT", dtls=True)
+```
+
+Requires `pyOpenSSL` — install via `pip install goodwe[dtls]`.
+
 (If you can't communicate with the inverter despite your model is listed above, it is possible you have old ARM firmware
 version. You should ask manufacturer support to upgrade your ARM firmware (not just inverter firmware) to be able to
 communicate with the inverter.)
