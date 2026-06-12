@@ -68,7 +68,7 @@ class GW6000_DT_Test(DtMock):
     def test_GW6000_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(45, len(data))
+        self.assertEqual(46, len(data))
 
         self.sensor_map = {s.id_: s for s in self.sensors()}
 
@@ -122,6 +122,7 @@ class GW6000_DT_Test(DtMock):
         self.assertSensor("derating_mode", 0, "", data)
         self.assertSensor("derating_mode_label", "", "", data)
         self.assertSensor("rssi", 100, "", data)
+        self.assertSensor("iso_resistance", 0.0, "kΩ", data)
 
         self.assertFalse(
             self.sensor_map, f"Some sensors were not tested {self.sensor_map}"
@@ -165,7 +166,7 @@ class GW8K_DT_Test(DtMock):
     def test_GW8K_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(45, len(data))
+        self.assertEqual(46, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -239,7 +240,7 @@ class GW5000D_NS_Test(DtMock):
     def test_GW5000D_NS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(35, len(data))
+        self.assertEqual(36, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -314,7 +315,7 @@ class GW5000_MS_Test(DtMock):
     def test_GW5000_MS_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(38, len(data))
+        self.assertEqual(39, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -384,7 +385,7 @@ class GW10K_MS_30_Test(DtMock):
     def test_GW10K_MS_30_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(38, len(data))
+        self.assertEqual(39, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -440,7 +441,7 @@ class GW10K_MS_TCP_Test(DtMock):
     def test_GW10K_MS_TCP_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(45, len(data))
+        self.assertEqual(46, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -515,7 +516,7 @@ class GW20KAU_DT_Test(DtMock):
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(45, len(data))
+        self.assertEqual(46, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -592,7 +593,7 @@ class GW17K_DT_Test(DtMock):
     def test_GW20KAU_DT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(45, len(data))
+        self.assertEqual(46, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -669,7 +670,7 @@ class GW50KS_MT_Test(DtMock):
     def test_GW50KS_MT_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(51, len(data))
+        self.assertEqual(52, len(data))
 
         for sensor in self.sensors():
             print(f"self.assertSensor('{sensor.id_}', {data[sensor.id_]}, '{self.sensor_map.get(sensor.id_).unit}', data)")
@@ -731,6 +732,7 @@ class GW50KS_MT_Test(DtMock):
         self.assertSensor('derating_mode', 256, '', data)
         self.assertSensor('derating_mode_label', "Maximum current derating", '', data)
         self.assertSensor('rssi', 37, '', data)
+        self.assertSensor('iso_resistance', 0.0, 'kΩ', data)
 
 class GW20K_SDT_20_Test(DtMock):
 
@@ -754,7 +756,7 @@ class GW20K_SDT_20_Test(DtMock):
     def test_GW20K_SDT_20_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
-        self.assertEqual(51, len(data))
+        self.assertEqual(52, len(data))
 
         self.assertSensor(
             "timestamp",
@@ -812,3 +814,4 @@ class GW20K_SDT_20_Test(DtMock):
         self.assertSensor("derating_mode", 0, "", data)
         self.assertSensor("derating_mode_label", "", "", data)
         self.assertSensor("rssi", 35, "", data)
+        self.assertSensor("iso_resistance", 0.0, "kΩ", data)
