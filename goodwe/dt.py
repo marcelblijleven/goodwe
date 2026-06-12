@@ -141,6 +141,8 @@ class DT(Inverter):
         # 30170 Line3 fault value (duplicate commentary in modbus protocol document)
         # 30171 Manufacture ID
         Integer("rssi", 30172, "RSSI"),
+        # 30173 ISO test value (insulation resistance), encoded like hybrid register 35365
+        Decimal("iso_resistance", 30173, 10, "ISO Resistance", "kΩ", Kind.PV),
         # 30173 ISO test value
         # 30174 PID and Wietap status
         # 30175 String 1 Current
@@ -164,6 +166,10 @@ class DT(Inverter):
         Integer("meter_comm_status", 30209, "Meter Communication Status code"),  # 1 Normal, 2 Disconnected
         Enum2("meter_comm_label", 30209, METER_COMMUNICATION_STATUS, "Meter Communication Status"),
         Calculated("house_consumption", lambda data: None, "House Consumption", "W", Kind.AC), # calculated and patched in read_runtime_data as we are unable to calculate it from seperate modbus offsets in all_sensors and all_sensors_meter
+        # active power at grid connection point (meter), patched in read_runtime_data
+        Calculated("active_power", lambda data: None, "Active Power", "W", Kind.GRID),
+        Calculated("grid_in_out", lambda data: None, "On-grid Mode code", "", Kind.GRID),
+        Calculated("grid_in_out_label", lambda data: None, "On-grid Mode", "", Kind.GRID),
         CurrentSmA("leakage_current", 30210, "Leakage Current", Kind.PV),
         # 30211 repeat of 30197 in U64 instead of U32
         # 30215 repeat of 30199 in U64 instead of U32
@@ -219,7 +225,7 @@ class DT(Inverter):
             0x756F, 0x0014
         )
         self._READ_DEVICE_MODEL: ProtocolCommand = self._read_command(0x9CED, 0x0008)
-        self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x0049)
+        self._READ_RUNNING_DATA: ProtocolCommand = self._read_command(0x7594, 0x004A)
         self._READ_METER_DATA: ProtocolCommand = self._read_command(0x75F3, 0xF)
         self._sensors = self.__all_sensors
         self._sensors_meter = self.__all_sensors_meter
@@ -291,6 +297,19 @@ class DT(Inverter):
                 data.update(self._map_response(response, self._sensors_meter))
                 #patch house_consumption int from all_sensors_meter now that we have values available
                 data["house_consumption"] = abs(data.get("ppv", 0) - data.get("meter_active_power", 0))
+                # patch grid connection point sensors, mirroring ET family behavior
+                meter_power = data.get("meter_active_power")
+                data["active_power"] = meter_power
+                if meter_power is None:
+                    grid_in_out = 0
+                elif meter_power < -90:
+                    grid_in_out = 2
+                elif meter_power >= 90:
+                    grid_in_out = 1
+                else:
+                    grid_in_out = 0
+                data["grid_in_out"] = grid_in_out
+                data["grid_in_out_label"] = GRID_IN_OUT_MODES.get(grid_in_out)
             except (RequestRejectedException, RequestFailedException):
                 logger.info("Meter values not supported, disabling further attempts.")
                 self._has_meter = False
