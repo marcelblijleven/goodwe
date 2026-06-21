@@ -8,7 +8,7 @@ from .const import *
 from .exceptions import RequestFailedException, RequestRejectedException
 from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
-from .model import is_2_battery, is_4_mppt, is_745_platform, is_single_phase
+from .model import is_2_battery, is_4_mppt, is_745_lv_platform, is_745_platform, is_single_phase
 from .protocol import ProtocolCommand
 from .sensor import *
 
@@ -763,15 +763,28 @@ class ET(Inverter):
         self.arm_firmware = self._decode(response[54:66])  # 35027 - 35032
 
         if not is_4_mppt(self) and self.rated_power < 15000:
-            # This inverter does not have 4 MPPTs or PV strings
-            self._sensors = tuple(filter(lambda s: not ("pv4" in s.id_), self._sensors))
-            self._sensors = tuple(filter(lambda s: not ("pv3" in s.id_), self._sensors))
+            # platform 745 LV has 2 MPPTs with up to 4 PV strings; keep pv3+pv4
+            if not is_745_lv_platform(self):
+                self._sensors = tuple(
+                    filter(lambda s: "pv3" not in s.id_ and "pv4" not in s.id_, self._sensors)
+                )
 
         if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._single_phase_only, self._sensors))
             self._sensors_meter = tuple(
                 filter(self._single_phase_only, self._sensors_meter)
+            )
+            # For mppt data, only L2/L3 reactive/apparent power are L-phase sensors;
+            # MPPT channel sensors like pmppt2/imppt2 must stay for 2-MPPT inverters.
+            self._sensors_mppt = tuple(
+                filter(
+                    lambda s: s.id_ not in (
+                        "reactive_power2", "reactive_power3",
+                        "apparent_power2", "apparent_power3",
+                    ),
+                    self._sensors_mppt,
+                )
             )
 
         if is_2_battery(self) or self.rated_power >= 25000:
@@ -784,6 +797,23 @@ class ET(Inverter):
         else:
             self._sensors_meter = tuple(
                 filter(self._not_extended_meter, self._sensors_meter)
+            )
+
+        if is_745_lv_platform(self):
+            # platform 745 LV has 2 MPPTs; strip excess channels from larger inverters (vpv5-16, pmppt3-8)
+            self._sensors_mppt = tuple(
+                filter(
+                    lambda s: not any(
+                        tag in s.id_ for tag in (
+                            "vpv5", "vpv6", "vpv7", "vpv8", "vpv9", "vpv10",
+                            "vpv11", "vpv12", "vpv13", "vpv14", "vpv15", "vpv16",
+                            "ipv5", "ipv6", "ipv7", "ipv8", "ipv9", "ipv10",
+                            "ipv11", "ipv12", "ipv13", "ipv14", "ipv15", "ipv16",
+                            "mppt3", "mppt4", "mppt5", "mppt6", "mppt7", "mppt8",
+                        )
+                    ),
+                    self._sensors_mppt,
+                )
             )
 
         # Check and add EcoModeV2 settings added in (ETU fw 19)

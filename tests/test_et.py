@@ -871,6 +871,158 @@ class GW6000_ES_20_Test(EtMock):
         self.assertEqual("02020-05-S01", self.arm_firmware)
 
 
+class GW8000M_ES_C10_Test(EtMock):
+
+    def __init__(self, methodName="runTest"):
+        EtMock.__init__(self, methodName)
+        self.mock_response(
+            self._READ_DEVICE_VERSION_INFO, "GW8000M-ES-C10_device_info.hex"
+        )
+        self.mock_response(self._READ_RUNNING_DATA, "GW8000M-ES-C10_running_data.hex")
+        self.mock_response(
+            self._READ_METER_DATA_EXTENDED2, "GW8000M-ES-C10_meter_data.hex"
+        )
+        self.mock_response(self._READ_BATTERY_INFO, "GW8000M-ES-C10_battery_info.hex")
+        self.mock_response(self._READ_MPPT_DATA, "GW8000M-ES-C10_mppt_data.hex")
+
+    def test_GW8000M_ES_C10_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual("GW6000ES20", self.model_name)
+        self.assertEqual("58000ESC254S0367", self.serial_number)
+        self.assertEqual(8800, self.rated_power)
+        self.assertEqual(121, self.modbus_version)
+        self.assertEqual(0, self.ac_output_type)
+        self.assertEqual(5, self.dsp1_version)
+        self.assertEqual(5, self.dsp2_version)
+        self.assertEqual(1313, self.dsp_svn_version)
+        self.assertEqual(15, self.arm_version)
+        self.assertEqual(493, self.arm_svn_version)
+        self.assertEqual("04070-05-S13", self.firmware)
+        self.assertEqual("02120-15-S01", self.arm_firmware)
+        # After device_info, single-phase filtering must have removed L2/L3 sensors
+        sensor_ids = {s.id_ for s in self._sensors}
+        self.assertNotIn("vgrid2", sensor_ids)
+        self.assertNotIn("vgrid3", sensor_ids)
+        self.assertNotIn("igrid2", sensor_ids)
+        self.assertNotIn("backup_v2", sensor_ids)
+
+    def test_GW8000M_ES_C10_runtime_data(self):
+        self.loop.run_until_complete(self.read_device_info())
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(141, len(data))
+
+        self.sensor_map = {s.id_: s for s in self.sensors()}
+
+        self.assertSensor(
+            "timestamp",
+            datetime.strptime("2026-06-21 14:05:21", "%Y-%m-%d %H:%M:%S"),
+            "",
+            data,
+        )
+        self.assertSensor("vpv1", 247.7, "V", data)
+        self.assertSensor("ipv1", 5.5, "A", data)
+        self.assertSensor("ppv1", 1368, "W", data)
+        self.assertSensor("vpv2", 247.7, "V", data)
+        self.assertSensor("ipv2", 0.0, "A", data)
+        self.assertSensor("ppv2", 1126, "W", data)
+        self.assertSensor("vpv3", 254.4, "V", data)
+        self.assertSensor("ipv3", 4.3, "A", data)
+        self.assertSensor("ppv3", 0, "W", data)
+        self.assertSensor("vpv4", 0.0, "V", data)
+        self.assertSensor("ipv4", 0.0, "A", data)
+        self.assertSensor("ppv4", 0, "W", data)
+        self.assertSensor("ppv", 2494, "W", data)
+        self.assertSensor("pv1_mode", 2, "", data)
+        self.assertSensor("pv1_mode_label", "PV panels connected, producing power", "", data)
+        self.assertSensor("pv2_mode", 2, "", data)
+        self.assertSensor("pv2_mode_label", "PV panels connected, producing power", "", data)
+        self.assertSensor("pv3_mode", 0, "", data)
+        self.assertSensor("pv3_mode_label", "PV panels not connected", "", data)
+        self.assertSensor("pv4_mode", 0, "", data)
+        self.assertSensor("pv4_mode_label", "PV panels not connected", "", data)
+        self.assertSensor("vgrid", 236.1, "V", data)
+        self.assertSensor("igrid", 9.9, "A", data)
+        self.assertSensor("fgrid", 50.27, "Hz", data)
+        self.assertSensor("pgrid", 2309, "W", data)
+        self.assertSensor("grid_mode", 1, "", data)
+        self.assertSensor("grid_mode_label", "Connected to grid", "", data)
+        self.assertSensor("total_inverter_power", 2309, "W", data)
+        self.assertSensor("active_power", 41, "W", data)
+        self.assertSensor("grid_in_out", 0, "", data)
+        self.assertSensor("grid_in_out_label", "Idle", "", data)
+        self.assertSensor("reactive_power", 9, "var", data)
+        self.assertSensor("apparent_power", 2286, "VA", data)
+        self.assertSensor("backup_v1", 234.5, "V", data)
+        self.assertSensor("backup_i1", 9.7, "A", data)
+        self.assertSensor("backup_f1", 50.27, "Hz", data)
+        self.assertSensor("load_mode1", 1, "", data)
+        self.assertSensor("backup_p1", 2245, "W", data)
+        self.assertSensor("load_p1", 23, "W", data)
+        self.assertSensor("backup_ptotal", 2245, "W", data)
+        self.assertSensor("load_ptotal", 9, "W", data)
+        self.assertSensor("ups_load", 0, "%", data)
+        self.assertSensor("temperature_air", 47.9, "C", data)
+        self.assertSensor("temperature_module", 0.0, "C", data)
+        self.assertSensor("temperature", 48.2, "C", data)
+        self.assertSensor("bus_voltage", 462.1, "V", data)
+        self.assertSensor("nbus_voltage", 462.3, "V", data)
+        self.assertSensor("vbattery1", 56.6, "V", data)
+        self.assertSensor("ibattery1", 0.6, "A", data)
+        self.assertSensor("pbattery1", 35, "W", data)
+        self.assertSensor("battery_mode", 3, "", data)
+        self.assertSensor("battery_mode_label", "Charge", "", data)
+        self.assertSensor("warning_code", 0, "", data)
+        self.assertSensor("safety_country", 205, "", data)
+        self.assertSensor("safety_country_label", None, "", data)
+        self.assertSensor("work_mode", 1, "", data)
+        self.assertSensor("work_mode_label", "Normal (On-Grid)", "", data)
+        self.assertSensor("error_codes", 0, "", data)
+        self.assertSensor("errors", "", "", data)
+        self.assertSensor("e_total", 5071.9, "kWh", data)
+        self.assertSensor("e_day", 21.5, "kWh", data)
+        self.assertSensor("e_total_exp", 4394.1, "kWh", data)
+        self.assertSensor("h_total", 7634, "h", data)
+        self.assertSensor("e_day_exp", 17.4, "kWh", data)
+        self.assertSensor("e_total_imp", 38.9, "kWh", data)
+        self.assertSensor("e_day_imp", 0.8, "kWh", data)
+        self.assertSensor("e_load_total", 6431.7, "kWh", data)
+        self.assertSensor("e_load_day", 23.1, "kWh", data)
+        self.assertSensor("e_bat_charge_total", 1081.2, "kWh", data)
+        self.assertSensor("e_bat_charge_day", 4.0, "kWh", data)
+        self.assertSensor("e_bat_discharge_total", 1078.9, "kWh", data)
+        self.assertSensor("e_bat_discharge_day", 1.0, "kWh", data)
+        self.assertSensor("diagnose_result", 17826048, "", data)
+        self.assertSensor(
+            "diagnose_result_label",
+            "APP: Discharge current too low, SOC delta too volatile, Export power limit set",
+            "",
+            data,
+        )
+        self.assertSensor("house_consumption", 2488, "W", data)
+        self.assertSensor("battery_soc", 99, "%", data)
+        self.assertSensor("battery_temperature", 34.0, "C", data)
+
+        # Both MPPT channels present (745 LV has 2 MPPTs)
+        self.assertSensor("pmppt1", 1369, "W", data)
+        self.assertSensor("pmppt2", 1127, "W", data)
+        self.assertSensor("imppt1", 5.5, "A", data)
+        self.assertSensor("imppt2", 4.3, "A", data)
+
+        # L2 and L3 grid sensors must be absent on this single-phase inverter
+        self.assertNotIn("vgrid2", data)
+        self.assertNotIn("vgrid3", data)
+        self.assertNotIn("igrid2", data)
+        self.assertNotIn("igrid3", data)
+        self.assertNotIn("backup_v2", data)
+        self.assertNotIn("backup_v3", data)
+
+        # Ghost sensors from larger inverters must be absent
+        self.assertNotIn("vpv5", data)
+        self.assertNotIn("vpv16", data)
+        self.assertNotIn("pmppt3", data)
+        self.assertNotIn("imppt3", data)
+
+
 class GW20K_ET_Test(EtMock):
 
     def __init__(self, methodName="runTest"):
