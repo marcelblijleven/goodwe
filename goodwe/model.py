@@ -88,6 +88,7 @@ SINGLE_PHASE_MODELS = (
     "EMN",
     "ERN",
     "EBN",
+    "ESC",
     "HLB",
     "HMB",
     "HBB",
@@ -127,6 +128,10 @@ def is_4_mppt(inverter: Inverter) -> bool:
 
 def is_2_battery(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in BAT_2_MODELS)
+
+
+def is_745_lv_platform(inverter: Inverter) -> bool:
+    return any(model in inverter.serial_number for model in PLATFORM_745_LV_MODELS)
 
 
 def is_745_platform(inverter: Inverter) -> bool:
