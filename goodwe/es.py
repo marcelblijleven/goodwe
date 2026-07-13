@@ -235,6 +235,17 @@ class ES(Inverter):
         Integer("fast_charging_soc", 47546, "Fast Charging SoC", "%", Kind.BAT),
     )
 
+    _ECO_MODE_SETTINGS: tuple[str, ...] = (
+        "eco_mode_1",
+        "eco_mode_1_switch",
+        "eco_mode_2",
+        "eco_mode_2_switch",
+        "eco_mode_3",
+        "eco_mode_3_switch",
+        "eco_mode_4",
+        "eco_mode_4_switch",
+    )
+
     def __init__(
         self,
         host: str,
@@ -245,6 +256,10 @@ class ES(Inverter):
     ):
         super().__init__(host, port, comm_addr if comm_addr else 0xF7, timeout, retries)
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
+        # V1 eco mode sensors kept aside when V2 is detected, so eco mode can
+        # fall back to the legacy registers when a schedule write does not
+        # stick (seen on GW5048D-ES fw 2323G under concurrent polling).
+        self._eco_mode_v1_fallback: dict[str, Sensor] | None = None
 
     def _supports_eco_mode_v2(self) -> bool:
         if self.arm_version < 14:
@@ -275,6 +290,9 @@ class ES(Inverter):
             logger.exception("Error decoding firmware version %s.", self.firmware)
 
         if self._supports_eco_mode_v2():
+            self._eco_mode_v1_fallback = {
+                sid: self._settings[sid] for sid in self._ECO_MODE_SETTINGS
+            }
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_14})
         if self.arm_version >= 19:
             self._settings.update({s.id_: s for s in self.__settings_arm_fw_19})
@@ -446,10 +464,69 @@ class ES(Inverter):
                 await self.write_setting(
                     "eco_mode_1", eco_mode.encode_discharge(eco_mode_power)
                 )
+            if not await self._eco_mode_write_verified(operation_mode, eco_mode_power):
+                await self._eco_mode_fallback_write(
+                    operation_mode, eco_mode_power, eco_mode_soc
+                )
             await self.write_setting("eco_mode_2_switch", 0)
             await self.write_setting("eco_mode_3_switch", 0)
             await self.write_setting("eco_mode_4_switch", 0)
             await self._set_eco_mode()
+
+    async def _eco_mode_write_verified(
+        self, operation_mode: OperationMode, eco_mode_power: int
+    ) -> bool:
+        """Read eco mode group 1 back and check it reflects the requested schedule."""
+        try:
+            readback = await self._read_setting(self._settings.get("eco_mode_1"))
+            if operation_mode == OperationMode.ECO_CHARGE:
+                return (
+                    readback.is_eco_charge_mode()
+                    and abs(readback.get_power() or 0) == eco_mode_power
+                )
+            return (
+                readback.is_eco_discharge_mode()
+                and abs(readback.get_power() or 0) == eco_mode_power
+            )
+        except (AttributeError, TypeError, ValueError, InverterError):
+            return False
+
+    async def _eco_mode_fallback_write(
+        self, operation_mode: OperationMode, eco_mode_power: int, eco_mode_soc: int
+    ) -> None:
+        """Fall back to the V1 eco mode registers when the schedule write did not stick.
+
+        On some units the eco schedule write is silently accepted but never
+        surfaces in the inverter's active schedule (observed on GW5048D-ES
+        fw 2323G, serial 5xxxxESUxxxxxxxx, while the inverter was being polled
+        concurrently - the typical Home Assistant setup). A/B testing on that
+        unit showed AA55 multi-register writes are silently dropped whenever
+        another client polls the inverter, while Modbus multi-register writes
+        are reliable under identical conditions. The fallback therefore writes
+        the legacy V1 group at 0x701 with a Modbus multi-register write and
+        verifies the result again.
+        """
+        if self._eco_mode_v1_fallback is None:
+            raise InverterError("Failed to apply eco mode schedule.")
+        logger.warning(
+            "Eco mode V2 registers did not accept the schedule "
+            "(model %s, serial %s, firmware %s), falling back to eco mode V1 registers.",
+            self.model_name,
+            self.serial_number,
+            self.firmware,
+        )
+        self._settings.update(self._eco_mode_v1_fallback)
+        self._eco_mode_v1_fallback = None
+        eco_mode: EcoMode | Sensor = self._settings.get("eco_mode_1")
+        if operation_mode == OperationMode.ECO_CHARGE:
+            raw_value = eco_mode.encode_charge(eco_mode_power, eco_mode_soc)
+        else:
+            raw_value = eco_mode.encode_discharge(eco_mode_power)
+        await self._read_from_socket(
+            self._write_multi_command(eco_mode.offset, raw_value)
+        )
+        if not await self._eco_mode_write_verified(operation_mode, eco_mode_power):
+            raise InverterError("Failed to apply eco mode schedule.")
 
     async def get_ems_mode(self) -> EMSMode:
         raise InverterError("Operation not supported.")
