@@ -458,28 +458,40 @@ class ET(Inverter):
         Integer("pv_channel", 35303, "PV Channel", "", Kind.PV),
         Voltage("vpv5", 35304, "PV5 Voltage", Kind.PV),
         Current("ipv5", 35305, "PV5 Current", Kind.PV),
+        Calculated("ppv5", lambda data: _pv_power(data, 35304, 35305), "PV5 Power", "W", Kind.PV),
         Voltage("vpv6", 35306, "PV6 Voltage", Kind.PV),
         Current("ipv6", 35307, "PV6 Current", Kind.PV),
+        Calculated("ppv6", lambda data: _pv_power(data, 35306, 35307), "PV6 Power", "W", Kind.PV),
         Voltage("vpv7", 35308, "PV7 Voltage", Kind.PV),
         Current("ipv7", 35309, "PV7 Current", Kind.PV),
+        Calculated("ppv7", lambda data: _pv_power(data, 35308, 35309), "PV7 Power", "W", Kind.PV),
         Voltage("vpv8", 35310, "PV8 Voltage", Kind.PV),
         Current("ipv8", 35311, "PV8 Current", Kind.PV),
+        Calculated("ppv8", lambda data: _pv_power(data, 35310, 35311), "PV8 Power", "W", Kind.PV),
         Voltage("vpv9", 35312, "PV9 Voltage", Kind.PV),
         Current("ipv9", 35313, "PV9 Current", Kind.PV),
+        Calculated("ppv9", lambda data: _pv_power(data, 35312, 35313), "PV9 Power", "W", Kind.PV),
         Voltage("vpv10", 35314, "PV10 Voltage", Kind.PV),
         Current("ipv10", 35315, "PV10 Current", Kind.PV),
+        Calculated("ppv10", lambda data: _pv_power(data, 35314, 35315), "PV10 Power", "W", Kind.PV),
         Voltage("vpv11", 35316, "PV11 Voltage", Kind.PV),
         Current("ipv11", 35317, "PV11 Current", Kind.PV),
+        Calculated("ppv11", lambda data: _pv_power(data, 35316, 35317), "PV11 Power", "W", Kind.PV),
         Voltage("vpv12", 35318, "PV12 Voltage", Kind.PV),
         Current("ipv12", 35319, "PV12 Current", Kind.PV),
+        Calculated("ppv12", lambda data: _pv_power(data, 35318, 35319), "PV12 Power", "W", Kind.PV),
         Voltage("vpv13", 35320, "PV13 Voltage", Kind.PV),
         Current("ipv13", 35321, "PV13 Current", Kind.PV),
+        Calculated("ppv13", lambda data: _pv_power(data, 35320, 35321), "PV13 Power", "W", Kind.PV),
         Voltage("vpv14", 35322, "PV14 Voltage", Kind.PV),
         Current("ipv14", 35323, "PV14 Current", Kind.PV),
+        Calculated("ppv14", lambda data: _pv_power(data, 35322, 35323), "PV14 Power", "W", Kind.PV),
         Voltage("vpv15", 35324, "PV15 Voltage", Kind.PV),
         Current("ipv15", 35325, "PV15 Current", Kind.PV),
+        Calculated("ppv15", lambda data: _pv_power(data, 35324, 35325), "PV15 Power", "W", Kind.PV),
         Voltage("vpv16", 35326, "PV16 Voltage", Kind.PV),
         Current("ipv16", 35327, "PV16 Current", Kind.PV),
+        Calculated("ppv16", lambda data: _pv_power(data, 35326, 35327), "PV16 Power", "W", Kind.PV),
         # 35328 Warning Message
         # 35330 Grid10minAvgVoltR
         # 35331 Grid10minAvgVoltS
@@ -1140,3 +1152,15 @@ class ET(Inverter):
     async def _set_offline(self, mode: bool) -> None:
         value = bytes.fromhex("00070000") if mode else bytes.fromhex("00010000")
         await self._read_from_socket(self._write_multi_command(0xB997, value))
+
+
+def _pv_power(data: ProtocolResponse, voltage_reg: int, current_reg: int) -> int:
+    """Calculate a PV string's power [W] from its voltage and current registers.
+
+    PV strings 5-16 have no dedicated power register, so the value is derived
+    from voltage * current. read_voltage/read_current normalise the 0xffff
+    "not present" marker to 0 (same as the 0x0000 idle value used by some
+    inverters), so strings that are absent or idle report 0 W, consistent with
+    the vpv*/ipv* sensors.
+    """
+    return round(read_voltage(data, voltage_reg) * read_current(data, current_reg))
