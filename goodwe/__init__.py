@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from .const import GOODWE_UDP_PORT
+from .const import GOODWE_TCP_PORT, GOODWE_UDP_PORT
 from .dt import DT
 from .es import ES
 from .et import ET
@@ -124,7 +124,7 @@ async def discover(
         except InverterError as ex:
             failures.append(ex)
 
-    # Probe inverter specific protocols
+    # Probe inverter specific protocols on the default port
     for inv in [ET, DT, ES]:
         i = inv(host, port, 0, timeout, retries)
         try:
@@ -140,6 +140,27 @@ async def discover(
             return i
         except InverterError as ex:
             failures.append(ex)
+
+    # Fallback to Modbus/TCP on port 502 for v2.0 LAN modules (WLA0000-01-00P)
+    # which do not respond on the default UDP port 8899
+    if port == GOODWE_UDP_PORT:
+        logger.debug("UDP probes failed, trying Modbus/TCP on port 502.")
+        for inv in [ET, DT, ES]:
+            i = inv(host, GOODWE_TCP_PORT, 0, timeout, retries)
+            try:
+                logger.debug("Probing %s inverter at %s:%s.", inv.__name__, host, GOODWE_TCP_PORT)
+                await i.read_device_info()
+                await i.read_runtime_data()
+                logger.debug(
+                    "Detected %s family inverter %s, S/N:%s.",
+                    inv.__name__,
+                    i.model_name,
+                    i.serial_number,
+                )
+                return i
+            except InverterError as ex:
+                failures.append(ex)
+
     raise InverterError(
         "Unable to connect to the inverter at "
         f"host={host}, or your inverter is not supported yet.\n"
