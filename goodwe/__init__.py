@@ -123,6 +123,9 @@ async def discover(
 
         except InverterError as ex:
             failures.append(ex)
+        except OSError as ex:
+            logger.debug("UDP probe failed with OS error: %s", ex)
+            failures.append(ex)
 
     # Probe inverter specific protocols on the default port
     for inv in [ET, DT, ES]:
@@ -139,6 +142,9 @@ async def discover(
             )
             return i
         except InverterError as ex:
+            failures.append(ex)
+        except OSError as ex:
+            logger.debug("Family probe failed with OS error: %s", ex)
             failures.append(ex)
 
     # Fallback to Modbus/TCP on port 502 for v2.0 LAN modules (WLA0000-01-00P)
@@ -159,6 +165,9 @@ async def discover(
                 )
                 return i
             except InverterError as ex:
+                failures.append(ex)
+            except OSError as ex:
+                logger.debug("TCP fallback probe failed with OS error: %s", ex)
                 failures.append(ex)
 
     raise InverterError(
