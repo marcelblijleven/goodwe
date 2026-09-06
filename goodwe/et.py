@@ -1084,7 +1084,7 @@ class ET(Inverter):
                 )
             else:
                 await self.write_setting(
-                    "eco_mode_1", eco_mode.encode_discharge(eco_mode_power)
+                    "eco_mode_1", eco_mode.encode_discharge(eco_mode_power, eco_mode_soc)
                 )
             await self.write_setting("eco_mode_2_switch", 0)
             await self.write_setting("eco_mode_3_switch", 0)

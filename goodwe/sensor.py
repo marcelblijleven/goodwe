@@ -522,7 +522,7 @@ class EcoMode(ABC):
         """Answer bytes representing all the time enabled charging eco-mode group"""
 
     @abstractmethod
-    def encode_discharge(self, eco_mode_power: int) -> bytes:
+    def encode_discharge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
         """Answer bytes representing all the time enabled discharging eco-mode group"""
 
     @abstractmethod
@@ -608,7 +608,7 @@ class EcoModeV1(Sensor, EcoMode):
         """Answer bytes representing all the time enabled charging eco-mode group"""
         return bytes.fromhex("0000173b{:04x}ff7f".format((-1 * abs(eco_mode_power)) & (2 ** 16 - 1)))
 
-    def encode_discharge(self, eco_mode_power: int) -> bytes:
+    def encode_discharge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
         """Answer bytes representing all the time enabled discharging eco-mode group"""
         return bytes.fromhex("0000173b{:04x}ff7f".format(abs(eco_mode_power)))
 
@@ -734,11 +734,12 @@ class Schedule(Sensor, EcoMode):
                 eco_mode_soc,
                 0 if self.schedule_type != ScheduleType.ECO_MODE_745 else 0x0fff))
 
-    def encode_discharge(self, eco_mode_power: int) -> bytes:
+    def encode_discharge(self, eco_mode_power: int, eco_mode_soc: int = 100) -> bytes:
         """Answer bytes representing all the time enabled discharging eco-mode group"""
-        return bytes.fromhex("0000173b{:02x}7f{:04x}0064{:04x}".format(
+        return bytes.fromhex("0000173b{:02x}7f{:04x}{:04x}{:04x}".format(
             255 - self.schedule_type,
             abs(self.schedule_type.encode_power(eco_mode_power)),
+            eco_mode_soc,
             0 if self.schedule_type != ScheduleType.ECO_MODE_745 else 0x0fff))
 
     def encode_off(self) -> bytes:
