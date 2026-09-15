@@ -240,8 +240,9 @@ class ET(Inverter):
         CellVoltage(
             "battery_min_cell_voltage", 37023, "Battery Min Cell Voltage", Kind.BAT
         ),
-        # Energy4("battery_total_charge", 37056, "Total Battery 1 Charge", Kind.BAT),
-        # Energy4("battery_total_discharge", 37058, "Total Battery 1 Discharge", Kind.BAT),
+
+        Energy4("battery_cell_charge_total", 37056, "Battery Cell Charge Total", Kind.BAT),
+        Energy4("battery_cell_discharge_total", 37058, "Battery Cell Discharge Total", Kind.BAT),
         # String8("battery_sn", 37060, "Battery S/N", Kind.BAT),
     )
 
@@ -708,7 +709,7 @@ class ET(Inverter):
         self._READ_METER_DATA_EXTENDED2: ProtocolCommand = self._read_command(
             0x8CA0, 0x7D
         )
-        self._READ_BATTERY_INFO: ProtocolCommand = self._read_command(0x9088, 0x0018)
+        self._READ_BATTERY_INFO: ProtocolCommand = self._read_command(0x9088, 0x003C)
         self._READ_BATTERY2_INFO: ProtocolCommand = self._read_command(0x9858, 0x0016)
         self._READ_BATTERY2_INFO_EXTENDED = self._read_command(0x89BE, 0x06)
         self._READ_MPPT_DATA: ProtocolCommand = self._read_command(0x89E5, 0x3D)
