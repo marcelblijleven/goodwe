@@ -266,7 +266,7 @@ class GW10K_ET_Test(EtMock):
         )
 
     def test_GW10K_ET_setting(self):
-        self.assertEqual(69, len(self.settings()))
+        self.assertEqual(70, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual("Timestamp", type(settings.get("time")).__name__)
         self.assertEqual("EcoModeV1", type(settings.get("eco_mode_1")).__name__)
@@ -295,6 +295,12 @@ class GW10K_ET_Test(EtMock):
             self.write_setting("time", datetime(2022, 1, 4, 18, 30, 25))
         )
         self.assertEqual("f710b090000306160104121e19a961", self.request.hex())
+
+    def test_offgrid_soc_recovery(self):
+        self.loop.run_until_complete(self.read_setting("offgrid_soc_recovery"))
+        self.assertEqual("f703b0e70001066b", self.request.hex())
+        self.loop.run_until_complete(self.write_setting("offgrid_soc_recovery", 50))
+        self.assertEqual("f706b0e700328a7e", self.request.hex())
 
     def test_get_grid_export_limit(self):
         self.loop.run_until_complete(self.get_grid_export_limit())
@@ -400,7 +406,7 @@ class GW10K_ET_fw819_Test(EtMock):
         self.assertEqual("02041-19-S00", self.arm_firmware)
 
     def test_GW10K_ET_settings_fw819(self):
-        self.assertEqual(76, len(self.settings()))
+        self.assertEqual(77, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual("EcoModeV2", type(settings.get("eco_mode_1")).__name__)
         self.assertEqual(None, settings.get("peak_shaving_mode"))
@@ -458,7 +464,7 @@ class GW10K_ET_fw1023_Test(EtMock):
         self.assertEqual("02041-23-S00", self.arm_firmware)
 
     def test_GW10K_ET_setting_fw1023(self):
-        self.assertEqual(84, len(self.settings()))
+        self.assertEqual(85, len(self.settings()))
         settings = {s.id_: s for s in self.settings()}
         self.assertEqual(
             "PeakShavingMode", type(settings.get("peak_shaving_mode")).__name__
