@@ -1114,6 +1114,13 @@ class ET(Inverter):
         if 0 <= dod <= 100:
             await self.write_setting("battery_discharge_depth", 100 - dod)
 
+    async def restart(self) -> None:
+        # Undocumented command captured from the SolarGo app's "restart inverter"
+        # action (GW8KN-ET, ARM fw 31): write 361 (0x0169) to register 45221.
+        # Not the documented 45220 "restart", which only makes the inverter
+        # recheck and reconnect to the grid without shutting down.
+        await self._read_from_socket(self._write_command(45221, 361))
+
     def _get_sensor(self, sensor_id: str) -> Sensor | None:
         if self._sensors_map is None:
             self._sensors_map = {s.id_: s for s in self.sensors()}

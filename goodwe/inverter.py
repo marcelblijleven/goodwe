@@ -438,6 +438,17 @@ class Inverter(ABC):
         """
         raise NotImplementedError()
 
+    async def restart(self) -> None:
+        """
+        BEWARE !!!
+        This method reboots the inverter.
+        Use with caution and at your own risk !
+
+        The inverter disconnects from the grid (and briefly drops the back-up
+        output) while it restarts, and stops answering requests for about a minute.
+        """
+        raise NotImplementedError()
+
     @abstractmethod
     def sensors(self) -> tuple[Sensor, ...]:
         """
