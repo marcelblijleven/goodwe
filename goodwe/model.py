@@ -112,6 +112,8 @@ MPPT4_MODELS = ("DTB", "KMT", "HSB", "EHB", "GW8K-EHA-G20", "GW10K-EHA-G20")
 
 BAT_2_MODELS = ("25KET", "29K9ET")
 
+EHA_G20_MODELS = ("NAH",)
+
 
 def is_single_phase(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
@@ -127,6 +129,10 @@ def is_4_mppt(inverter: Inverter) -> bool:
 
 def is_2_battery(inverter: Inverter) -> bool:
     return any(model in inverter.serial_number for model in BAT_2_MODELS)
+
+
+def is_eha_g20(inverter: Inverter) -> bool:
+    return any(model in inverter.serial_number for model in EHA_G20_MODELS)
 
 
 def is_745_platform(inverter: Inverter) -> bool:

@@ -8,7 +8,7 @@ from .const import *
 from .exceptions import RequestFailedException, RequestRejectedException
 from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
-from .model import is_2_battery, is_4_mppt, is_745_platform, is_single_phase
+from .model import is_2_battery, is_4_mppt, is_745_platform, is_eha_g20, is_single_phase
 from .protocol import ProtocolCommand
 from .sensor import *
 
@@ -451,6 +451,12 @@ class ET(Inverter):
         Energy8("meter_e_total_imp", 36120, "Meter Total Energy (import)", Kind.GRID),
     )
 
+    # Separate Meter 2 (ARM745 Modbus protocol v1.2, page 60).
+    # Replaces legacy CT2 power at 36045 only for the verified configuration.
+    __all_sensors_meter2: tuple[Sensor, ...] = (
+        Power4S("meter2_active_power", 36133, "Meter 2 Active Power", Kind.GRID),
+    )
+
     # Inverter's MPPT data
     # Modbus registers from offset 0x89e5 (35301)
     __all_sensors_mppt: tuple[Sensor, ...] = (
@@ -708,6 +714,8 @@ class ET(Inverter):
         self._READ_METER_DATA_EXTENDED2: ProtocolCommand = self._read_command(
             0x8CA0, 0x7D
         )
+        # Read separately: the 36000 block already uses the 125-register limit.
+        self._READ_METER2_DATA: ProtocolCommand = self._read_command(0x8D25, 0x02)
         self._READ_BATTERY_INFO: ProtocolCommand = self._read_command(0x9088, 0x0018)
         self._READ_BATTERY2_INFO: ProtocolCommand = self._read_command(0x9858, 0x0016)
         self._READ_BATTERY2_INFO_EXTENDED = self._read_command(0x89BE, 0x06)
@@ -718,12 +726,14 @@ class ET(Inverter):
         self._has_battery2: bool = False
         self._has_meter_extended: bool = False
         self._has_meter_extended2: bool = False
+        self._has_meter2_data: bool = False
         self._has_mppt: bool = False
         self._sensors = self.__all_sensors
         self._sensors_battery = self.__all_sensors_battery
         self._sensors_battery2 = self.__all_sensors_battery2
         self._sensors_battery2_extended = self.__all_sensors_battery2_extended
         self._sensors_meter = self.__all_sensors_meter
+        self._sensors_meter2 = self.__all_sensors_meter2
         self._sensors_mppt = self.__all_sensors_mppt
         self._settings: dict[str, Sensor] = {s.id_: s for s in self.__all_settings}
         self._sensors_map: dict[str, Sensor] | None = None
@@ -767,6 +777,26 @@ class ET(Inverter):
             self._sensors = tuple(filter(lambda s: not ("pv4" in s.id_), self._sensors))
             self._sensors = tuple(filter(lambda s: not ("pv3" in s.id_), self._sensors))
 
+        # Verified on EHA-G20 with built-in Meter 1 and external Meter 2.
+        self._has_meter2_data = False
+        if is_eha_g20(self):
+            self._sensors_meter = self.__all_sensors_meter
+            self._sensors_map = None
+            try:
+                response = await self._read_from_socket(self._read_command(47464, 1))
+                self._has_meter2_data = read_unsigned_int(response.response_data(), 0) == 2
+            except RequestRejectedException as ex:
+                if ex.message == ILLEGAL_DATA_ADDRESS:
+                    logger.debug("Meter configuration not supported, keeping legacy mapping.")
+                else:
+                    raise ex
+            except RequestFailedException:
+                logger.debug("Cannot read meter configuration, keeping legacy mapping.")
+            if self._has_meter2_data:
+                # Never fall back to unrelated CT2 data for this configuration.
+                self._sensors_meter = tuple(
+                    s for s in self._sensors_meter if s.id_ != "meter2_active_power"
+                )
         if is_single_phase(self):
             # this is single phase inverter, filter out all L2 and L3 sensors
             self._sensors = tuple(filter(self._single_phase_only, self._sensors))
@@ -917,6 +947,20 @@ class ET(Inverter):
                         "MPPT values not supported, disabling further attempts."
                     )
                     self._has_mppt = False
+                else:
+                    raise ex
+
+        if self._has_meter2_data:
+            try:
+                response = await self._read_from_socket(self._READ_METER2_DATA)
+                data.update(self._map_response(response, self._sensors_meter2))
+            except RequestRejectedException as ex:
+                if ex.message == ILLEGAL_DATA_ADDRESS:
+                    logger.info(
+                        "Meter 2 values not supported, disabling further attempts."
+                    )
+                    self._has_meter2_data = False
+                    self._sensors_map = None
                 else:
                     raise ex
 
@@ -1122,6 +1166,8 @@ class ET(Inverter):
     def sensors(self) -> tuple[Sensor, ...]:
         result = {s.id_: s for s in self._sensors}
         result.update({s.id_: s for s in self._sensors_meter})
+        if self._has_meter2_data:
+            result.update({s.id_: s for s in self._sensors_meter2})
         if self._has_battery:
             result.update({s.id_: s for s in self._sensors_battery})
         if self._has_battery2:
