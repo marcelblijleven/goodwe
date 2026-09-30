@@ -112,8 +112,22 @@ MPPT4_MODELS = ("DTB", "KMT", "HSB", "EHB", "GW8K-EHA-G20", "GW10K-EHA-G20")
 
 BAT_2_MODELS = ("25KET", "29K9ET")
 
+# Model names that identify the phase even when the serial number does not.
+# Newer DNS units ship a serial with none of the SINGLE_PHASE_MODELS tags, so
+# the serial match alone reports them as three-phase. That is not cosmetic:
+# DT then binds grid_export_limit to the three-phase register 40336 (percent)
+# instead of the single-phase 40328 (watts), a register these units ignore, so
+# the export limit silently stops working. GoodWe names the product "DNS" where
+# the serial tags use "DSN".
+SINGLE_PHASE_MODEL_NAMES = (
+    "DNS",
+)
+
 
 def is_single_phase(inverter: Inverter) -> bool:
+    model_name = inverter.model_name or ""
+    if any(tag in model_name for tag in SINGLE_PHASE_MODEL_NAMES):
+        return True
     return any(model in inverter.serial_number for model in SINGLE_PHASE_MODELS)
 
 
