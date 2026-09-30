@@ -179,27 +179,27 @@ class UdpInverterProtocol(InverterProtocol, asyncio.DatagramProtocol):
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
-        await self._ensure_lock().acquire()
-        try:
-            await self._connect()
-            response_future = asyncio.get_running_loop().create_future()
-            self._send_request(command, response_future)
-            await response_future
-            return response_future
-        except asyncio.CancelledError:
-            if self._retry < self.retries:
-                self._retry += 1
-                if self._lock and self._lock.locked():
-                    self._lock.release()
+        async with self._ensure_lock():
+            retry = 0
+            try:
+                while True:
+                    try:
+                        await self._connect()
+                        response_future = asyncio.get_running_loop().create_future()
+                        self._retry = retry
+                        self._send_request(command, response_future)
+                        await response_future
+                        return response_future
+                    except asyncio.CancelledError:
+                        if retry < self.retries:
+                            retry += 1
+                            if not self.keep_alive:
+                                self._close_transport()
+                            continue
+                        return self._max_retries_reached()
+            finally:
                 if not self.keep_alive:
                     self._close_transport()
-                return await self.send_request(command)
-            return self._max_retries_reached()
-        finally:
-            if self._lock and self._lock.locked():
-                self._lock.release()
-            if not self.keep_alive:
-                self._close_transport()
 
     def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
         """Send message via transport"""
@@ -324,34 +324,30 @@ class TcpInverterProtocol(InverterProtocol, asyncio.Protocol):
 
     async def send_request(self, command: ProtocolCommand) -> Future:
         """Send message via transport"""
-        await self._ensure_lock().acquire()
-        try:
-            await asyncio.wait_for(self._connect(), timeout=5)
-            response_future = asyncio.get_running_loop().create_future()
-            self._send_request(command, response_future)
-            await response_future
-            return response_future
-        except asyncio.CancelledError:
-            if self._retry < self.retries:
-                if self._timer:
-                    logger.debug("Connection broken error.")
-                self._retry += 1
-                if self._lock and self._lock.locked():
-                    self._lock.release()
-                self._close_transport()
-                return await self.send_request(command)
-            return self._max_retries_reached()
-        except (ConnectionRefusedError, TimeoutError, OSError, asyncio.TimeoutError):
-            if self._retry < self.retries:
-                logger.debug("Connection refused error.")
-                self._retry += 1
-                if self._lock and self._lock.locked():
-                    self._lock.release()
-                return await self.send_request(command)
-            return self._max_retries_reached()
-        finally:
-            if self._lock and self._lock.locked():
-                self._lock.release()
+        async with self._ensure_lock():
+            retry = 0
+            while True:
+                try:
+                    await asyncio.wait_for(self._connect(), timeout=5)
+                    response_future = asyncio.get_running_loop().create_future()
+                    self._retry = retry
+                    self._send_request(command, response_future)
+                    await response_future
+                    return response_future
+                except asyncio.CancelledError:
+                    if retry < self.retries:
+                        if self._timer:
+                            logger.debug("Connection broken error.")
+                        retry += 1
+                        self._close_transport()
+                        continue
+                    return self._max_retries_reached()
+                except (ConnectionRefusedError, TimeoutError, OSError, asyncio.TimeoutError):
+                    if retry < self.retries:
+                        logger.debug("Connection refused error.")
+                        retry += 1
+                        continue
+                    return self._max_retries_reached()
 
     def _send_request(self, command: ProtocolCommand, response_future: Future) -> None:
         """Send message via transport"""
