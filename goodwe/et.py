@@ -714,7 +714,7 @@ class ET(Inverter):
         self._READ_MPPT_DATA: ProtocolCommand = self._read_command(0x89E5, 0x3D)
         self._has_eco_mode_v2: bool = True
         self._has_peak_shaving: bool = True
-        self._has_battery: bool = True
+        self._has_battery: bool = False
         self._has_battery2: bool = False
         self._has_meter_extended: bool = False
         self._has_meter_extended2: bool = False
@@ -816,8 +816,13 @@ class ET(Inverter):
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
         data = self._map_response(response, self._sensors)
 
-        self._has_battery = data.get("battery_mode", 0) != 0
-        if self._has_battery:
+        # Battery presence is a capability, not a transient runtime state:
+        # battery_mode can temporarily report 0 ("No battery"), e.g. during
+        # BMS communication dropouts. Remember it once seen, so that sensors()
+        # does not shrink and consumers building entities from it (only once,
+        # at setup time) do not permanently lose battery sensors.
+        if data.get("battery_mode", 0) != 0:
+            self._has_battery = True
             try:
                 response = await self._read_from_socket(self._READ_BATTERY_INFO)
                 data.update(self._map_response(response, self._sensors_battery))
