@@ -46,8 +46,13 @@ class EtMock(TestCase, ET):
     def assertSensor(self, sensor_name, expected_value, expected_unit, data):
         self.assertEqual(expected_value, data.get(sensor_name))
         sensor = self.sensor_map.get(sensor_name)
+        if sensor is None:
+            # Battery sensors only appear in sensors() once a battery has been
+            # detected by read_runtime_data(); the pre-built map cannot
+            # contain them.
+            sensor = next((s for s in self.sensors() if s.id_ == sensor_name))
         self.assertEqual(expected_unit, sensor.unit)
-        self.sensor_map.pop(sensor_name)
+        self.sensor_map.pop(sensor_name, None)
 
     @classmethod
     def setUpClass(cls):
@@ -264,6 +269,24 @@ class GW10K_ET_Test(EtMock):
         self.assertFalse(
             self.sensor_map, f"Some sensors were not tested {self.sensor_map}"
         )
+
+    def test_GW10K_ET_battery_sensors_persist_after_transient_no_battery(self):
+        """Battery sensors must stay listed when battery_mode transiently
+        reports "No battery" (e.g. during BMS communication dropout).
+        """
+        self.loop.run_until_complete(self.read_device_info())
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(3, data.get("battery_mode"))
+        self.assertTrue(self._has_battery)
+        self.assertIn("battery_soc", {s.id_ for s in self.sensors()})
+
+        self.mock_response(
+            self._READ_RUNNING_DATA, "GW10K-ET_running_data_no_battery.hex"
+        )
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(0, data.get("battery_mode"))
+        self.assertTrue(self._has_battery)
+        self.assertIn("battery_soc", {s.id_ for s in self.sensors()})
 
     def test_GW10K_ET_setting(self):
         self.assertEqual(69, len(self.settings()))
