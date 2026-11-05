@@ -284,12 +284,96 @@ class GW5000D_NS_Test(DtMock):
     def test_get_grid_export_limit(self):
         self.loop.run_until_complete(self.read_device_info())
         self.loop.run_until_complete(self.get_grid_export_limit())
-        self.assertEqual("7f039d8800026193", self.request.hex())
+        self.assertEqual("7f039d8700039050", self.request.hex())
 
     def test_set_grid_export_limit(self):
         self.loop.run_until_complete(self.read_device_info())
         self.loop.run_until_complete(self.set_grid_export_limit(5000))
         self.assertEqual("7f109d88000204000013889d80", self.request.hex())
+
+
+class GW3000_XS_Test(DtMock):
+
+    def __init__(self, methodName="runTest"):
+        DtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, "GW3000-XS_device_info.hex")
+        self.mock_response(self._READ_RUNNING_DATA, "GW3000-XS_running_data.hex")
+        self.mock_response(self._READ_METER_DATA, "GW3000-XS_meter_data.hex")
+
+    def test_GW3000_XS_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual("GW3000-XS", self.model_name)
+        self.assertEqual("00000SSX00000000", self.serial_number)
+        self.assertEqual(59, self.dsp1_version)
+        self.assertEqual(59, self.dsp2_version)
+        self.assertEqual(65535, self.dsp_svn_version)
+        self.assertEqual(50, self.arm_version)
+        self.assertEqual(271, self.arm_svn_version)
+        self.assertEqual("59.59.32", self.firmware)
+
+    def test_GW3000_XS_runtime_data(self):
+        self.loop.run_until_complete(self.read_device_info())
+        data = self.loop.run_until_complete(self.read_runtime_data())
+        self.assertEqual(42, len(data))
+
+        self.assertSensor(
+            "timestamp",
+            datetime.strptime("2026-11-05 15:07:25", "%Y-%m-%d %H:%M:%S"),
+            "",
+            data,
+        )
+        self.assertSensor("vpv1", 285.5, "V", data)
+        self.assertSensor("ipv1", 2.2, "A", data)
+        self.assertSensor("ppv1", 628, "W", data)
+        self.assertSensor("vpv2", 0.0, "V", data)
+        self.assertSensor("ipv2", 0.0, "A", data)
+        self.assertSensor("ppv2", 0, "W", data)
+        self.assertSensor("ppv", 628, "W", data)
+        self.assertSensor("vline1", 0, "V", data)
+        self.assertSensor("vgrid1", 235.4, "V", data)
+        self.assertSensor("igrid1", 2.6, "A", data)
+        self.assertSensor("fgrid1", 50.0, "Hz", data)
+        self.assertSensor("pgrid1", 612, "W", data)
+        self.assertSensor("total_inverter_power", 678, "W", data)
+        self.assertSensor("work_mode", 1, "", data)
+        self.assertSensor("work_mode_label", "Normal", "", data)
+        self.assertSensor("error_codes", 0, "", data)
+        self.assertSensor("warning_code", 0, "", data)
+        self.assertSensor("apparent_power", -1, "VA", data)
+        self.assertSensor("reactive_power", -1, "var", data)
+        self.assertSensor("total_input_power", -1, "W", data)
+        self.assertSensor("power_factor", -0.001, "", data)
+        self.assertSensor("temperature", 36.6, "C", data)
+        self.assertSensor("temperature_heatsink", None, "C", data)
+        self.assertSensor("e_day", 11.2, "kWh", data)
+        self.assertSensor("e_total", 14831.5, "kWh", data)
+        self.assertSensor("h_total", 17810, "h", data)
+        self.assertSensor("safety_country", 20, "", data)
+        self.assertSensor("safety_country_label", "NL-A", "", data)
+        self.assertSensor("funbit", 336, "", data)
+        self.assertSensor("vbus", 383.3, "V", data)
+        self.assertSensor("vnbus", 0, "V", data)
+        self.assertSensor("derating_mode", 0, "", data)
+        self.assertSensor("derating_mode_label", "", "", data)
+        self.assertSensor("rssi", 47, "", data)
+        self.assertSensor("meter_active_power", -1, "W", data)
+        self.assertSensor("meter_e_total_exp", None, "kWh", data)
+        self.assertSensor("meter_e_total_imp", None, "kWh", data)
+        self.assertSensor("meter_comm_status", 0, "", data)
+        self.assertSensor("meter_comm_label", "", "", data)
+        self.assertSensor("house_consumption", 629, "W", data)
+        self.assertSensor("leakage_current", 0.0, "mA", data)
+
+    def test_get_grid_export_limit(self):
+        # Single phase firmware returns the export limit only in the block starting at 40327
+        self.loop.run_until_complete(self.read_device_info())
+        self.mock_response(self._read_command(40327, 3), "GW3000-XS_grid_export_limit.hex")
+        self.assertEqual(100, self.loop.run_until_complete(self.get_grid_export_limit()))
+
+    def test_set_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.set_grid_export_limit(400))
+        self.assertEqual("7f109d8800020400000190912a", self.request.hex())
 
 
 class GW5000_MS_Test(DtMock):

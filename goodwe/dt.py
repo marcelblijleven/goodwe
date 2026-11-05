@@ -322,9 +322,18 @@ class DT(Inverter):
     async def _read_sensor(self, setting: Sensor) -> Any:
         try:
             count = (setting.size_ + (setting.size_ % 2)) // 2
+            start = setting.offset
+            if setting.id_ == "grid_export_limit" and setting.offset == 40328:
+                # Single phase (D-NS/XS) firmware only returns the export limit as part
+                # of the block starting at 40327 (grid_export), like SolarGo reads it.
+                # A direct read of 40328 returns 0xFFFF 0xFFFF.
+                start = 40327
+                count += 1
             response = await self._read_from_socket(
-                self._read_command(setting.offset, count)
+                self._read_command(start, count)
             )
+            if start != setting.offset:
+                response.seek(setting.offset)
             return setting.read_value(response)
         except RequestRejectedException as ex:
             if ex.message == ILLEGAL_DATA_ADDRESS:
