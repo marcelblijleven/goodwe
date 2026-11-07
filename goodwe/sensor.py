@@ -984,7 +984,15 @@ def encode_datetime(value: Any) -> bytes:
 
 def read_grid_mode(buffer: ProtocolResponse, offset: int = None) -> int:
     """Retrieve 'grid mode' sign value from buffer"""
-    value = read_bytes2_signed(buffer, offset)
+    return _grid_mode(read_bytes2_signed(buffer, offset))
+
+
+def read_grid_mode4(buffer: ProtocolResponse, offset: int = None) -> int:
+    """Retrieve 'grid mode' sign value from 4 byte (signed int) value in buffer"""
+    return _grid_mode(read_bytes4_signed(buffer, offset))
+
+
+def _grid_mode(value: int) -> int:
     if value < -90:
         return 2
     if value >= 90:

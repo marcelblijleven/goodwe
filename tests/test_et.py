@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from goodwe.et import ET
 from goodwe.exceptions import RequestRejectedException, RequestFailedException
-from goodwe.inverter import OperationMode
+from goodwe.inverter import EMSMode, OperationMode
 from goodwe.modbus import ILLEGAL_DATA_ADDRESS
 from goodwe.protocol import ModbusRtuReadCommand, ProtocolCommand, ProtocolResponse
 
@@ -365,6 +365,19 @@ class GW10K_ET_Test(EtMock):
         self.loop.run_until_complete(self.get_ems_mode())
         self.assertEqual("f703b9970001042c", self.request.hex())
 
+    def test_set_ems_mode_zero_power(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertFalse(self._has_ems_42000)
+        self._list_of_requests = []
+        self.loop.run_until_complete(self.set_ems_mode(EMSMode.CHARGE_PV, 0))
+        self.assertEqual(
+            [
+                self._write_command(47511, EMSMode.CHARGE_PV.value).request,
+                self._write_command(47512, 0).request,
+            ],
+            self._list_of_requests,
+        )
+
     def test_get_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.get_ongrid_battery_dod())
         self.assertEqual("f703b12c00017669", self.request.hex())
@@ -593,6 +606,12 @@ class GW6000_EH_Test(EtMock):
         self.assertEqual(188, self.arm_svn_version)
         self.assertEqual("04034-03-S10", self.firmware)
         self.assertEqual("02041-16-S00", self.arm_firmware)
+
+    def test_GW6000_EH_power_sensors_16bit(self):
+        # Platform 205 EH does not sign-extend the high word of S32 power registers
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertFalse(self._has_32bit_power())
+        self.assertEqual(35140, self._get_sensor("active_power").offset)
 
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
@@ -1719,6 +1738,124 @@ class GW29K9_ET_Test(EtMock):
 
         self.assertFalse(
             self.sensor_map, f"Some sensors were not tested {self.sensor_map}"
+        )
+
+
+class GW29K9_ET_HighPower_Test(EtMock):
+    """Platform 745 inverter with powers above the 16-bit range (synthetic data)"""
+
+    def __init__(self, methodName="runTest"):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, "GW29K9-ET_device_info.hex")
+        self.mock_response(
+            self._READ_RUNNING_DATA, "GW29K9-ET_running_data_high_power.hex"
+        )
+        self.mock_response(self._READ_METER_DATA_EXTENDED2, ILLEGAL_DATA_ADDRESS)
+        self.mock_response(self._READ_METER_DATA_EXTENDED, "GW29K9-ET_meter_data.hex")
+        self.mock_response(self._READ_BATTERY_INFO, "GW29K9-ET_battery_info.hex")
+        self.mock_response(self._READ_BATTERY2_INFO, "GW29K9-ET_battery2_info.hex")
+        self.mock_response(self._READ_MPPT_DATA, "GW29K9-ET_mppt_data.hex")
+        self.mock_response(
+            self._READ_BATTERY2_INFO_EXTENDED, "GW29K9-ET_battery2_info_extended.hex"
+        )
+
+    def test_power_sensors_32bit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertTrue(self._has_32bit_power())
+        for sensor_id, offset in (
+            ("pgrid", 35124),
+            ("total_inverter_power", 35137),
+            ("active_power", 35139),
+            ("reactive_power", 35141),
+            ("apparent_power", 35143),
+            ("load_ptotal", 35171),
+        ):
+            self.assertEqual(offset, self._get_sensor(sensor_id).offset)
+
+    def test_high_power_runtime_data(self):
+        self.loop.run_until_complete(self.read_device_info())
+        data = self.loop.run_until_complete(self.read_runtime_data())
+
+        self.assertEqual(15200, data.get("pgrid"))
+        self.assertEqual(15100, data.get("pgrid2"))
+        self.assertEqual(14700, data.get("pgrid3"))
+        self.assertEqual(45000, data.get("total_inverter_power"))
+        self.assertEqual(-40000, data.get("active_power"))
+        self.assertEqual(2, data.get("grid_in_out"))
+        self.assertEqual("Importing", data.get("grid_in_out_label"))
+        self.assertEqual(-33000, data.get("reactive_power"))
+        self.assertEqual(46000, data.get("apparent_power"))
+        self.assertEqual(12700, data.get("load_p1"))
+        self.assertEqual(12600, data.get("load_p2"))
+        self.assertEqual(12700, data.get("load_p3"))
+        self.assertEqual(66, data.get("backup_ptotal"))
+        self.assertEqual(38000, data.get("load_ptotal"))
+        # 6950 (original sample) - (-5403) + (-40000) difference in active power
+        self.assertEqual(41547, data.get("house_consumption"))
+
+
+class GW50K_ET_Test(EtMock):
+    """Inverter above 30kW using EMS / export limit registers 42000-42005 (synthetic data)"""
+
+    def __init__(self, methodName="runTest"):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, "GW50K-ET_device_info.hex")
+
+    def test_GW50K_ET_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual("9050KETT00CW0000", self.serial_number)
+        self.assertEqual(50000, self.rated_power)
+        self.assertTrue(self._has_32bit_power())
+        self.assertTrue(self._uses_ems_42000())
+        self.assertTrue(self._has_ems_42000)
+        self.assertEqual(42000, self._settings["ems_mode"].offset)
+        self.assertEqual(42001, self._settings["ems_power_limit"].offset)
+        self.assertEqual(42003, self._settings["grid_export"].offset)
+        self.assertEqual(42004, self._settings["grid_export_limit"].offset)
+
+    def test_GW50K_ET_ems_42000_not_supported(self):
+        self.mock_response(self._read_command(42000, 6), ILLEGAL_DATA_ADDRESS)
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertFalse(self._has_ems_42000)
+        self.assertEqual(47511, self._settings["ems_mode"].offset)
+        self.assertEqual(47512, self._settings["ems_power_limit"].offset)
+        self.assertEqual(47510, self._settings["grid_export_limit"].offset)
+
+    def test_GW50K_ET_get_ems_mode(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.get_ems_mode())
+        self.assertEqual(self._read_command(42000, 1).request, self.request)
+
+    def test_GW50K_ET_set_ems_mode(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self._list_of_requests = []
+        self.loop.run_until_complete(self.set_ems_mode(EMSMode.IMPORT_AC, 40000))
+        self.assertEqual(
+            [
+                self._write_command(42000, EMSMode.IMPORT_AC.value).request,
+                self._write_multi_command(42001, (40000).to_bytes(4, "big")).request,
+            ],
+            self._list_of_requests,
+        )
+
+    def test_GW50K_ET_set_ems_mode_zero_power(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self._list_of_requests = []
+        self.loop.run_until_complete(self.set_ems_mode(EMSMode.CHARGE_PV, 0))
+        self.assertEqual(
+            [
+                self._write_command(42000, EMSMode.CHARGE_PV.value).request,
+                self._write_multi_command(42001, (0).to_bytes(4, "big")).request,
+            ],
+            self._list_of_requests,
+        )
+
+    def test_GW50K_ET_set_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.set_grid_export_limit(40000))
+        self.assertEqual(
+            self._write_multi_command(42004, (40000).to_bytes(4, "big")).request,
+            self.request,
         )
 
 
