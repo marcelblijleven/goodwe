@@ -594,6 +594,12 @@ class GW6000_EH_Test(EtMock):
         self.assertEqual("04034-03-S10", self.firmware)
         self.assertEqual("02041-16-S00", self.arm_firmware)
 
+    def test_GW6000_EH_power_sensors_16bit(self):
+        # Platform 205 EH does not sign-extend the high word of S32 power registers
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertFalse(self._has_32bit_power())
+        self.assertEqual(35140, self._get_sensor("active_power").offset)
+
     def test_GW6000_EH_runtime_data(self):
         self.loop.run_until_complete(self.read_device_info())
         data = self.loop.run_until_complete(self.read_runtime_data())
@@ -1720,6 +1726,59 @@ class GW29K9_ET_Test(EtMock):
         self.assertFalse(
             self.sensor_map, f"Some sensors were not tested {self.sensor_map}"
         )
+
+
+class GW29K9_ET_HighPower_Test(EtMock):
+    """Platform 745 inverter with powers above the 16-bit range (synthetic data)"""
+
+    def __init__(self, methodName="runTest"):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, "GW29K9-ET_device_info.hex")
+        self.mock_response(
+            self._READ_RUNNING_DATA, "GW29K9-ET_running_data_high_power.hex"
+        )
+        self.mock_response(self._READ_METER_DATA_EXTENDED2, ILLEGAL_DATA_ADDRESS)
+        self.mock_response(self._READ_METER_DATA_EXTENDED, "GW29K9-ET_meter_data.hex")
+        self.mock_response(self._READ_BATTERY_INFO, "GW29K9-ET_battery_info.hex")
+        self.mock_response(self._READ_BATTERY2_INFO, "GW29K9-ET_battery2_info.hex")
+        self.mock_response(self._READ_MPPT_DATA, "GW29K9-ET_mppt_data.hex")
+        self.mock_response(
+            self._READ_BATTERY2_INFO_EXTENDED, "GW29K9-ET_battery2_info_extended.hex"
+        )
+
+    def test_power_sensors_32bit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertTrue(self._has_32bit_power())
+        for sensor_id, offset in (
+            ("pgrid", 35124),
+            ("total_inverter_power", 35137),
+            ("active_power", 35139),
+            ("reactive_power", 35141),
+            ("apparent_power", 35143),
+            ("load_ptotal", 35171),
+        ):
+            self.assertEqual(offset, self._get_sensor(sensor_id).offset)
+
+    def test_high_power_runtime_data(self):
+        self.loop.run_until_complete(self.read_device_info())
+        data = self.loop.run_until_complete(self.read_runtime_data())
+
+        self.assertEqual(15200, data.get("pgrid"))
+        self.assertEqual(15100, data.get("pgrid2"))
+        self.assertEqual(14700, data.get("pgrid3"))
+        self.assertEqual(45000, data.get("total_inverter_power"))
+        self.assertEqual(-40000, data.get("active_power"))
+        self.assertEqual(2, data.get("grid_in_out"))
+        self.assertEqual("Importing", data.get("grid_in_out_label"))
+        self.assertEqual(-33000, data.get("reactive_power"))
+        self.assertEqual(46000, data.get("apparent_power"))
+        self.assertEqual(12700, data.get("load_p1"))
+        self.assertEqual(12600, data.get("load_p2"))
+        self.assertEqual(12700, data.get("load_p3"))
+        self.assertEqual(66, data.get("backup_ptotal"))
+        self.assertEqual(38000, data.get("load_ptotal"))
+        # 6950 (original sample) - (-5403) + (-40000) difference in active power
+        self.assertEqual(41547, data.get("house_consumption"))
 
 
 class GW5K_BT_Test(EtMock):

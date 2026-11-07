@@ -8,7 +8,13 @@ from .const import *
 from .exceptions import RequestFailedException, RequestRejectedException
 from .inverter import EMSMode, Inverter, OperationMode, SensorKind as Kind
 from .modbus import ILLEGAL_DATA_ADDRESS
-from .model import is_2_battery, is_4_mppt, is_745_platform, is_single_phase
+from .model import (
+    is_2_battery,
+    is_4_mppt,
+    is_745_platform,
+    is_753_platform,
+    is_single_phase,
+)
 from .protocol import ProtocolCommand
 from .sensor import *
 
@@ -171,6 +177,56 @@ class ET(Inverter):
         ),
         #        Voltage("vbattery2", 47924, "Battery2 Voltage", Kind.BAT),
         #        Enum2("battery2_mode_label", 35184, BATTERY_MODES, "Battery2 Mode", Kind.BAT),
+    )
+
+    # Full 32-bit (S32) variants of the power sensors above.
+    # The ARM 745 Modbus map defines these registers as S32 (high word at the "reserved" address),
+    # but older platform 205 inverters (e.g. EH) do not sign-extend the high word, so the sensors
+    # above read the low word only, which overflows above 32767 W.
+    # These replace the sensors with the same id on platforms known to fill the high word properly.
+    __sensors_power_32bit: tuple[Sensor, ...] = (
+        Power4S("pgrid", 35124, "On-grid L1 Power", Kind.AC),
+        Power4S("pgrid2", 35129, "On-grid L2 Power", Kind.AC),
+        Power4S("pgrid3", 35134, "On-grid L3 Power", Kind.AC),
+        Power4S("total_inverter_power", 35137, "Total Power", Kind.AC),
+        Power4S("active_power", 35139, "Active Power", Kind.GRID),
+        Calculated(
+            "grid_in_out",
+            lambda data: read_grid_mode4(data, 35139),
+            "On-grid Mode code",
+            "",
+            Kind.GRID,
+        ),
+        EnumCalculated(
+            "grid_in_out_label",
+            lambda data: read_grid_mode4(data, 35139),
+            GRID_IN_OUT_MODES,
+            "On-grid Mode",
+            Kind.GRID,
+        ),
+        Reactive4("reactive_power", 35141, "Reactive Power", Kind.GRID),
+        Apparent4("apparent_power", 35143, "Apparent Power", Kind.GRID),
+        Power4S("backup_p1", 35149, "Back-up L1 Power", Kind.UPS),
+        Power4S("backup_p2", 35155, "Back-up L2 Power", Kind.UPS),
+        Power4S("backup_p3", 35161, "Back-up L3 Power", Kind.UPS),
+        Power4S("load_p1", 35163, "Load L1", Kind.AC),
+        Power4S("load_p2", 35165, "Load L2", Kind.AC),
+        Power4S("load_p3", 35167, "Load L3", Kind.AC),
+        Power4S("backup_ptotal", 35169, "Back-up Load", Kind.UPS),
+        Power4S("load_ptotal", 35171, "Load", Kind.AC),
+        # ppv1 + ppv2 + ppv3 + ppv4 + pbattery1 - active_power
+        Calculated(
+            "house_consumption",
+            lambda data: read_bytes4(data, 35105, 0)
+            + read_bytes4(data, 35109, 0)
+            + read_bytes4(data, 35113, 0)
+            + read_bytes4(data, 35117, 0)
+            + read_bytes4_signed(data, 35182)
+            - read_bytes4_signed(data, 35139),
+            "House Consumption",
+            "W",
+            Kind.AC,
+        ),
     )
 
     # Modbus registers from offset 0x9088 (37000)
@@ -733,6 +789,16 @@ class ET(Inverter):
         """Filter to exclude phase2/3 sensors on single phase inverters"""
         return not ((s.id_.endswith("2") or s.id_.endswith("3")) and "pv" not in s.id_)
 
+    def _has_32bit_power(self) -> bool:
+        """Inverter fills the high word of S32 power registers (35124-35172) properly.
+        True for platform 745/753 inverters and for inverters above 30kW,
+        whose power cannot be represented by the 16-bit low word anyway."""
+        return (
+            is_745_platform(self)
+            or is_753_platform(self)
+            or self.rated_power > 30000
+        )
+
     @staticmethod
     def _not_extended_meter(s: Sensor) -> bool:
         """Filter to exclude extended meter sensors"""
@@ -761,6 +827,12 @@ class ET(Inverter):
         self.arm_svn_version = read_unsigned_int(response, 40)  # 35020
         self.firmware = self._decode(response[42:54])  # 35021 - 35027
         self.arm_firmware = self._decode(response[54:66])  # 35027 - 35032
+
+        if self._has_32bit_power():
+            # Read power registers as full S32 values (see __sensors_power_32bit)
+            power_32bit = {s.id_: s for s in self.__sensors_power_32bit}
+            self._sensors = tuple(power_32bit.get(s.id_, s) for s in self._sensors)
+            self._sensors_map = None
 
         if not is_4_mppt(self) and self.rated_power < 15000:
             # This inverter does not have 4 MPPTs or PV strings
