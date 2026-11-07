@@ -744,6 +744,16 @@ class ET(Inverter):
         Integer("eco_mode_enable", 47612, "Eco Mode Switch"),
     )
 
+    # EMS and export limit registers for inverters above 30kW (and BTC/ETC).
+    # Per GoodWe ARM 745 map / Third-party EMS protocol, these replace 47509-47512,
+    # whose 16-bit values cannot hold powers of large inverters.
+    __settings_ems_42000: tuple[Sensor, ...] = (
+        Integer("ems_mode", 42000, "EMS Mode"),
+        Long("ems_power_limit", 42001, "EMS Power Limit", "W"),
+        Integer("grid_export", 42003, "Grid Export Limit Enabled", "", Kind.GRID),
+        LongS("grid_export_limit", 42004, "Grid Export Limit", "W", Kind.GRID),
+    )
+
     def __init__(
         self,
         host: str,
@@ -770,6 +780,7 @@ class ET(Inverter):
         self._READ_MPPT_DATA: ProtocolCommand = self._read_command(0x89E5, 0x3D)
         self._has_eco_mode_v2: bool = True
         self._has_peak_shaving: bool = True
+        self._has_ems_42000: bool = False
         self._has_battery: bool = True
         self._has_battery2: bool = False
         self._has_meter_extended: bool = False
@@ -797,6 +808,13 @@ class ET(Inverter):
             is_745_platform(self)
             or is_753_platform(self)
             or self.rated_power > 30000
+        )
+
+    def _uses_ems_42000(self) -> bool:
+        """Inverter is expected to use EMS / export limit registers 42000-42005.
+        ARM 745 map: for inverters with AC power above 30kW and for BTC/ETC models."""
+        return self.rated_power > 30000 or any(
+            model in self.serial_number for model in ("BTC", "ETC")
         )
 
     @staticmethod
@@ -883,6 +901,18 @@ class ET(Inverter):
         except RequestFailedException:
             logger.debug("Cannot read _has_peak_shaving settings, disabling it.")
             self._has_peak_shaving = False
+
+        # Large (>30kW) and BTC/ETC inverters use EMS / export limit registers 42000-42005
+        if self._uses_ems_42000():
+            try:
+                await self._read_from_socket(self._read_command(42000, 6))
+                self._settings.update({s.id_: s for s in self.__settings_ems_42000})
+                self._has_ems_42000 = True
+            except RequestRejectedException as ex:
+                if ex.message == ILLEGAL_DATA_ADDRESS:
+                    logger.debug("EMS registers 42000 not supported, using 47509.")
+            except RequestFailedException:
+                logger.debug("Cannot read EMS registers 42000, using 47509.")
 
     async def read_runtime_data(self) -> dict[str, Any]:
         response = await self._read_from_socket(self._READ_RUNNING_DATA)
@@ -1176,7 +1206,8 @@ class ET(Inverter):
         self, ems_mode: EMSMode, ems_power_limit: int | None = None
     ) -> None:
         await self.write_setting("ems_mode", ems_mode.value)
-        if ems_power_limit:
+        if ems_power_limit is not None:
+            # 0 is a valid value (e.g. Charge PV with 0 = PV only, no grid import)
             await self.write_setting("ems_power_limit", ems_power_limit)
 
     async def get_ongrid_battery_dod(self) -> int:

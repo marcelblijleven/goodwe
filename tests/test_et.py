@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from goodwe.et import ET
 from goodwe.exceptions import RequestRejectedException, RequestFailedException
-from goodwe.inverter import OperationMode
+from goodwe.inverter import EMSMode, OperationMode
 from goodwe.modbus import ILLEGAL_DATA_ADDRESS
 from goodwe.protocol import ModbusRtuReadCommand, ProtocolCommand, ProtocolResponse
 
@@ -364,6 +364,19 @@ class GW10K_ET_Test(EtMock):
     def test_get_ems_mode(self):
         self.loop.run_until_complete(self.get_ems_mode())
         self.assertEqual("f703b9970001042c", self.request.hex())
+
+    def test_set_ems_mode_zero_power(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertFalse(self._has_ems_42000)
+        self._list_of_requests = []
+        self.loop.run_until_complete(self.set_ems_mode(EMSMode.CHARGE_PV, 0))
+        self.assertEqual(
+            [
+                self._write_command(47511, EMSMode.CHARGE_PV.value).request,
+                self._write_command(47512, 0).request,
+            ],
+            self._list_of_requests,
+        )
 
     def test_get_ongrid_battery_dod(self):
         self.loop.run_until_complete(self.get_ongrid_battery_dod())
@@ -1779,6 +1792,71 @@ class GW29K9_ET_HighPower_Test(EtMock):
         self.assertEqual(38000, data.get("load_ptotal"))
         # 6950 (original sample) - (-5403) + (-40000) difference in active power
         self.assertEqual(41547, data.get("house_consumption"))
+
+
+class GW50K_ET_Test(EtMock):
+    """Inverter above 30kW using EMS / export limit registers 42000-42005 (synthetic data)"""
+
+    def __init__(self, methodName="runTest"):
+        EtMock.__init__(self, methodName)
+        self.mock_response(self._READ_DEVICE_VERSION_INFO, "GW50K-ET_device_info.hex")
+
+    def test_GW50K_ET_device_info(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertEqual("9050KETT00CW0000", self.serial_number)
+        self.assertEqual(50000, self.rated_power)
+        self.assertTrue(self._has_32bit_power())
+        self.assertTrue(self._uses_ems_42000())
+        self.assertTrue(self._has_ems_42000)
+        self.assertEqual(42000, self._settings["ems_mode"].offset)
+        self.assertEqual(42001, self._settings["ems_power_limit"].offset)
+        self.assertEqual(42003, self._settings["grid_export"].offset)
+        self.assertEqual(42004, self._settings["grid_export_limit"].offset)
+
+    def test_GW50K_ET_ems_42000_not_supported(self):
+        self.mock_response(self._read_command(42000, 6), ILLEGAL_DATA_ADDRESS)
+        self.loop.run_until_complete(self.read_device_info())
+        self.assertFalse(self._has_ems_42000)
+        self.assertEqual(47511, self._settings["ems_mode"].offset)
+        self.assertEqual(47512, self._settings["ems_power_limit"].offset)
+        self.assertEqual(47510, self._settings["grid_export_limit"].offset)
+
+    def test_GW50K_ET_get_ems_mode(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.get_ems_mode())
+        self.assertEqual(self._read_command(42000, 1).request, self.request)
+
+    def test_GW50K_ET_set_ems_mode(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self._list_of_requests = []
+        self.loop.run_until_complete(self.set_ems_mode(EMSMode.IMPORT_AC, 40000))
+        self.assertEqual(
+            [
+                self._write_command(42000, EMSMode.IMPORT_AC.value).request,
+                self._write_multi_command(42001, (40000).to_bytes(4, "big")).request,
+            ],
+            self._list_of_requests,
+        )
+
+    def test_GW50K_ET_set_ems_mode_zero_power(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self._list_of_requests = []
+        self.loop.run_until_complete(self.set_ems_mode(EMSMode.CHARGE_PV, 0))
+        self.assertEqual(
+            [
+                self._write_command(42000, EMSMode.CHARGE_PV.value).request,
+                self._write_multi_command(42001, (0).to_bytes(4, "big")).request,
+            ],
+            self._list_of_requests,
+        )
+
+    def test_GW50K_ET_set_grid_export_limit(self):
+        self.loop.run_until_complete(self.read_device_info())
+        self.loop.run_until_complete(self.set_grid_export_limit(40000))
+        self.assertEqual(
+            self._write_multi_command(42004, (40000).to_bytes(4, "big")).request,
+            self.request,
+        )
 
 
 class GW5K_BT_Test(EtMock):
